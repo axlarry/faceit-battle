@@ -18,11 +18,6 @@ export const Header = () => {
           <p className="text-xl text-gray-300 font-light">
             Clasament Global cu Prieteni
           </p>
-          <div className="mt-6 inline-block px-4 py-2 bg-yellow-500/20 border border-yellow-500/30 rounded-lg backdrop-blur-sm">
-            <p className="text-yellow-300 text-sm">
-              🔑 Demo API Key - Pentru utilizare extensivă, obține propriul API key
-            </p>
-          </div>
         </div>
       </div>
     </div>

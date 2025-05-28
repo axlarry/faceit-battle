@@ -15,7 +15,8 @@ interface FriendsSectionProps {
   onShowPlayerDetails: (player: Player) => void;
 }
 
-const API_KEY = '7d9b35f2-bfb6-4980-af46-4928638dfab5';
+// Setează aici propriul tău API key FACEIT
+const API_KEY = 'c2755709-8b70-4f89-934f-7e4a8d0b7a29'; // Înlocuiește cu propriul tău API key
 const API_BASE = 'https://open.faceit.com/data/v4';
 
 export const FriendsSection = ({ friends, onAddFriend, onRemoveFriend, onShowPlayerDetails }: FriendsSectionProps) => {
