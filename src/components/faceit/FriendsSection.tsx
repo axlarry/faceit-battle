@@ -15,9 +15,29 @@ interface FriendsSectionProps {
   onShowPlayerDetails: (player: Player) => void;
 }
 
-// Setează aici propriul tău API key FACEIT
-const API_KEY = 'c2755709-8b70-4f89-934f-7e4a8d0b7a29'; // Înlocuiește cu propriul tău API key
-const API_BASE = 'https://open.faceit.com/data/v4';
+// Demo data pentru căutare jucători
+const generateDemoPlayer = (nickname: string): Player => {
+  const playerId = `demo-search-${nickname.toLowerCase()}`;
+  const level = Math.floor(Math.random() * 10) + 1;
+  const elo = Math.floor(Math.random() * 2000) + 1000;
+  const wins = Math.floor(Math.random() * 500) + 50;
+  const matches = wins + Math.floor(Math.random() * 200) + 20;
+  const winRate = Math.round((wins / matches) * 100);
+  const hsRate = Math.floor(Math.random() * 60) + 20;
+  const kdRatio = (Math.random() * 1.5 + 0.5).toFixed(2);
+
+  return {
+    player_id: playerId,
+    nickname: nickname,
+    avatar: `https://picsum.photos/seed/${playerId}/100/100`,
+    level: level,
+    elo: elo,
+    wins: wins,
+    winRate: winRate,
+    hsRate: hsRate,
+    kdRatio: parseFloat(kdRatio),
+  };
+};
 
 export const FriendsSection = ({ friends, onAddFriend, onRemoveFriend, onShowPlayerDetails }: FriendsSectionProps) => {
   const [searchTerm, setSearchTerm] = useState('');
@@ -28,46 +48,24 @@ export const FriendsSection = ({ friends, onAddFriend, onRemoveFriend, onShowPla
     
     setLoading(true);
     try {
-      const response = await fetch(
-        `${API_BASE}/players?nickname=${encodeURIComponent(searchTerm.trim())}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${API_KEY}`
-          }
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Jucătorul nu a fost găsit');
-      }
-
-      const playerData = await response.json();
+      // Simulăm un delay pentru a simula un API real
+      await new Promise(resolve => setTimeout(resolve, 500));
       
-      // Get additional stats
-      const statsResponse = await fetch(`${API_BASE}/players/${playerData.player_id}/stats/cs2`, {
-        headers: { 'Authorization': `Bearer ${API_KEY}` }
-      });
-      const statsData = await statsResponse.json();
-
-      const player: Player = {
-        player_id: playerData.player_id,
-        nickname: playerData.nickname,
-        avatar: playerData.avatar || '/placeholder.svg',
-        level: playerData.games?.cs2?.skill_level || 0,
-        elo: playerData.games?.cs2?.faceit_elo || 0,
-        wins: parseInt(statsData.lifetime?.Wins) || 0,
-        winRate: Math.round((parseInt(statsData.lifetime?.Wins) / parseInt(statsData.lifetime?.Matches)) * 100) || 0,
-        hsRate: parseFloat(statsData.lifetime?.['Average Headshots %']) || 0,
-        kdRatio: parseFloat(statsData.lifetime?.['Average K/D Ratio']) || 0,
-      };
+      // Simulăm că orice căutare returnează un jucător demo
+      const player = generateDemoPlayer(searchTerm.trim());
 
       onAddFriend(player);
       setSearchTerm('');
 
+      toast({
+        title: "Jucător demo găsit!",
+        description: `${player.nickname} a fost generat și adăugat ca date demo.`,
+      });
+
     } catch (error) {
       toast({
         title: "Eroare la căutare",
-        description: "Jucătorul nu a fost găsit sau a apărut o eroare.",
+        description: "A apărut o eroare la generarea jucătorului demo.",
         variant: "destructive",
       });
     } finally {
@@ -95,12 +93,12 @@ export const FriendsSection = ({ friends, onAddFriend, onRemoveFriend, onShowPla
             <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
               <UserPlus size={16} className="text-white" />
             </div>
-            Adaugă Prieteni
+            Adaugă Prieteni Demo
           </h2>
           
           <div className="flex gap-3">
             <Input
-              placeholder="Introdu nickname-ul prietenului..."
+              placeholder="Introdu nickname-ul prietenului... (va genera date demo)"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && searchPlayer()}
@@ -111,7 +109,7 @@ export const FriendsSection = ({ friends, onAddFriend, onRemoveFriend, onShowPla
               disabled={loading || !searchTerm.trim()}
               className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white border-0 px-8"
             >
-              {loading ? 'Caută...' : 'Adaugă'}
+              {loading ? 'Generează...' : 'Adaugă Demo'}
             </Button>
           </div>
         </div>
@@ -133,7 +131,7 @@ export const FriendsSection = ({ friends, onAddFriend, onRemoveFriend, onShowPla
                 <Users size={40} className="text-white" />
               </div>
               <h3 className="text-xl font-semibold text-white mb-2">Niciun prieten adăugat</h3>
-              <p className="text-gray-400 mb-6">Caută și adaugă prieteni pentru a-i vedea în clasamentul tău personal!</p>
+              <p className="text-gray-400 mb-6">Caută și adaugă prieteni demo pentru a-i vedea în clasamentul tău personal!</p>
             </div>
           ) : (
             <div className="space-y-3">

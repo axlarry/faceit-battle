@@ -12,9 +12,39 @@ interface LeaderboardTableProps {
   onAddFriend: (player: Player) => void;
 }
 
-// Setează aici propriul tău API key FACEIT
-const API_KEY = 'c2755709-8b70-4f89-934f-7e4a8d0b7a29'; // Înlocuiește cu propriul tău API key
-const API_BASE = 'https://open.faceit.com/data/v4';
+// Demo data pentru testare
+const generateDemoPlayers = (region: string, offset: number, limit: number): Player[] => {
+  const demoPlayers: Player[] = [];
+  const regionPrefix = region.toLowerCase();
+  
+  for (let i = 0; i < limit; i++) {
+    const position = offset + i + 1;
+    const playerId = `demo-${regionPrefix}-${position}`;
+    const nickname = `${regionPrefix}Player${position}`;
+    const level = Math.floor(Math.random() * 10) + 1;
+    const elo = Math.floor(Math.random() * 2000) + 1000;
+    const wins = Math.floor(Math.random() * 500) + 50;
+    const matches = wins + Math.floor(Math.random() * 200) + 20;
+    const winRate = Math.round((wins / matches) * 100);
+    const hsRate = Math.floor(Math.random() * 60) + 20;
+    const kdRatio = (Math.random() * 1.5 + 0.5).toFixed(2);
+
+    demoPlayers.push({
+      player_id: playerId,
+      nickname: nickname,
+      avatar: `https://picsum.photos/seed/${playerId}/100/100`,
+      position: position,
+      level: level,
+      elo: elo,
+      wins: wins,
+      winRate: winRate,
+      hsRate: hsRate,
+      kdRatio: parseFloat(kdRatio),
+    });
+  }
+  
+  return demoPlayers;
+};
 
 export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: LeaderboardTableProps) => {
   const [players, setPlayers] = useState<Player[]>([]);
@@ -33,22 +63,12 @@ export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: L
     
     setLoading(true);
     try {
-      const response = await fetch(
-        `${API_BASE}/rankings/games/cs2/regions/${region}?offset=${currentOffset}&limit=${limit}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${API_KEY}`
-          }
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`Eroare API: ${response.status}`);
-      }
-
-      const data = await response.json();
+      // Simulăm un delay pentru a simula un API real
+      await new Promise(resolve => setTimeout(resolve, 500));
       
-      if (data.items.length === 0) {
+      const demoPlayers = generateDemoPlayers(region, currentOffset, limit);
+      
+      if (demoPlayers.length === 0) {
         toast({
           title: "Nu există mai mulți jucători",
           description: "S-au încărcat toți jucătorii disponibili.",
@@ -56,63 +76,19 @@ export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: L
         return;
       }
 
-      // Get detailed player info
-      const playersWithDetails = await Promise.all(
-        data.items.map(async (item: any) => {
-          try {
-            const playerResponse = await fetch(`${API_BASE}/players/${item.player_id}`, {
-              headers: { 'Authorization': `Bearer ${API_KEY}` }
-            });
-            const playerData = await playerResponse.json();
-            
-            const statsResponse = await fetch(`${API_BASE}/players/${item.player_id}/stats/cs2`, {
-              headers: { 'Authorization': `Bearer ${API_KEY}` }
-            });
-            const statsData = await statsResponse.json();
-
-            return {
-              player_id: item.player_id,
-              nickname: item.nickname,
-              avatar: playerData.avatar || '/placeholder.svg',
-              position: item.position,
-              level: playerData.games?.cs2?.skill_level || 0,
-              elo: playerData.games?.cs2?.faceit_elo || 0,
-              wins: parseInt(statsData.lifetime?.Wins) || 0,
-              winRate: Math.round((parseInt(statsData.lifetime?.Wins) / parseInt(statsData.lifetime?.Matches)) * 100) || 0,
-              hsRate: parseFloat(statsData.lifetime?.['Average Headshots %']) || 0,
-              kdRatio: parseFloat(statsData.lifetime?.['Average K/D Ratio']) || 0,
-            };
-          } catch (error) {
-            console.error(`Error loading player ${item.player_id}:`, error);
-            return {
-              player_id: item.player_id,
-              nickname: item.nickname,
-              avatar: '/placeholder.svg',
-              position: item.position,
-              level: 0,
-              elo: 0,
-              wins: 0,
-              winRate: 0,
-              hsRate: 0,
-              kdRatio: 0,
-            };
-          }
-        })
-      );
-
       if (reset) {
-        setPlayers(playersWithDetails);
+        setPlayers(demoPlayers);
       } else {
-        setPlayers(prev => [...prev, ...playersWithDetails]);
+        setPlayers(prev => [...prev, ...demoPlayers]);
       }
       
       setOffset(currentOffset + limit);
 
     } catch (error) {
-      console.error('Error loading leaderboard:', error);
+      console.error('Error loading demo leaderboard:', error);
       toast({
         title: "Eroare la încărcare",
-        description: "Nu s-au putut încărca datele clasamentului.",
+        description: "Nu s-au putut încărca datele clasamentului demo.",
         variant: "destructive",
       });
     } finally {
@@ -134,7 +110,7 @@ export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: L
         <div className="p-6">
           <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
             <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-full"></div>
-            Clasament {region}
+            Clasament Demo {region}
           </h2>
           
           <div className="space-y-3">
@@ -208,7 +184,7 @@ export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: L
             ))}
           </div>
 
-          {players.length > 0 && (
+          {players.length > 0 && offset < 100 && (
             <div className="text-center pt-6">
               <Button
                 onClick={() => loadPlayers(offset)}
