@@ -2,42 +2,52 @@
 import { useState, useEffect } from 'react';
 import { Player } from '@/types/Player';
 import { toast } from '@/hooks/use-toast';
-
-const FRIENDS_STORAGE_KEY = 'faceit_friends';
+import { supabase } from '@/integrations/supabase/client';
 
 export const useFriends = () => {
   const [friends, setFriends] = useState<Player[]>([]);
 
-  // Load friends from localStorage
+  // Load friends from Supabase
   useEffect(() => {
-    loadFriendsFromStorage();
+    loadFriendsFromDatabase();
   }, []);
 
-  const loadFriendsFromStorage = () => {
+  const loadFriendsFromDatabase = async () => {
     try {
-      const storedFriends = localStorage.getItem(FRIENDS_STORAGE_KEY);
-      if (storedFriends) {
-        const parsedFriends = JSON.parse(storedFriends);
-        setFriends(parsedFriends);
+      const { data, error } = await supabase
+        .from('friends')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error loading friends:', error);
+        toast({
+          title: "Eroare la încărcare",
+          description: "Nu s-au putut încărca prietenii din baza de date.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (data) {
+        const friendsData: Player[] = data.map(friend => ({
+          player_id: friend.player_id,
+          nickname: friend.nickname,
+          avatar: friend.avatar,
+          level: friend.level || 0,
+          elo: friend.elo || 0,
+          wins: friend.wins || 0,
+          winRate: friend.win_rate || 0,
+          hsRate: friend.hs_rate || 0,
+          kdRatio: friend.kd_ratio || 0,
+        }));
+        setFriends(friendsData);
       }
     } catch (error) {
-      console.error('Error loading friends from localStorage:', error);
+      console.error('Error loading friends from database:', error);
       toast({
         title: "Eroare la încărcare",
-        description: "Nu s-au putut încărca prietenii din storage local.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const saveFriendsToStorage = (friendsList: Player[]) => {
-    try {
-      localStorage.setItem(FRIENDS_STORAGE_KEY, JSON.stringify(friendsList));
-    } catch (error) {
-      console.error('Error saving friends to localStorage:', error);
-      toast({
-        title: "Eroare la salvare",
-        description: "Nu s-au putut salva prietenii în storage local.",
+        description: "Nu s-au putut încărca prietenii din baza de date.",
         variant: "destructive",
       });
     }
@@ -47,9 +57,33 @@ export const useFriends = () => {
     const exists = friends.some(f => f.player_id === player.player_id);
     if (!exists) {
       try {
+        const { error } = await supabase
+          .from('friends')
+          .insert({
+            player_id: player.player_id,
+            nickname: player.nickname,
+            avatar: player.avatar,
+            level: player.level || 0,
+            elo: player.elo || 0,
+            wins: player.wins || 0,
+            win_rate: player.winRate || 0,
+            hs_rate: player.hsRate || 0,
+            kd_ratio: player.kdRatio || 0,
+          });
+
+        if (error) {
+          console.error('Error adding friend:', error);
+          toast({
+            title: "Eroare la adăugare",
+            description: "Nu s-a putut adăuga prietenul în baza de date.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Actualizez lista locală
         const updatedFriends = [...friends, player];
         setFriends(updatedFriends);
-        saveFriendsToStorage(updatedFriends);
         
         toast({
           title: "Prieten adăugat!",
@@ -74,9 +108,24 @@ export const useFriends = () => {
 
   const removeFriend = async (playerId: string) => {
     try {
+      const { error } = await supabase
+        .from('friends')
+        .delete()
+        .eq('player_id', playerId);
+
+      if (error) {
+        console.error('Error removing friend:', error);
+        toast({
+          title: "Eroare la ștergere",
+          description: "Nu s-a putut șterge prietenul din baza de date.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Actualizez lista locală
       const updatedFriends = friends.filter(f => f.player_id !== playerId);
       setFriends(updatedFriends);
-      saveFriendsToStorage(updatedFriends);
       
       toast({
         title: "Prieten șters",
@@ -96,6 +145,6 @@ export const useFriends = () => {
     friends,
     addFriend,
     removeFriend,
-    loadFriendsFromDatabase: loadFriendsFromStorage
+    loadFriendsFromDatabase
   };
 };
