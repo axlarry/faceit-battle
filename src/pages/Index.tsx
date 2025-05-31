@@ -4,12 +4,13 @@ import { Header } from "@/components/faceit/Header";
 import { RegionTabs } from "@/components/faceit/RegionTabs";
 import { LeaderboardTable } from "@/components/faceit/LeaderboardTable";
 import { FriendsSection } from "@/components/faceit/FriendsSection";
+import { FaceitTool } from "@/components/faceit/FaceitTool";
 import { PlayerModal } from "@/components/faceit/PlayerModal";
 import { useFriends } from "@/hooks/useFriends";
 import { usePlayerModal } from "@/hooks/usePlayerModal";
 
 const Index = () => {
-  const [currentRegion, setCurrentRegion] = useState('EU');
+  const [currentRegion, setCurrentRegion] = useState('FRIENDS'); // Schimbat default la FRIENDS
   const { friends, addFriend, removeFriend } = useFriends();
   const { selectedPlayer, showModal, showPlayerDetails, closeModal } = usePlayerModal();
 
@@ -37,6 +38,11 @@ const Index = () => {
               onAddFriend={addFriend}
               onRemoveFriend={removeFriend}
               onShowPlayerDetails={showPlayerDetails}
+            />
+          ) : currentRegion === 'FACEIT_TOOL' ? (
+            <FaceitTool
+              onShowPlayerDetails={showPlayerDetails}
+              onAddFriend={addFriend}
             />
           ) : (
             <LeaderboardTable

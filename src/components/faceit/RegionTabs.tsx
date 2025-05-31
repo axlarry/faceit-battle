@@ -8,11 +8,12 @@ interface RegionTabsProps {
 
 export const RegionTabs = ({ currentRegion, onRegionChange }: RegionTabsProps) => {
   const regions = [
+    { id: 'FRIENDS', name: 'Prietenii Mei', flag: '👥' },
     { id: 'EU', name: 'Europa', flag: '🇪🇺' },
     { id: 'NA', name: 'America de Nord', flag: '🇺🇸' },
     { id: 'SA', name: 'America de Sud', flag: '🇧🇷' },
     { id: 'OCE', name: 'Oceania', flag: '🇦🇺' },
-    { id: 'FRIENDS', name: 'Prietenii Mei', flag: '👥' },
+    { id: 'FACEIT_TOOL', name: 'FACEIT Tool', flag: '🔍' },
   ];
 
   return (
@@ -27,9 +28,13 @@ export const RegionTabs = ({ currentRegion, onRegionChange }: RegionTabsProps) =
             ${currentRegion === region.id 
               ? region.id === 'FRIENDS'
                 ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white border-0 shadow-lg'
+                : region.id === 'FACEIT_TOOL'
+                ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white border-0 shadow-lg'
                 : 'bg-gradient-to-r from-orange-500 to-red-500 text-white border-0 shadow-lg'
               : region.id === 'FRIENDS'
                 ? 'border-blue-400 text-blue-400 hover:bg-blue-400 hover:text-white bg-white/5 backdrop-blur-sm'
+                : region.id === 'FACEIT_TOOL'
+                ? 'border-green-400 text-green-400 hover:bg-green-400 hover:text-white bg-white/5 backdrop-blur-sm'
                 : 'border-orange-400 text-orange-400 hover:bg-orange-400 hover:text-white bg-white/5 backdrop-blur-sm'
             }
           `}
