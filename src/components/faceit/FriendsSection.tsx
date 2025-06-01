@@ -121,39 +121,47 @@ export const FriendsSection = ({
   };
 
   const getLevelColor = (level: number) => {
-    if (level >= 9) return 'from-red-500 to-red-600';
-    if (level >= 7) return 'from-purple-500 to-purple-600';
-    if (level >= 5) return 'from-blue-500 to-blue-600';
-    if (level >= 3) return 'from-green-500 to-green-600';
-    return 'from-gray-500 to-gray-600';
+    if (level >= 9) return 'bg-red-500';
+    if (level >= 7) return 'bg-purple-500';
+    if (level >= 5) return 'bg-blue-500';
+    if (level >= 3) return 'bg-green-500';
+    return 'bg-gray-500';
+  };
+
+  const getLevelBorder = (level: number) => {
+    if (level >= 9) return 'border-red-400';
+    if (level >= 7) return 'border-purple-400';
+    if (level >= 5) return 'border-blue-400';
+    if (level >= 3) return 'border-green-400';
+    return 'border-gray-400';
   };
 
   const sortedFriends = [...friends].sort((a, b) => (b.elo || 0) - (a.elo || 0));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 px-4 md:px-0">
       {/* Search Section */}
-      <Card className="bg-gradient-to-br from-indigo-500/10 via-purple-500/10 to-pink-500/10 backdrop-blur-xl border-white/20 shadow-2xl">
-        <div className="p-8">
-          <h2 className="text-3xl font-bold text-white mb-8 flex items-center gap-4">
-            <div className="w-12 h-12 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg">
-              <UserPlus size={24} className="text-white" />
+      <Card className="bg-[#1a1d21] border-[#2a2f36] shadow-xl">
+        <div className="p-6 md:p-8">
+          <h2 className="text-2xl md:text-3xl font-bold text-white mb-6 md:mb-8 flex items-center gap-4">
+            <div className="w-10 h-10 md:w-12 md:h-12 bg-[#ff6500] rounded-lg flex items-center justify-center shadow-lg">
+              <UserPlus size={20} className="md:w-6 md:h-6 text-white" />
             </div>
-            Adaugă Prieteni
+            <span className="text-lg md:text-3xl">Adaugă Prieteni</span>
           </h2>
           
-          <div className="flex gap-4">
+          <div className="flex flex-col md:flex-row gap-4">
             <Input
               placeholder="Introdu nickname-ul prietenului..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && searchPlayer()}
-              className="bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:border-purple-400 rounded-xl"
+              className="bg-[#2a2f36] border-[#3a4048] text-white placeholder:text-[#9f9f9f] focus:border-[#ff6500] rounded-lg h-12"
             />
             <Button
               onClick={searchPlayer}
               disabled={loading || !searchTerm.trim()}
-              className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 hover:from-indigo-600 hover:via-purple-600 hover:to-pink-600 text-white border-0 px-8 rounded-xl shadow-lg"
+              className="bg-[#ff6500] hover:bg-[#e55a00] text-white border-0 px-6 md:px-8 h-12 rounded-lg shadow-lg font-bold"
             >
               {loading ? 'Caută...' : 'Adaugă'}
             </Button>
@@ -162,105 +170,102 @@ export const FriendsSection = ({
       </Card>
 
       {/* Friends List */}
-      <Card className="bg-white/5 backdrop-blur-xl border-white/20 shadow-2xl">
-        <div className="p-8">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-3xl font-bold text-white flex items-center gap-4">
-              <div className="w-12 h-12 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg">
-                <Users size={24} className="text-white" />
+      <Card className="bg-[#1a1d21] border-[#2a2f36] shadow-xl">
+        <div className="p-6 md:p-8">
+          <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 md:mb-8 gap-4">
+            <h2 className="text-2xl md:text-3xl font-bold text-white flex items-center gap-4">
+              <div className="w-10 h-10 md:w-12 md:h-12 bg-[#ff6500] rounded-lg flex items-center justify-center shadow-lg">
+                <Users size={20} className="md:w-6 md:h-6 text-white" />
               </div>
-              Prietenii Mei ({friends.length})
+              <span className="text-lg md:text-3xl">Prietenii Mei ({friends.length})</span>
             </h2>
             
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-400">
+            <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
+              <span className="text-xs md:text-sm text-[#9f9f9f]">
                 Actualizare automată la 5 min
               </span>
               <Button
                 onClick={updateAllFriends}
                 disabled={isUpdating}
                 size="lg"
-                variant="outline"
-                className="border-purple-400 text-purple-400 hover:bg-purple-400 hover:text-white rounded-xl"
+                className="bg-transparent border-2 border-[#ff6500] text-[#ff6500] hover:bg-[#ff6500] hover:text-white rounded-lg h-10 md:h-12 px-4 md:px-6 font-bold"
               >
-                <RefreshCw size={20} className={isUpdating ? 'animate-spin' : ''} />
+                <RefreshCw size={16} className={`md:w-5 md:h-5 mr-2 ${isUpdating ? 'animate-spin' : ''}`} />
                 {isUpdating ? 'Actualizare...' : 'Actualizează acum'}
               </Button>
             </div>
           </div>
           
           {friends.length === 0 ? (
-            <div className="text-center py-16">
-              <div className="w-24 h-24 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-                <Users size={48} className="text-white" />
+            <div className="text-center py-12 md:py-16">
+              <div className="w-20 h-20 md:w-24 md:h-24 bg-[#ff6500] rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
+                <Users size={40} className="md:w-12 md:h-12 text-white" />
               </div>
-              <h3 className="text-2xl font-bold text-white mb-3">Niciun prieten adăugat</h3>
-              <p className="text-gray-400 text-lg mb-8">Caută și adaugă prieteni pentru a-i vedea în clasamentul tău personal!</p>
+              <h3 className="text-xl md:text-2xl font-bold text-white mb-3">Niciun prieten adăugat</h3>
+              <p className="text-[#9f9f9f] text-base md:text-lg mb-8">Caută și adaugă prieteni pentru a-i vedea în clasamentul tău personal!</p>
             </div>
           ) : (
             <div className="space-y-4">
               {sortedFriends.map((friend, index) => (
                 <div
                   key={friend.player_id}
-                  className="bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10 backdrop-blur-lg rounded-xl p-6 border border-white/10 hover:border-white/30 transition-all duration-300 hover:scale-[1.02] shadow-lg"
+                  className="bg-[#2a2f36] rounded-lg p-4 md:p-6 border border-[#3a4048] hover:border-[#ff6500]/50 transition-all duration-300 shadow-lg"
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-6">
-                      <div className="text-3xl font-bold text-purple-400 min-w-[4rem]">
+                  <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 lg:gap-6">
+                    <div className="flex items-center gap-4 md:gap-6 w-full lg:w-auto">
+                      <div className="text-2xl md:text-3xl font-bold text-[#ff6500] min-w-[3rem] md:min-w-[4rem]">
                         #{index + 1}
                       </div>
                       
                       <img
                         src={friend.avatar}
                         alt={friend.nickname}
-                        className="w-16 h-16 rounded-xl border-2 border-purple-400 shadow-lg"
+                        className="w-12 h-12 md:w-16 md:h-16 rounded-lg border-2 border-[#ff6500] shadow-lg"
                       />
                       
-                      <div>
-                        <h3 className="text-xl font-bold text-white">{friend.nickname}</h3>
-                        <div className="flex items-center gap-3 mt-2">
-                          <Badge className={`bg-gradient-to-r ${getLevelColor(friend.level || 0)} text-white border-0 px-3 py-1`}>
+                      <div className="min-w-0 flex-1">
+                        <h3 className="text-lg md:text-xl font-bold text-white truncate">{friend.nickname}</h3>
+                        <div className="flex flex-wrap items-center gap-2 md:gap-3 mt-2">
+                          <Badge className={`${getLevelColor(friend.level || 0)} text-white border-0 px-2 md:px-3 py-1 text-xs md:text-sm`}>
                             Nivel {friend.level}
                           </Badge>
-                          <span className="text-purple-400 font-bold text-lg">{friend.elo} ELO</span>
+                          <span className="text-[#ff6500] font-bold text-sm md:text-lg">{friend.elo} ELO</span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-8 text-base">
+                    <div className="flex flex-wrap items-center gap-4 md:gap-8 text-sm md:text-base w-full lg:w-auto justify-between lg:justify-end">
                       <div className="text-center">
-                        <div className="text-white font-bold text-xl">{friend.wins}</div>
-                        <div className="text-gray-400">Victorii</div>
+                        <div className="text-white font-bold text-lg md:text-xl">{friend.wins}</div>
+                        <div className="text-[#9f9f9f] text-xs md:text-sm">Victorii</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-white font-bold text-xl">{friend.winRate}%</div>
-                        <div className="text-gray-400">Win Rate</div>
+                        <div className="text-white font-bold text-lg md:text-xl">{friend.winRate}%</div>
+                        <div className="text-[#9f9f9f] text-xs md:text-sm">Win Rate</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-white font-bold text-xl">{friend.hsRate}%</div>
-                        <div className="text-gray-400">HS%</div>
+                        <div className="text-white font-bold text-lg md:text-xl">{friend.hsRate}%</div>
+                        <div className="text-[#9f9f9f] text-xs md:text-sm">HS%</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-white font-bold text-xl">{friend.kdRatio}</div>
-                        <div className="text-gray-400">K/D</div>
+                        <div className="text-white font-bold text-lg md:text-xl">{friend.kdRatio}</div>
+                        <div className="text-[#9f9f9f] text-xs md:text-sm">K/D</div>
                       </div>
                       
-                      <div className="flex gap-3">
+                      <div className="flex gap-2 md:gap-3">
                         <Button 
                           size="lg"
-                          variant="outline"
                           onClick={() => onShowPlayerDetails(friend)}
-                          className="border-purple-400 text-purple-400 hover:bg-purple-400 hover:text-white rounded-xl"
+                          className={`bg-transparent border-2 ${getLevelBorder(friend.level || 0)} text-white hover:bg-[#ff6500] hover:border-[#ff6500] rounded-lg px-3 md:px-4 h-10 md:h-12 font-bold text-xs md:text-sm`}
                         >
                           Detalii
                         </Button>
                         <Button 
                           size="lg"
-                          variant="outline"
                           onClick={() => handleRemoveFriend(friend.player_id)}
-                          className="border-red-400 text-red-400 hover:bg-red-400 hover:text-white rounded-xl"
+                          className="bg-transparent border-2 border-red-400 text-red-400 hover:bg-red-500 hover:border-red-500 hover:text-white rounded-lg px-3 md:px-4 h-10 md:h-12 font-bold"
                         >
-                          <Trash2 size={20} />
+                          <Trash2 size={16} className="md:w-5 md:h-5" />
                         </Button>
                       </div>
                     </div>

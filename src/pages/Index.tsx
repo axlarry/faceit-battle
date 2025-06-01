@@ -15,18 +15,17 @@ const Index = () => {
   const { selectedPlayer, showModal, showPlayerDetails, closeModal } = usePlayerModal();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-orange-900/20 to-slate-900">
-      {/* Animated background elements */}
+    <div className="min-h-screen bg-[#0d1117]">
+      {/* Background pattern */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-orange-500/20 rounded-full mix-blend-multiply filter blur-xl animate-pulse"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-500/20 rounded-full mix-blend-multiply filter blur-xl animate-pulse"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-purple-500/10 rounded-full mix-blend-multiply filter blur-xl animate-pulse"></div>
+        <div className="absolute inset-0 bg-gradient-to-br from-[#ff6500]/5 via-transparent to-[#ff6500]/5"></div>
+        <div className="absolute top-0 left-0 w-full h-full bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZjY1MDAiIGZpbGwtb3BhY2l0eT0iMC4wMyI+PGNpcmNsZSBjeD0iMzAiIGN5PSIzMCIgcj0iMiIvPjwvZz48L2c+PC9zdmc+')] opacity-40"></div>
       </div>
 
       <div className="relative z-10">
         <Header />
         
-        <div className="container mx-auto px-4 py-8 space-y-8">
+        <div className="container mx-auto px-4 py-6 md:py-8 space-y-6 md:space-y-8 max-w-7xl">
           <RegionTabs 
             currentRegion={currentRegion}
             onRegionChange={setCurrentRegion}

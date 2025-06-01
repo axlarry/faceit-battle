@@ -17,23 +17,24 @@ export const RegionTabs = ({ currentRegion, onRegionChange }: RegionTabsProps) =
   ];
 
   return (
-    <div className="flex flex-wrap gap-4 justify-center p-6">
+    <div className="flex flex-wrap gap-3 justify-center p-4 bg-[#1a1d21] rounded-xl border border-[#2a2f36] shadow-xl">
       {regions.map((region) => (
         <Button
           key={region.id}
           variant={currentRegion === region.id ? "default" : "outline"}
           onClick={() => onRegionChange(region.id)}
           className={`
-            px-8 py-4 text-base font-semibold transition-all duration-300 transform hover:scale-105
-            rounded-xl shadow-lg backdrop-blur-lg border-2
+            px-4 py-2.5 text-sm md:text-base font-bold transition-all duration-200 
+            rounded-lg border-2 min-h-[48px] min-w-[120px] md:min-w-[140px]
             ${currentRegion === region.id 
-              ? 'bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white border-transparent shadow-2xl shadow-purple-500/30' 
-              : 'bg-white/10 border-white/20 text-white hover:bg-white/20 hover:border-white/40 hover:shadow-xl'
+              ? 'bg-[#ff6500] hover:bg-[#e55a00] text-white border-[#ff6500] shadow-lg shadow-[#ff6500]/25' 
+              : 'bg-[#2a2f36] hover:bg-[#363c45] text-[#b3b3b3] hover:text-white border-[#3a4048] hover:border-[#ff6500]/50'
             }
           `}
         >
-          <span className="mr-3 text-xl">{region.flag}</span>
-          {region.name}
+          <span className="mr-2 text-lg">{region.flag}</span>
+          <span className="hidden sm:inline">{region.name}</span>
+          <span className="sm:hidden">{region.name.split(' ')[0]}</span>
         </Button>
       ))}
     </div>
