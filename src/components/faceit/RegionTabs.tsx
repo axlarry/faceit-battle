@@ -17,29 +17,22 @@ export const RegionTabs = ({ currentRegion, onRegionChange }: RegionTabsProps) =
   ];
 
   return (
-    <div className="flex flex-wrap gap-3 justify-center">
+    <div className="flex flex-wrap gap-4 justify-center p-6">
       {regions.map((region) => (
         <Button
           key={region.id}
           variant={currentRegion === region.id ? "default" : "outline"}
           onClick={() => onRegionChange(region.id)}
           className={`
-            px-6 py-3 text-sm font-medium transition-all duration-300 transform hover:scale-105
+            px-8 py-4 text-base font-semibold transition-all duration-300 transform hover:scale-105
+            rounded-xl shadow-lg backdrop-blur-lg border-2
             ${currentRegion === region.id 
-              ? region.id === 'FRIENDS'
-                ? 'bg-gradient-to-r from-blue-500 to-purple-500 text-white border-0 shadow-lg'
-                : region.id === 'FACEIT_TOOL'
-                ? 'bg-gradient-to-r from-green-500 to-emerald-500 text-white border-0 shadow-lg'
-                : 'bg-gradient-to-r from-orange-500 to-red-500 text-white border-0 shadow-lg'
-              : region.id === 'FRIENDS'
-                ? 'border-blue-400 text-blue-400 hover:bg-blue-400 hover:text-white bg-white/5 backdrop-blur-sm'
-                : region.id === 'FACEIT_TOOL'
-                ? 'border-green-400 text-green-400 hover:bg-green-400 hover:text-white bg-white/5 backdrop-blur-sm'
-                : 'border-orange-400 text-orange-400 hover:bg-orange-400 hover:text-white bg-white/5 backdrop-blur-sm'
+              ? 'bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white border-transparent shadow-2xl shadow-purple-500/30' 
+              : 'bg-white/10 border-white/20 text-white hover:bg-white/20 hover:border-white/40 hover:shadow-xl'
             }
           `}
         >
-          <span className="mr-2">{region.flag}</span>
+          <span className="mr-3 text-xl">{region.flag}</span>
           {region.name}
         </Button>
       ))}
