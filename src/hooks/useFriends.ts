@@ -81,7 +81,6 @@ export const useFriends = () => {
           return;
         }
 
-        // Actualizez lista locală
         const updatedFriends = [...friends, player];
         setFriends(updatedFriends);
         
@@ -106,6 +105,38 @@ export const useFriends = () => {
     }
   };
 
+  const updateFriend = async (updatedPlayer: Player) => {
+    try {
+      const { error } = await supabase
+        .from('friends')
+        .update({
+          nickname: updatedPlayer.nickname,
+          avatar: updatedPlayer.avatar,
+          level: updatedPlayer.level || 0,
+          elo: updatedPlayer.elo || 0,
+          wins: updatedPlayer.wins || 0,
+          win_rate: updatedPlayer.winRate || 0,
+          hs_rate: updatedPlayer.hsRate || 0,
+          kd_ratio: updatedPlayer.kdRatio || 0,
+        })
+        .eq('player_id', updatedPlayer.player_id);
+
+      if (error) {
+        console.error('Error updating friend:', error);
+        return;
+      }
+
+      // Update local state
+      const updatedFriends = friends.map(f => 
+        f.player_id === updatedPlayer.player_id ? updatedPlayer : f
+      );
+      setFriends(updatedFriends);
+      
+    } catch (error) {
+      console.error('Error updating friend:', error);
+    }
+  };
+
   const removeFriend = async (playerId: string) => {
     try {
       const { error } = await supabase
@@ -123,7 +154,6 @@ export const useFriends = () => {
         return;
       }
 
-      // Actualizez lista locală
       const updatedFriends = friends.filter(f => f.player_id !== playerId);
       setFriends(updatedFriends);
       
@@ -144,6 +174,7 @@ export const useFriends = () => {
   return {
     friends,
     addFriend,
+    updateFriend,
     removeFriend,
     loadFriendsFromDatabase
   };

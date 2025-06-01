@@ -5,23 +5,37 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Player } from "@/types/Player";
-import { UserPlus, Users, Trash2 } from "lucide-react";
+import { UserPlus, Users, Trash2, RefreshCw } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { useFriendsAutoUpdate } from "@/hooks/useFriendsAutoUpdate";
 
 interface FriendsSectionProps {
   friends: Player[];
   onAddFriend: (player: Player) => void;
   onRemoveFriend: (playerId: string) => void;
   onShowPlayerDetails: (player: Player) => void;
+  onUpdateFriend?: (player: Player) => void;
 }
 
-// Setează aici propriul tău API key FACEIT
-const API_KEY = 'c2755709-8b70-4f89-934f-7e4a8d0b7a29'; // Înlocuiește cu propriul tău API key
+const API_KEY = 'c2755709-8b70-4f89-934f-7e4a8d0b7a29';
 const API_BASE = 'https://open.faceit.com/data/v4';
 
-export const FriendsSection = ({ friends, onAddFriend, onRemoveFriend, onShowPlayerDetails }: FriendsSectionProps) => {
+export const FriendsSection = ({ 
+  friends, 
+  onAddFriend, 
+  onRemoveFriend, 
+  onShowPlayerDetails,
+  onUpdateFriend 
+}: FriendsSectionProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // Auto-update friends data every 5 minutes
+  const { isUpdating, updateAllFriends } = useFriendsAutoUpdate({
+    friends,
+    updateFriend: onUpdateFriend || (() => {}),
+    enabled: true
+  });
 
   const searchPlayer = async () => {
     if (!searchTerm.trim()) return;
@@ -43,11 +57,13 @@ export const FriendsSection = ({ friends, onAddFriend, onRemoveFriend, onShowPla
 
       const playerData = await response.json();
       
-      // Get additional stats
       const statsResponse = await fetch(`${API_BASE}/players/${playerData.player_id}/stats/cs2`, {
         headers: { 'Authorization': `Bearer ${API_KEY}` }
       });
-      const statsData = await statsResponse.json();
+      let statsData = {};
+      if (statsResponse.ok) {
+        statsData = await statsResponse.json();
+      }
 
       const player: Player = {
         player_id: playerData.player_id,
@@ -55,10 +71,10 @@ export const FriendsSection = ({ friends, onAddFriend, onRemoveFriend, onShowPla
         avatar: playerData.avatar || '/placeholder.svg',
         level: playerData.games?.cs2?.skill_level || 0,
         elo: playerData.games?.cs2?.faceit_elo || 0,
-        wins: parseInt(statsData.lifetime?.Wins) || 0,
-        winRate: Math.round((parseInt(statsData.lifetime?.Wins) / parseInt(statsData.lifetime?.Matches)) * 100) || 0,
-        hsRate: parseFloat(statsData.lifetime?.['Average Headshots %']) || 0,
-        kdRatio: parseFloat(statsData.lifetime?.['Average K/D Ratio']) || 0,
+        wins: parseInt((statsData as any).lifetime?.Wins) || 0,
+        winRate: Math.round((parseInt((statsData as any).lifetime?.Wins) / parseInt((statsData as any).lifetime?.Matches)) * 100) || 0,
+        hsRate: parseFloat((statsData as any).lifetime?.['Average Headshots %']) || 0,
+        kdRatio: parseFloat((statsData as any).lifetime?.['Average K/D Ratio']) || 0,
       };
 
       onAddFriend(player);
@@ -83,7 +99,6 @@ export const FriendsSection = ({ friends, onAddFriend, onRemoveFriend, onShowPla
     return 'from-gray-500 to-gray-600';
   };
 
-  // Sort friends by ELO
   const sortedFriends = [...friends].sort((a, b) => (b.elo || 0) - (a.elo || 0));
 
   return (
@@ -120,12 +135,30 @@ export const FriendsSection = ({ friends, onAddFriend, onRemoveFriend, onShowPla
       {/* Friends List */}
       <Card className="bg-white/5 backdrop-blur-lg border-white/10">
         <div className="p-6">
-          <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
-            <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-              <Users size={16} className="text-white" />
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+                <Users size={16} className="text-white" />
+              </div>
+              Prietenii Mei ({friends.length})
+            </h2>
+            
+            <div className="flex items-center gap-3">
+              <span className="text-sm text-gray-400">
+                Actualizare automată la 5 min
+              </span>
+              <Button
+                onClick={updateAllFriends}
+                disabled={isUpdating}
+                size="sm"
+                variant="outline"
+                className="border-blue-400 text-blue-400 hover:bg-blue-400 hover:text-white"
+              >
+                <RefreshCw size={16} className={isUpdating ? 'animate-spin' : ''} />
+                {isUpdating ? 'Actualizare...' : 'Actualizează acum'}
+              </Button>
             </div>
-            Prietenii Mei ({friends.length})
-          </h2>
+          </div>
           
           {friends.length === 0 ? (
             <div className="text-center py-12">

@@ -1,0 +1,144 @@
+
+import { useEffect, useRef } from 'react';
+import { Player } from '@/types/Player';
+import { toast } from '@/hooks/use-toast';
+
+const API_KEY = 'c2755709-8b70-4f89-934f-7e4a8d0b7a29';
+const API_BASE = 'https://open.faceit.com/data/v4';
+
+interface UseFriendsAutoUpdateProps {
+  friends: Player[];
+  updateFriend: (updatedPlayer: Player) => void;
+  enabled?: boolean;
+}
+
+export const useFriendsAutoUpdate = ({ 
+  friends, 
+  updateFriend, 
+  enabled = true 
+}: UseFriendsAutoUpdateProps) => {
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const isUpdatingRef = useRef(false);
+
+  const updatePlayerData = async (player: Player): Promise<Player | null> => {
+    try {
+      // Get player basic data
+      const playerResponse = await fetch(
+        `${API_BASE}/players/${player.player_id}`,
+        {
+          headers: {
+            'Authorization': `Bearer ${API_KEY}`
+          }
+        }
+      );
+
+      if (!playerResponse.ok) {
+        console.error(`Failed to update data for ${player.nickname}`);
+        return null;
+      }
+
+      const playerData = await playerResponse.json();
+      
+      // Get additional stats
+      const statsResponse = await fetch(`${API_BASE}/players/${player.player_id}/stats/cs2`, {
+        headers: { 'Authorization': `Bearer ${API_KEY}` }
+      });
+      
+      let statsData = {};
+      if (statsResponse.ok) {
+        statsData = await statsResponse.json();
+      }
+
+      const updatedPlayer: Player = {
+        player_id: playerData.player_id,
+        nickname: playerData.nickname,
+        avatar: playerData.avatar || player.avatar,
+        level: playerData.games?.cs2?.skill_level || player.level || 0,
+        elo: playerData.games?.cs2?.faceit_elo || player.elo || 0,
+        wins: parseInt((statsData as any).lifetime?.Wins) || player.wins || 0,
+        winRate: Math.round((parseInt((statsData as any).lifetime?.Wins) / parseInt((statsData as any).lifetime?.Matches)) * 100) || player.winRate || 0,
+        hsRate: parseFloat((statsData as any).lifetime?.['Average Headshots %']) || player.hsRate || 0,
+        kdRatio: parseFloat((statsData as any).lifetime?.['Average K/D Ratio']) || player.kdRatio || 0,
+      };
+
+      return updatedPlayer;
+    } catch (error) {
+      console.error(`Error updating data for ${player.nickname}:`, error);
+      return null;
+    }
+  };
+
+  const updateAllFriends = async () => {
+    if (isUpdatingRef.current || friends.length === 0) return;
+    
+    isUpdatingRef.current = true;
+    console.log('Starting auto-update for', friends.length, 'friends...');
+    
+    try {
+      let updatedCount = 0;
+      
+      for (const friend of friends) {
+        const updatedPlayer = await updatePlayerData(friend);
+        if (updatedPlayer) {
+          updateFriend(updatedPlayer);
+          updatedCount++;
+        }
+        
+        // Add a small delay between requests to avoid rate limiting
+        await new Promise(resolve => setTimeout(resolve, 200));
+      }
+      
+      if (updatedCount > 0) {
+        toast({
+          title: "Date actualizate",
+          description: `Datele pentru ${updatedCount} prieteni au fost actualizate automat.`,
+        });
+      }
+      
+    } catch (error) {
+      console.error('Error during auto-update:', error);
+      toast({
+        title: "Eroare la actualizare",
+        description: "Nu s-au putut actualiza toate datele prietenilor.",
+        variant: "destructive",
+      });
+    } finally {
+      isUpdatingRef.current = false;
+    }
+  };
+
+  useEffect(() => {
+    if (!enabled || friends.length === 0) {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      return;
+    }
+
+    // Set up interval for 5 minutes (300000 ms)
+    intervalRef.current = setInterval(updateAllFriends, 300000);
+    
+    // Clean up on unmount or dependency change
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+  }, [friends.length, enabled]);
+
+  // Clean up on unmount
+  useEffect(() => {
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, []);
+
+  return {
+    isUpdating: isUpdatingRef.current,
+    updateAllFriends
+  };
+};

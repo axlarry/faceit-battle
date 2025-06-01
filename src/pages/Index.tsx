@@ -10,8 +10,8 @@ import { useFriends } from "@/hooks/useFriends";
 import { usePlayerModal } from "@/hooks/usePlayerModal";
 
 const Index = () => {
-  const [currentRegion, setCurrentRegion] = useState('FRIENDS'); // Schimbat default la FRIENDS
-  const { friends, addFriend, removeFriend } = useFriends();
+  const [currentRegion, setCurrentRegion] = useState('FRIENDS');
+  const { friends, addFriend, updateFriend, removeFriend } = useFriends();
   const { selectedPlayer, showModal, showPlayerDetails, closeModal } = usePlayerModal();
 
   return (
@@ -36,6 +36,7 @@ const Index = () => {
             <FriendsSection
               friends={friends}
               onAddFriend={addFriend}
+              onUpdateFriend={updateFriend}
               onRemoveFriend={removeFriend}
               onShowPlayerDetails={showPlayerDetails}
             />
