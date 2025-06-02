@@ -3,7 +3,7 @@ import { useEffect, useRef } from 'react';
 import { Player } from '@/types/Player';
 import { toast } from '@/hooks/use-toast';
 
-const API_KEY = 'c2755709-8b70-4f89-934f-7e4a8d0b7a29';
+const API_KEY = '6bb8f3be-53d3-400b-9766-bca9106ea411';
 const API_BASE = 'https://open.faceit.com/data/v4';
 
 interface UseFriendsAutoUpdateProps {
@@ -22,6 +22,8 @@ export const useFriendsAutoUpdate = ({
 
   const updatePlayerData = async (player: Player): Promise<Player | null> => {
     try {
+      console.log(`Updating player data for ${player.nickname} (ID: ${player.player_id})`);
+      
       // Get player basic data
       const playerResponse = await fetch(
         `${API_BASE}/players/${player.player_id}`,
@@ -33,7 +35,8 @@ export const useFriendsAutoUpdate = ({
       );
 
       if (!playerResponse.ok) {
-        console.error(`Failed to update data for ${player.nickname}`);
+        const errorData = await playerResponse.json().catch(() => ({}));
+        console.error(`Failed to update data for ${player.nickname}:`, errorData);
         return null;
       }
 
@@ -44,7 +47,7 @@ export const useFriendsAutoUpdate = ({
         headers: { 'Authorization': `Bearer ${API_KEY}` }
       });
       
-      let statsData = {};
+      let statsData: any = {};
       if (statsResponse.ok) {
         statsData = await statsResponse.json();
       }
@@ -55,12 +58,13 @@ export const useFriendsAutoUpdate = ({
         avatar: playerData.avatar || player.avatar,
         level: playerData.games?.cs2?.skill_level || player.level || 0,
         elo: playerData.games?.cs2?.faceit_elo || player.elo || 0,
-        wins: parseInt((statsData as any).lifetime?.Wins) || player.wins || 0,
-        winRate: Math.round((parseInt((statsData as any).lifetime?.Wins) / parseInt((statsData as any).lifetime?.Matches)) * 100) || player.winRate || 0,
-        hsRate: parseFloat((statsData as any).lifetime?.['Average Headshots %']) || player.hsRate || 0,
-        kdRatio: parseFloat((statsData as any).lifetime?.['Average K/D Ratio']) || player.kdRatio || 0,
+        wins: parseInt(statsData.lifetime?.Wins) || player.wins || 0,
+        winRate: Math.round((parseInt(statsData.lifetime?.Wins) / parseInt(statsData.lifetime?.Matches)) * 100) || player.winRate || 0,
+        hsRate: parseFloat(statsData.lifetime?.['Average Headshots %']) || player.hsRate || 0,
+        kdRatio: parseFloat(statsData.lifetime?.['Average K/D Ratio']) || player.kdRatio || 0,
       };
 
+      console.log(`Successfully updated ${player.nickname}`);
       return updatedPlayer;
     } catch (error) {
       console.error(`Error updating data for ${player.nickname}:`, error);
@@ -92,6 +96,14 @@ export const useFriendsAutoUpdate = ({
         toast({
           title: "Date actualizate",
           description: `Datele pentru ${updatedCount} prieteni au fost actualizate automat.`,
+        });
+        console.log(`Successfully updated ${updatedCount}/${friends.length} friends`);
+      } else {
+        console.log('No friends were updated - all requests failed');
+        toast({
+          title: "Eroare la actualizare",
+          description: "Nu s-au putut actualiza datele prietenilor. Verifică conexiunea la API.",
+          variant: "destructive",
         });
       }
       
