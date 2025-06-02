@@ -10,13 +10,23 @@ import { toast } from "@/hooks/use-toast";
 
 interface FaceitToolProps {
   onShowPlayerDetails: (player: Player) => void;
+  onAddFriend: (player: Player) => Promise<void>;
 }
 
 const FACEIT_API_KEY = '6bb8f3be-53d3-400b-9766-bca9106ea411';
 const FACEIT_API_BASE = 'https://open.faceit.com/data/v4';
 const PROXY_SERVER = 'https://lacurte.ro:3000';
 
-export const FaceitTool = ({ onShowPlayerDetails }: FaceitToolProps) => {
+interface StatsData {
+  lifetime?: {
+    Wins?: string;
+    Matches?: string;
+    'Average Headshots %'?: string;
+    'Average K/D Ratio'?: string;
+  };
+}
+
+export const FaceitTool = ({ onShowPlayerDetails, onAddFriend }: FaceitToolProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchType, setSearchType] = useState<'steam' | 'nickname'>('steam');
   const [loading, setLoading] = useState(false);
@@ -103,8 +113,10 @@ export const FaceitTool = ({ onShowPlayerDetails }: FaceitToolProps) => {
         headers: { 'Authorization': `Bearer ${FACEIT_API_KEY}` }
       });
 
-      let statsData = {};
-      if (statsResponse.ok) statsData = await statsResponse.json();
+      let statsData: StatsData = {};
+      if (statsResponse.ok) {
+        statsData = await statsResponse.json();
+      }
 
       const player: Player = {
         player_id: playerInfo.player_id,
@@ -112,10 +124,10 @@ export const FaceitTool = ({ onShowPlayerDetails }: FaceitToolProps) => {
         avatar: playerInfo.avatar || '/placeholder.svg',
         level: playerInfo.games?.cs2?.skill_level || 0,
         elo: playerInfo.games?.cs2?.faceit_elo || 0,
-        wins: parseInt(statsData.lifetime?.Wins) || 0,
-        winRate: Math.round((parseInt(statsData.lifetime?.Wins) / parseInt(statsData.lifetime?.Matches)) * 100) || 0,
-        hsRate: parseFloat(statsData.lifetime?.['Average Headshots %']) || 0,
-        kdRatio: parseFloat(statsData.lifetime?.['Average K/D Ratio']) || 0,
+        wins: parseInt(statsData.lifetime?.Wins || '0') || 0,
+        winRate: Math.round((parseInt(statsData.lifetime?.Wins || '0') / parseInt(statsData.lifetime?.Matches || '1')) * 100) || 0,
+        hsRate: parseFloat(statsData.lifetime?.['Average Headshots %'] || '0') || 0,
+        kdRatio: parseFloat(statsData.lifetime?.['Average K/D Ratio'] || '0') || 0,
       };
 
       setPlayerData(player);
@@ -282,6 +294,13 @@ export const FaceitTool = ({ onShowPlayerDetails }: FaceitToolProps) => {
                       className="border-orange-400 text-orange-400 hover:bg-orange-400 hover:text-white"
                     >
                       Detalii
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => onAddFriend(playerData)}
+                      className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white border-0"
+                    >
+                      Adaugă
                     </Button>
                   </div>
                 </div>
