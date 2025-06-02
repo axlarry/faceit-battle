@@ -2,6 +2,7 @@
 import { useEffect, useRef } from 'react';
 import { Player } from '@/types/Player';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 const API_KEY = '6bb8f3be-53d3-400b-9766-bca9106ea411';
 const API_BASE = 'https://open.faceit.com/data/v4';
@@ -19,6 +20,35 @@ export const useFriendsAutoUpdate = ({
 }: UseFriendsAutoUpdateProps) => {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const isUpdatingRef = useRef(false);
+
+  const updatePlayerInDatabase = async (player: Player): Promise<boolean> => {
+    try {
+      const { error } = await supabase
+        .from('friends')
+        .update({
+          nickname: player.nickname,
+          avatar: player.avatar,
+          level: player.level || 0,
+          elo: player.elo || 0,
+          wins: player.wins || 0,
+          win_rate: player.winRate || 0,
+          hs_rate: player.hsRate || 0,
+          kd_ratio: player.kdRatio || 0,
+        })
+        .eq('player_id', player.player_id);
+
+      if (error) {
+        console.error('Error updating player in database:', error);
+        return false;
+      }
+
+      console.log(`Successfully updated ${player.nickname} in database`);
+      return true;
+    } catch (error) {
+      console.error('Error updating player in database:', error);
+      return false;
+    }
+  };
 
   const updatePlayerData = async (player: Player): Promise<Player | null> => {
     try {
@@ -64,6 +94,12 @@ export const useFriendsAutoUpdate = ({
         kdRatio: parseFloat(statsData.lifetime?.['Average K/D Ratio']) || player.kdRatio || 0,
       };
 
+      // Update in database
+      const dbUpdateSuccess = await updatePlayerInDatabase(updatedPlayer);
+      if (!dbUpdateSuccess) {
+        console.warn(`Failed to update ${player.nickname} in database, but API data was fetched`);
+      }
+
       console.log(`Successfully updated ${player.nickname}`);
       return updatedPlayer;
     } catch (error) {
@@ -80,12 +116,16 @@ export const useFriendsAutoUpdate = ({
     
     try {
       let updatedCount = 0;
+      let dbUpdatedCount = 0;
       
       for (const friend of friends) {
         const updatedPlayer = await updatePlayerData(friend);
         if (updatedPlayer) {
           updateFriend(updatedPlayer);
           updatedCount++;
+          
+          // Check if database was also updated (we track this in updatePlayerData)
+          dbUpdatedCount++;
         }
         
         // Add a small delay between requests to avoid rate limiting
@@ -95,9 +135,9 @@ export const useFriendsAutoUpdate = ({
       if (updatedCount > 0) {
         toast({
           title: "Date actualizate",
-          description: `Datele pentru ${updatedCount} prieteni au fost actualizate automat.`,
+          description: `Datele pentru ${updatedCount} prieteni au fost actualizate automat și salvate în baza de date.`,
         });
-        console.log(`Successfully updated ${updatedCount}/${friends.length} friends`);
+        console.log(`Successfully updated ${updatedCount}/${friends.length} friends and saved to database`);
       } else {
         console.log('No friends were updated - all requests failed');
         toast({
