@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -7,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Player } from "@/types/Player";
 import { Search, User, Trophy, Sword, Crosshair, BarChart2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { PasswordDialog } from "./PasswordDialog";
 
 interface FaceitToolProps {
   onShowPlayerDetails: (player: Player) => void;
@@ -32,6 +32,8 @@ export const FaceitTool = ({ onShowPlayerDetails, onAddFriend }: FaceitToolProps
   const [loading, setLoading] = useState(false);
   const [playerData, setPlayerData] = useState<Player | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [pendingPlayer, setPendingPlayer] = useState<Player | null>(null);
 
   const extractSteamVanity = (input: string): string => {
     if (input.includes('steamcommunity.com')) {
@@ -151,6 +153,18 @@ export const FaceitTool = ({ onShowPlayerDetails, onAddFriend }: FaceitToolProps
     if (level >= 5) return 'from-blue-500 to-blue-600';
     if (level >= 3) return 'from-green-500 to-green-600';
     return 'from-gray-500 to-gray-600';
+  };
+
+  const handleAddFriend = (player: Player) => {
+    setPendingPlayer(player);
+    setShowPasswordDialog(true);
+  };
+
+  const confirmAddFriend = async () => {
+    if (pendingPlayer) {
+      await onAddFriend(pendingPlayer);
+      setPendingPlayer(null);
+    }
   };
 
   return (
@@ -297,7 +311,7 @@ export const FaceitTool = ({ onShowPlayerDetails, onAddFriend }: FaceitToolProps
                     </Button>
                     <Button
                       size="sm"
-                      onClick={() => onAddFriend(playerData)}
+                      onClick={() => handleAddFriend(playerData)}
                       className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white border-0"
                     >
                       Adaugă
@@ -309,6 +323,17 @@ export const FaceitTool = ({ onShowPlayerDetails, onAddFriend }: FaceitToolProps
           </div>
         </Card>
       )}
+
+      <PasswordDialog
+        isOpen={showPasswordDialog}
+        onClose={() => {
+          setShowPasswordDialog(false);
+          setPendingPlayer(null);
+        }}
+        onConfirm={confirmAddFriend}
+        title="Adaugă Prieten"
+        description={`Vrei să adaugi ${pendingPlayer?.nickname} în lista de prieteni?`}
+      />
     </div>
   );
 };

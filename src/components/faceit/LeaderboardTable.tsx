@@ -1,10 +1,10 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Player } from "@/types/Player";
 import { toast } from "@/hooks/use-toast";
+import { PasswordDialog } from "./PasswordDialog";
 
 interface LeaderboardTableProps {
   region: string;
@@ -20,6 +20,8 @@ export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: L
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(false);
   const [offset, setOffset] = useState(0);
+  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [pendingPlayer, setPendingPlayer] = useState<Player | null>(null);
   const limit = 20;
 
   useEffect(() => {
@@ -128,6 +130,18 @@ export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: L
     return 'from-gray-500 to-gray-600';
   };
 
+  const handleAddFriend = (player: Player) => {
+    setPendingPlayer(player);
+    setShowPasswordDialog(true);
+  };
+
+  const confirmAddFriend = () => {
+    if (pendingPlayer) {
+      onAddFriend(pendingPlayer);
+      setPendingPlayer(null);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <Card className="bg-white/5 backdrop-blur-lg border-white/10">
@@ -196,7 +210,7 @@ export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: L
                       <Button 
                         size="sm"
                         variant="outline"
-                        onClick={() => onAddFriend(player)}
+                        onClick={() => handleAddFriend(player)}
                         className="border-blue-400 text-blue-400 hover:bg-blue-400 hover:text-white"
                       >
                         Adaugă
@@ -221,6 +235,17 @@ export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: L
           )}
         </div>
       </Card>
+
+      <PasswordDialog
+        isOpen={showPasswordDialog}
+        onClose={() => {
+          setShowPasswordDialog(false);
+          setPendingPlayer(null);
+        }}
+        onConfirm={confirmAddFriend}
+        title="Adaugă Prieten"
+        description={`Vrei să adaugi ${pendingPlayer?.nickname} în lista de prieteni?`}
+      />
     </div>
   );
 };
