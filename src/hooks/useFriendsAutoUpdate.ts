@@ -1,8 +1,9 @@
+
 import { useEffect, useRef } from 'react';
 import { Player } from '@/types/Player';
 import { toast } from '@/hooks/use-toast';
 
-const API_KEY = '6bb8f3be-53d3-400b-9766-bca9106ea411';
+const API_KEY = '060ceb63-0ae6-4c52-9108-6941d4760b50';
 const API_BASE = 'https://open.faceit.com/data/v4';
 
 interface UseFriendsAutoUpdateProps {
@@ -63,7 +64,7 @@ export const useFriendsAutoUpdate = ({
         kdRatio: parseFloat(statsData.lifetime?.['Average K/D Ratio']) || player.kdRatio || 0,
       };
 
-      console.log(`Successfully updated ${player.nickname}`);
+      console.log(`Successfully updated ${player.nickname}`, updatedPlayer);
       return updatedPlayer;
     } catch (error) {
       console.error(`Error updating data for ${player.nickname}:`, error);
@@ -83,13 +84,19 @@ export const useFriendsAutoUpdate = ({
       for (const friend of friends) {
         const updatedPlayer = await updatePlayerData(friend);
         if (updatedPlayer) {
-          // Use the updateFriend function from useFriends which handles both state and database
-          await updateFriend(updatedPlayer);
-          updatedCount++;
+          console.log(`Calling updateFriend for ${updatedPlayer.nickname}...`);
+          // Ensure we wait for the database update to complete
+          try {
+            await updateFriend(updatedPlayer);
+            console.log(`Successfully updated ${updatedPlayer.nickname} in state and database`);
+            updatedCount++;
+          } catch (error) {
+            console.error(`Failed to update ${updatedPlayer.nickname} in database:`, error);
+          }
         }
         
         // Add a small delay between requests to avoid rate limiting
-        await new Promise(resolve => setTimeout(resolve, 200));
+        await new Promise(resolve => setTimeout(resolve, 500));
       }
       
       if (updatedCount > 0) {

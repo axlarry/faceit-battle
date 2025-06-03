@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Player } from '@/types/Player';
 import { toast } from '@/hooks/use-toast';
@@ -107,6 +106,8 @@ export const useFriends = () => {
 
   const updateFriend = async (updatedPlayer: Player) => {
     try {
+      console.log(`Updating friend ${updatedPlayer.nickname} in database...`, updatedPlayer);
+      
       const { error } = await supabase
         .from('friends')
         .update({
@@ -122,18 +123,22 @@ export const useFriends = () => {
         .eq('player_id', updatedPlayer.player_id);
 
       if (error) {
-        console.error('Error updating friend:', error);
-        return;
+        console.error('Error updating friend in database:', error);
+        throw error;
       }
 
-      // Update local state
-      const updatedFriends = friends.map(f => 
-        f.player_id === updatedPlayer.player_id ? updatedPlayer : f
+      console.log(`Successfully updated ${updatedPlayer.nickname} in database`);
+
+      // Update local state only after successful database update
+      setFriends(prevFriends => 
+        prevFriends.map(f => 
+          f.player_id === updatedPlayer.player_id ? updatedPlayer : f
+        )
       );
-      setFriends(updatedFriends);
       
     } catch (error) {
       console.error('Error updating friend:', error);
+      throw error; // Re-throw to handle in calling function
     }
   };
 
