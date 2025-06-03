@@ -25,7 +25,7 @@ const Index = () => {
       <div className="relative z-10">
         <Header />
         
-        <div className="container mx-auto px-4 py-6 md:py-8 space-y-6 md:space-y-8 max-w-7xl">
+        <div className="container mx-auto px-2 sm:px-3 md:px-4 py-3 sm:py-4 md:py-6 lg:py-8 space-y-3 sm:space-y-4 md:space-y-6 lg:space-y-8 max-w-7xl">
           <RegionTabs 
             currentRegion={currentRegion}
             onRegionChange={setCurrentRegion}
