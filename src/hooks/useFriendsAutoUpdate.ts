@@ -3,7 +3,7 @@ import { useEffect, useRef } from 'react';
 import { Player } from '@/types/Player';
 import { toast } from '@/hooks/use-toast';
 
-const API_KEY = '060ceb63-0ae6-4c52-9108-6941d4760b50';
+const API_KEY = '5d81df9c-db61-494c-8e0a-d94c89bb7913';
 const API_BASE = 'https://open.faceit.com/data/v4';
 
 interface UseFriendsAutoUpdateProps {
@@ -86,13 +86,13 @@ export const useFriendsAutoUpdate = ({
       for (const friend of friends) {
         const updatedPlayer = await updatePlayerData(friend);
         if (updatedPlayer) {
-          console.log(`Calling updateFriend for ${updatedPlayer.nickname}...`);
+          console.log(`Saving updated data for ${updatedPlayer.nickname} to Supabase...`);
           try {
             await updateFriend(updatedPlayer);
-            console.log(`Successfully updated ${updatedPlayer.nickname} in state and database`);
+            console.log(`Successfully updated and saved ${updatedPlayer.nickname} to database`);
             updatedCount++;
           } catch (error) {
-            console.error(`Failed to update ${updatedPlayer.nickname} in database:`, error);
+            console.error(`Failed to save ${updatedPlayer.nickname} to database:`, error);
           }
         }
         
@@ -101,17 +101,17 @@ export const useFriendsAutoUpdate = ({
       }
       
       if (updatedCount > 0) {
-        // Reload friends from database to ensure UI is in sync
-        console.log('Reloading friends from database after updates...');
+        // Force reload from database to ensure UI shows latest data
+        console.log('Reloading all friends from database to sync UI...');
         await reloadFriends();
         
         toast({
           title: "Date actualizate",
-          description: `Datele pentru ${updatedCount} prieteni au fost actualizate automat și salvate în baza de date.`,
+          description: `Datele pentru ${updatedCount} prieteni au fost actualizate și salvate în Supabase.`,
         });
-        console.log(`Successfully updated ${updatedCount}/${friends.length} friends and reloaded from database`);
+        console.log(`Successfully updated ${updatedCount}/${friends.length} friends and synced with database`);
       } else {
-        console.log('No friends were updated - all requests failed');
+        console.log('No friends were updated - all API requests failed');
         toast({
           title: "Eroare la actualizare",
           description: "Nu s-au putut actualiza datele prietenilor. Verifică conexiunea la API.",

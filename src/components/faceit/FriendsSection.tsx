@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -19,7 +18,7 @@ interface FriendsSectionProps {
   onReloadFriends?: () => void;
 }
 
-const API_KEY = '060ceb63-0ae6-4c52-9108-6941d4760b50';
+const API_KEY = '5d81df9c-db61-494c-8e0a-d94c89bb7913';
 const API_BASE = 'https://open.faceit.com/data/v4';
 
 export const FriendsSection = ({ 
