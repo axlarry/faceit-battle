@@ -16,9 +16,10 @@ interface FriendsSectionProps {
   onRemoveFriend: (playerId: string) => void;
   onShowPlayerDetails: (player: Player) => void;
   onUpdateFriend?: (player: Player) => void;
+  onReloadFriends?: () => void;
 }
 
-const API_KEY = 'c2755709-8b70-4f89-934f-7e4a8d0b7a29';
+const API_KEY = '060ceb63-0ae6-4c52-9108-6941d4760b50';
 const API_BASE = 'https://open.faceit.com/data/v4';
 
 export const FriendsSection = ({ 
@@ -26,7 +27,8 @@ export const FriendsSection = ({
   onAddFriend, 
   onRemoveFriend, 
   onShowPlayerDetails,
-  onUpdateFriend 
+  onUpdateFriend,
+  onReloadFriends
 }: FriendsSectionProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
@@ -41,6 +43,7 @@ export const FriendsSection = ({
   const { isUpdating, updateAllFriends } = useFriendsAutoUpdate({
     friends,
     updateFriend: onUpdateFriend || (() => {}),
+    reloadFriends: onReloadFriends || (() => {}),
     enabled: true
   });
 

@@ -11,7 +11,7 @@ import { usePlayerModal } from "@/hooks/usePlayerModal";
 
 const Index = () => {
   const [currentRegion, setCurrentRegion] = useState('FRIENDS');
-  const { friends, addFriend, updateFriend, removeFriend } = useFriends();
+  const { friends, addFriend, updateFriend, removeFriend, loadFriendsFromDatabase } = useFriends();
   const { selectedPlayer, showModal, showPlayerDetails, closeModal } = usePlayerModal();
 
   return (
@@ -38,6 +38,7 @@ const Index = () => {
               onUpdateFriend={updateFriend}
               onRemoveFriend={removeFriend}
               onShowPlayerDetails={showPlayerDetails}
+              onReloadFriends={loadFriendsFromDatabase}
             />
           ) : currentRegion === 'FACEIT_TOOL' ? (
             <FaceitTool

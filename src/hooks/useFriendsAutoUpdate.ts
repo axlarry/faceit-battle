@@ -9,12 +9,14 @@ const API_BASE = 'https://open.faceit.com/data/v4';
 interface UseFriendsAutoUpdateProps {
   friends: Player[];
   updateFriend: (updatedPlayer: Player) => void;
+  reloadFriends: () => void;
   enabled?: boolean;
 }
 
 export const useFriendsAutoUpdate = ({ 
   friends, 
-  updateFriend, 
+  updateFriend,
+  reloadFriends,
   enabled = true 
 }: UseFriendsAutoUpdateProps) => {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -85,7 +87,6 @@ export const useFriendsAutoUpdate = ({
         const updatedPlayer = await updatePlayerData(friend);
         if (updatedPlayer) {
           console.log(`Calling updateFriend for ${updatedPlayer.nickname}...`);
-          // Ensure we wait for the database update to complete
           try {
             await updateFriend(updatedPlayer);
             console.log(`Successfully updated ${updatedPlayer.nickname} in state and database`);
@@ -100,11 +101,15 @@ export const useFriendsAutoUpdate = ({
       }
       
       if (updatedCount > 0) {
+        // Reload friends from database to ensure UI is in sync
+        console.log('Reloading friends from database after updates...');
+        await reloadFriends();
+        
         toast({
           title: "Date actualizate",
           description: `Datele pentru ${updatedCount} prieteni au fost actualizate automat și salvate în baza de date.`,
         });
-        console.log(`Successfully updated ${updatedCount}/${friends.length} friends and saved to database`);
+        console.log(`Successfully updated ${updatedCount}/${friends.length} friends and reloaded from database`);
       } else {
         console.log('No friends were updated - all requests failed');
         toast({
