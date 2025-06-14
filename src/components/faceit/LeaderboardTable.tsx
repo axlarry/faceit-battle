@@ -15,7 +15,7 @@ interface LeaderboardTableProps {
 export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: LeaderboardTableProps) => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(false);
-  const { getLeaderboard, loading: apiLoading } = useFaceitApi();
+  const { getLeaderboard, getPlayerStats, loading: apiLoading } = useFaceitApi();
 
   useEffect(() => {
     if (region !== 'FRIENDS' && region !== 'FACEIT_TOOL') {
@@ -27,18 +27,44 @@ export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: L
     setLoading(true);
     try {
       const data = await getLeaderboard(region);
-      const formattedPlayers: Player[] = data.map((item: any, index: number) => ({
-        player_id: item.player_id,
-        nickname: item.nickname,
-        avatar: item.avatar || '/placeholder.svg',
-        position: item.position || index + 1,
-        level: item.skill_level,
-        elo: item.faceit_elo,
-        wins: 0, // Not available in leaderboard data
-        winRate: 0, // Not available in leaderboard data
-        hsRate: 0, // Not available in leaderboard data
-        kdRatio: 0 // Not available in leaderboard data
-      }));
+      
+      // Get detailed stats for top players
+      const formattedPlayers = await Promise.all(
+        data.slice(0, 50).map(async (item: any, index: number) => {
+          try {
+            const stats = await getPlayerStats(item.player_id);
+            const playerStats = stats?.segments?.[0]?.stats || {};
+            
+            return {
+              player_id: item.player_id,
+              nickname: item.nickname,
+              avatar: item.avatar || '/placeholder.svg',
+              position: item.position || index + 1,
+              level: item.skill_level,
+              elo: item.faceit_elo,
+              wins: parseInt(playerStats.Wins?.value || '0'),
+              winRate: parseFloat(playerStats['Win Rate %']?.value || '0'),
+              hsRate: parseFloat(playerStats['Headshots %']?.value || '0'),
+              kdRatio: parseFloat(playerStats['K/D Ratio']?.value || '0')
+            };
+          } catch (error) {
+            console.error('Error fetching player stats:', error);
+            return {
+              player_id: item.player_id,
+              nickname: item.nickname,
+              avatar: item.avatar || '/placeholder.svg',
+              position: item.position || index + 1,
+              level: item.skill_level,
+              elo: item.faceit_elo,
+              wins: 0,
+              winRate: 0,
+              hsRate: 0,
+              kdRatio: 0
+            };
+          }
+        })
+      );
+      
       setPlayers(formattedPlayers);
     } catch (error) {
       console.error('Error loading leaderboard:', error);
@@ -84,7 +110,9 @@ export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: L
             <div className="col-span-4 sm:col-span-3">Jucător</div>
             <div className="col-span-2 text-center">Nivel</div>
             <div className="col-span-2 text-center">ELO</div>
-            <div className="col-span-3 sm:col-span-4 text-center">Acțiuni</div>
+            <div className="col-span-1 text-center">W%</div>
+            <div className="col-span-1 text-center">K/D</div>
+            <div className="col-span-1 text-center">Acțiuni</div>
           </div>
 
           {/* Players List */}
@@ -132,8 +160,22 @@ export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: L
                   </div>
                 </div>
 
+                {/* Win Rate */}
+                <div className="col-span-1 flex items-center justify-center">
+                  <div className="text-green-400 font-bold text-xs">
+                    {player.winRate?.toFixed(0)}%
+                  </div>
+                </div>
+
+                {/* K/D Ratio */}
+                <div className="col-span-1 flex items-center justify-center">
+                  <div className="text-purple-400 font-bold text-xs">
+                    {player.kdRatio?.toFixed(2)}
+                  </div>
+                </div>
+
                 {/* Actions */}
-                <div className="col-span-3 sm:col-span-4 flex items-center justify-center gap-1 sm:gap-2">
+                <div className="col-span-1 flex items-center justify-center gap-1 sm:gap-2">
                   <Button
                     size="sm"
                     className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white border-0 text-xs px-2 py-1"

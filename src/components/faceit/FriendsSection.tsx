@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -204,7 +205,7 @@ export const FriendsSection = ({
         )}
       </div>
 
-      {/* Friends List */}
+      {/* Friends List - Original Design Restored */}
       <div className="bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-sm rounded-xl border border-white/10 overflow-hidden">
         <div className="p-4 sm:p-6 border-b border-white/10">
           <div className="flex items-center justify-between">
@@ -254,94 +255,65 @@ export const FriendsSection = ({
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <div className="min-w-full">
-              {/* Header */}
-              <div className="grid grid-cols-12 gap-2 sm:gap-4 p-3 sm:p-4 border-b border-white/10 text-gray-400 text-xs sm:text-sm font-medium">
-                <div className="col-span-4 sm:col-span-3">Jucător</div>
-                <div className="col-span-2 text-center">Nivel</div>
-                <div className="col-span-2 text-center">ELO</div>
-                <div className="col-span-1 text-center">W%</div>
-                <div className="col-span-1 text-center">HS%</div>
-                <div className="col-span-1 text-center">K/D</div>
-                <div className="col-span-1 text-center">Acțiuni</div>
-              </div>
-
-              {/* Friends List */}
-              <div className="space-y-1">
-                {friends.map((friend) => (
-                  <div
-                    key={friend.player_id}
-                    className="grid grid-cols-12 gap-2 sm:gap-4 p-3 sm:p-4 hover:bg-white/5 transition-colors cursor-pointer group"
-                    onClick={() => onShowPlayerDetails(friend)}
-                  >
-                    {/* Player Info */}
-                    <div className="col-span-4 sm:col-span-3 flex items-center gap-2 sm:gap-3">
-                      <img
-                        src={friend.avatar}
-                        alt={friend.nickname}
-                        className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-orange-400"
-                      />
-                      <div className="min-w-0">
-                        <div className="text-white font-medium text-sm sm:text-base truncate">
-                          {friend.nickname}
-                        </div>
+          <div className="space-y-3 p-4">
+            {friends.map((friend) => (
+              <div
+                key={friend.player_id}
+                className="bg-white/5 rounded-lg p-4 hover:bg-white/10 transition-colors cursor-pointer"
+                onClick={() => onShowPlayerDetails(friend)}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-4">
+                    <img
+                      src={friend.avatar}
+                      alt={friend.nickname}
+                      className="w-12 h-12 rounded-full border-2 border-orange-400"
+                    />
+                    <div>
+                      <div className="text-white font-bold text-lg">{friend.nickname}</div>
+                      <div className="flex items-center gap-3 mt-1">
+                        <Badge className={`bg-gradient-to-r ${getLevelColor(friend.level || 0)} text-white border-0`}>
+                          Level {friend.level}
+                        </Badge>
+                        <span className="text-blue-400 font-medium">{friend.elo} ELO</span>
                       </div>
-                    </div>
-
-                    {/* Level */}
-                    <div className="col-span-2 flex items-center justify-center">
-                      <Badge className={`bg-gradient-to-r ${getLevelColor(friend.level || 0)} text-white border-0 text-xs px-2 py-1`}>
-                        {friend.level}
-                      </Badge>
-                    </div>
-
-                    {/* ELO */}
-                    <div className="col-span-2 flex items-center justify-center">
-                      <div className="text-blue-400 font-bold text-sm">
-                        {friend.elo?.toLocaleString()}
-                      </div>
-                    </div>
-
-                    {/* Win Rate */}
-                    <div className="col-span-1 flex items-center justify-center">
-                      <div className="text-green-400 font-bold text-xs">
-                        {friend.winRate?.toFixed(0)}%
-                      </div>
-                    </div>
-
-                    {/* Headshot Rate */}
-                    <div className="col-span-1 flex items-center justify-center">
-                      <div className="text-red-400 font-bold text-xs">
-                        {friend.hsRate?.toFixed(0)}%
-                      </div>
-                    </div>
-
-                    {/* K/D Ratio */}
-                    <div className="col-span-1 flex items-center justify-center">
-                      <div className="text-purple-400 font-bold text-xs">
-                        {friend.kdRatio?.toFixed(2)}
-                      </div>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="col-span-1 flex items-center justify-center">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="border-orange-400 text-orange-400 hover:bg-orange-400 hover:text-white text-xs px-2 py-1"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onShowPlayerDetails(friend);
-                        }}
-                      >
-                        <Target size={12} />
-                      </Button>
                     </div>
                   </div>
-                ))}
+                  
+                  <div className="flex items-center gap-6">
+                    <div className="text-center">
+                      <div className="text-green-400 font-bold">{friend.wins}</div>
+                      <div className="text-gray-400 text-sm">Victorii</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-blue-400 font-bold">{friend.winRate?.toFixed(1)}%</div>
+                      <div className="text-gray-400 text-sm">Win Rate</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-red-400 font-bold">{friend.hsRate?.toFixed(1)}%</div>
+                      <div className="text-gray-400 text-sm">HS %</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-purple-400 font-bold">{friend.kdRatio?.toFixed(2)}</div>
+                      <div className="text-gray-400 text-sm">K/D</div>
+                    </div>
+                    
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-orange-400 text-orange-400 hover:bg-orange-400 hover:text-white"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onShowPlayerDetails(friend);
+                      }}
+                    >
+                      <Target size={14} className="mr-1" />
+                      Detalii
+                    </Button>
+                  </div>
+                </div>
               </div>
-            </div>
+            ))}
           </div>
         )}
       </div>
