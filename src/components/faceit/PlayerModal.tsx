@@ -44,8 +44,8 @@ export const PlayerModal = ({
   const [pendingAction, setPendingAction] = useState<'add' | 'remove' | null>(null);
   const [matches, setMatches] = useState<Match[]>([]);
   const [loadingMatches, setLoadingMatches] = useState(false);
-  const [matchesDetails, setMatchesDetails] = useState<{[key: string]: any}>({});
-  const { getPlayerMatches, getMatchDetails } = useFaceitApi();
+  const [matchesStats, setMatchesStats] = useState<{[key: string]: any}>({});
+  const { getPlayerMatches, getMatchDetails, getMatchStats } = useFaceitApi();
 
   // Load matches when player changes and modal is open
   useEffect(() => {
@@ -63,28 +63,38 @@ export const PlayerModal = ({
       console.log('Loading matches for player:', player.player_id);
       
       const matchesData = await getPlayerMatches(player.player_id, 10);
+      console.log('Matches data received:', matchesData);
       setMatches(matchesData);
 
       // Load detailed stats for each match
       if (matchesData.length > 0) {
-        const detailsPromises = matchesData.map(async (match: Match) => {
+        const statsPromises = matchesData.map(async (match: Match) => {
           try {
-            console.log('Loading details for match:', match.match_id);
+            console.log('Loading stats for match:', match.match_id);
+            
+            // Try to get match stats first
+            const matchStats = await getMatchStats(match.match_id);
+            if (matchStats) {
+              console.log('Match stats response:', matchStats);
+              return { [match.match_id]: matchStats };
+            }
+            
+            // Fallback to match details
             const matchDetail = await getMatchDetails(match.match_id);
             if (matchDetail) {
               console.log('Match detail response:', matchDetail);
               return { [match.match_id]: matchDetail };
             }
           } catch (error) {
-            console.error('Error loading match details:', error);
+            console.error('Error loading match data:', error);
           }
           return {};
         });
 
-        const detailsResults = await Promise.all(detailsPromises);
-        const combinedDetails = detailsResults.reduce((acc, curr) => ({ ...acc, ...curr }), {});
-        console.log('Combined match details:', combinedDetails);
-        setMatchesDetails(combinedDetails);
+        const statsResults = await Promise.all(statsPromises);
+        const combinedStats = statsResults.reduce((acc, curr) => ({ ...acc, ...curr }), {});
+        console.log('Combined match stats:', combinedStats);
+        setMatchesStats(combinedStats);
       }
 
     } catch (error) {
@@ -134,10 +144,17 @@ export const PlayerModal = ({
   };
 
   const getMatchResult = (match: Match) => {
-    if (!match.teams || !match.results) return 'N/A';
+    console.log('Getting match result for:', match.match_id, match);
+    
+    if (!match.teams || !match.results) {
+      console.log('No teams or results data');
+      return null;
+    }
     
     const teamIds = Object.keys(match.teams);
     const winnerTeamId = match.results.winner;
+    
+    console.log('Team IDs:', teamIds, 'Winner:', winnerTeamId);
     
     // Find which team the player is on
     let playerTeamId = '';
@@ -149,91 +166,147 @@ export const PlayerModal = ({
       }
     }
     
+    console.log('Player team ID:', playerTeamId);
+    
     return playerTeamId === winnerTeamId;
   };
 
-  const getPlayerStats = (match: Match) => {
-    if (!match.teams) return null;
+  const getPlayerStatsFromMatch = (match: Match) => {
+    console.log('Getting player stats from match:', match.match_id);
     
-    for (const teamId of Object.keys(match.teams)) {
-      const team = match.teams[teamId];
-      const playerData = team.players?.find(p => p.player_id === player.player_id);
-      if (playerData) {
-        return playerData.player_stats;
-      }
-    }
-    return null;
-  };
-
-  const getEloChange = (match: Match) => {
-    const matchDetail = matchesDetails[match.match_id];
-    if (!matchDetail) return null;
-    
-    // Check if calculate_elo exists and is an array
-    if (matchDetail.calculate_elo && Array.isArray(matchDetail.calculate_elo)) {
-      const playerEloData = matchDetail.calculate_elo.find((elo: any) => elo.player_id === player.player_id);
-      if (playerEloData) {
-        return playerEloData;
+    // First try from match teams data
+    if (match.teams) {
+      for (const teamId of Object.keys(match.teams)) {
+        const team = match.teams[teamId];
+        const playerData = team.players?.find(p => p.player_id === player.player_id);
+        if (playerData && playerData.player_stats) {
+          console.log('Found player stats in teams:', playerData.player_stats);
+          return playerData.player_stats;
+        }
       }
     }
     
+    // Try from match stats data
+    const matchStatsData = matchesStats[match.match_id];
+    if (matchStatsData) {
+      console.log('Checking match stats data:', matchStatsData);
+      
+      // Check if it's match stats response
+      if (matchStatsData.rounds && Array.isArray(matchStatsData.rounds)) {
+        for (const round of matchStatsData.rounds) {
+          if (round.teams) {
+            for (const team of Object.values(round.teams) as any[]) {
+              if (team.players) {
+                const playerStats = team.players.find((p: any) => p.player_id === player.player_id);
+                if (playerStats && playerStats.player_stats) {
+                  console.log('Found player stats in rounds:', playerStats.player_stats);
+                  return playerStats.player_stats;
+                }
+              }
+            }
+          }
+        }
+      }
+      
+      // Check if it's match details with teams
+      if (matchStatsData.teams) {
+        for (const team of Object.values(matchStatsData.teams) as any[]) {
+          if (team.players) {
+            const playerStats = team.players.find((p: any) => p.player_id === player.player_id);
+            if (playerStats && playerStats.player_stats) {
+              console.log('Found player stats in match details:', playerStats.player_stats);
+              return playerStats.player_stats;
+            }
+          }
+        }
+      }
+    }
+    
+    console.log('No player stats found for match:', match.match_id);
     return null;
   };
 
   const getMatchScore = (match: Match) => {
+    console.log('Getting match score for:', match.match_id);
+    
     // Try to get score from results first
     if (match.results && match.results.score) {
       const scores = Object.values(match.results.score);
+      console.log('Scores from results:', scores);
       if (scores.length === 2) {
         const numericScores = scores.map(score => Number(score)).filter(score => !isNaN(score));
         if (numericScores.length === 2) {
-          const [score1, score2] = numericScores;
-          return `${Math.max(score1, score2)} - ${Math.min(score1, score2)}`;
+          const sortedScores = numericScores.sort((a, b) => b - a);
+          return `${sortedScores[0]} - ${sortedScores[1]}`;
         }
       }
     }
 
-    // Try to get score from match details
-    const matchDetail = matchesDetails[match.match_id];
-    if (matchDetail && matchDetail.results && matchDetail.results.score) {
-      const scores = Object.values(matchDetail.results.score);
-      if (scores.length === 2) {
-        const numericScores = scores.map(score => Number(score)).filter(score => !isNaN(score));
-        if (numericScores.length === 2) {
-          const [score1, score2] = numericScores;
-          return `${Math.max(score1, score2)} - ${Math.min(score1, score2)}`;
+    // Try to get score from match stats
+    const matchStatsData = matchesStats[match.match_id];
+    if (matchStatsData) {
+      console.log('Checking match stats for score:', matchStatsData);
+      
+      if (matchStatsData.rounds && Array.isArray(matchStatsData.rounds)) {
+        // Get the final round for the score
+        const lastRound = matchStatsData.rounds[matchStatsData.rounds.length - 1];
+        if (lastRound && lastRound.round_stats && lastRound.round_stats.Score) {
+          const scores = Object.values(lastRound.round_stats.Score);
+          if (scores.length === 2) {
+            const numericScores = scores.map(score => Number(score)).filter(score => !isNaN(score));
+            if (numericScores.length === 2) {
+              const sortedScores = numericScores.sort((a, b) => b - a);
+              return `${sortedScores[0]} - ${sortedScores[1]}`;
+            }
+          }
+        }
+      }
+      
+      if (matchStatsData.results && matchStatsData.results.score) {
+        const scores = Object.values(matchStatsData.results.score);
+        if (scores.length === 2) {
+          const numericScores = scores.map(score => Number(score)).filter(score => !isNaN(score));
+          if (numericScores.length === 2) {
+            const sortedScores = numericScores.sort((a, b) => b - a);
+            return `${sortedScores[0]} - ${sortedScores[1]}`;
+          }
         }
       }
     }
 
-    // Try to get round stats if available
-    if (match.round_stats) {
-      const roundScores = Object.values(match.round_stats);
-      if (roundScores.length >= 2) {
-        const scores = roundScores.map((rs: any) => rs.score ? Number(rs.score) : 0);
-        if (scores.length >= 2) {
-          return `${Math.max(...scores)} - ${Math.min(...scores)}`;
-        }
-      }
-    }
-
+    console.log('No score found for match:', match.match_id);
     return null;
   };
 
   const getMapInfo = (match: Match) => {
-    // Try to get map from match details first
-    const matchDetail = matchesDetails[match.match_id];
-    if (matchDetail) {
-      // Check voting section
-      if (matchDetail.voting?.map?.pick?.[0]) {
-        return matchDetail.voting.map.pick[0];
+    console.log('Getting map info for:', match.match_id);
+    
+    // Try to get map from match stats first
+    const matchStatsData = matchesStats[match.match_id];
+    if (matchStatsData) {
+      console.log('Checking match stats for map:', matchStatsData);
+      
+      if (matchStatsData.rounds && Array.isArray(matchStatsData.rounds) && matchStatsData.rounds.length > 0) {
+        const firstRound = matchStatsData.rounds[0];
+        if (firstRound.round_stats && firstRound.round_stats.Map) {
+          console.log('Found map in rounds:', firstRound.round_stats.Map);
+          return firstRound.round_stats.Map;
+        }
       }
-      if (matchDetail.voting?.location?.pick?.[0]) {
-        return matchDetail.voting.location.pick[0];
+      
+      if (matchStatsData.voting?.map?.pick?.[0]) {
+        console.log('Found map in voting:', matchStatsData.voting.map.pick[0]);
+        return matchStatsData.voting.map.pick[0];
       }
-      // Check if map is directly available
-      if (matchDetail.map) {
-        return matchDetail.map;
+      
+      if (matchStatsData.voting?.location?.pick?.[0]) {
+        console.log('Found location in voting:', matchStatsData.voting.location.pick[0]);
+        return matchStatsData.voting.location.pick[0];
+      }
+      
+      if (matchStatsData.map) {
+        console.log('Found direct map:', matchStatsData.map);
+        return matchStatsData.map;
       }
     }
     
@@ -242,6 +315,7 @@ export const PlayerModal = ({
       return match.competition_name;
     }
     
+    console.log('No map found, using default');
     return 'Unknown';
   };
 
@@ -252,7 +326,12 @@ export const PlayerModal = ({
   };
 
   const getKDRatio = (stats: any) => {
-    if (!stats) return '0.00';
+    if (!stats) {
+      console.log('No stats for K/D ratio');
+      return '0.00';
+    }
+    
+    console.log('Getting K/D ratio from stats:', stats);
     
     // Try different possible field names for K/D ratio
     if (stats['K/D Ratio']) {
@@ -271,11 +350,17 @@ export const PlayerModal = ({
       return deaths > 0 ? (kills / deaths).toFixed(2) : kills.toString();
     }
     
+    console.log('No K/D ratio found in stats');
     return '0.00';
   };
 
   const getHeadshotPercentage = (stats: any) => {
-    if (!stats) return '0';
+    if (!stats) {
+      console.log('No stats for headshot percentage');
+      return '0';
+    }
+    
+    console.log('Getting headshot percentage from stats:', stats);
     
     // Try different possible field names
     if (stats['Headshots %']) {
@@ -296,11 +381,23 @@ export const PlayerModal = ({
       return kills > 0 ? Math.round((headshots / kills) * 100) : 0;
     }
     
+    if (stats.headshots && stats.kills) {
+      const headshots = parseInt(stats.headshots);
+      const kills = parseInt(stats.kills);
+      return kills > 0 ? Math.round((headshots / kills) * 100) : 0;
+    }
+    
+    console.log('No headshot percentage found in stats');
     return '0';
   };
 
   const getADR = (stats: any) => {
-    if (!stats) return '0';
+    if (!stats) {
+      console.log('No stats for ADR');
+      return '0';
+    }
+    
+    console.log('Getting ADR from stats:', stats);
     
     // Try different possible field names for ADR
     if (stats.ADR) {
@@ -315,17 +412,68 @@ export const PlayerModal = ({
       return Math.round(parseFloat(stats.average_damage));
     }
     
+    if (stats['Damage/Round']) {
+      return Math.round(parseFloat(stats['Damage/Round']));
+    }
+    
+    console.log('No ADR found in stats');
     return '0';
   };
 
   const getKDA = (stats: any) => {
-    if (!stats) return { kills: '0', deaths: '0', assists: '0' };
+    if (!stats) {
+      console.log('No stats for KDA');
+      return { kills: '0', deaths: '0', assists: '0' };
+    }
+    
+    console.log('Getting KDA from stats:', stats);
     
     return {
       kills: stats.Kills || stats.kills || '0',
       deaths: stats.Deaths || stats.deaths || '0',
       assists: stats.Assists || stats.assists || '0'
     };
+  };
+
+  const getEloChange = (match: Match) => {
+    console.log('Getting ELO change for match:', match.match_id);
+    
+    const matchStatsData = matchesStats[match.match_id];
+    if (!matchStatsData) {
+      console.log('No match stats data for ELO');
+      return null;
+    }
+    
+    console.log('Checking match stats for ELO:', matchStatsData);
+    
+    // Check if calculate_elo exists and is an array
+    if (matchStatsData.calculate_elo && Array.isArray(matchStatsData.calculate_elo)) {
+      const playerEloData = matchStatsData.calculate_elo.find((elo: any) => elo.player_id === player.player_id);
+      if (playerEloData) {
+        console.log('Found ELO data:', playerEloData);
+        return playerEloData;
+      }
+    }
+    
+    // Check in rounds for ELO data
+    if (matchStatsData.rounds && Array.isArray(matchStatsData.rounds)) {
+      for (const round of matchStatsData.rounds) {
+        if (round.teams) {
+          for (const team of Object.values(round.teams) as any[]) {
+            if (team.players) {
+              const playerData = team.players.find((p: any) => p.player_id === player.player_id);
+              if (playerData && playerData.elo_change) {
+                console.log('Found ELO change in rounds:', playerData.elo_change);
+                return { elo_change: playerData.elo_change };
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    console.log('No ELO change found');
+    return null;
   };
 
   return (
@@ -432,36 +580,42 @@ export const PlayerModal = ({
                     <TableBody>
                       {matches.map((match) => {
                         const isWin = getMatchResult(match);
-                        const playerStats = getPlayerStats(match);
+                        const playerStats = getPlayerStatsFromMatch(match);
                         const eloChange = getEloChange(match);
                         const mapName = getMapInfo(match);
                         const matchScore = getMatchScore(match);
                         const kda = getKDA(playerStats);
                         
-                        console.log('Match stats for debugging:', {
+                        console.log('Rendering match row:', {
                           matchId: match.match_id,
+                          isWin,
                           playerStats,
                           eloChange,
                           matchScore,
-                          kda
+                          kda,
+                          mapName
                         });
                         
                         return (
                           <TableRow 
                             key={match.match_id}
                             className={`border-white/10 hover:bg-white/5 transition-colors ${
-                              isWin ? 'bg-green-500/5' : 'bg-red-500/5'
+                              isWin === true ? 'bg-green-500/5' : isWin === false ? 'bg-red-500/5' : ''
                             }`}
                           >
                             {/* Result */}
                             <TableCell>
-                              <Badge className={`${
-                                isWin 
-                                  ? 'bg-green-500/20 text-green-400 border-green-500/30' 
-                                  : 'bg-red-500/20 text-red-400 border-red-500/30'
-                              } border font-semibold`}>
-                                {isWin ? 'W' : 'L'}
-                              </Badge>
+                              {isWin !== null ? (
+                                <Badge className={`${
+                                  isWin 
+                                    ? 'bg-green-500/20 text-green-400 border-green-500/30' 
+                                    : 'bg-red-500/20 text-red-400 border-red-500/30'
+                                } border font-semibold`}>
+                                  {isWin ? 'W' : 'L'}
+                                </Badge>
+                              ) : (
+                                <span className="text-gray-400">-</span>
+                              )}
                             </TableCell>
 
                             {/* Map */}

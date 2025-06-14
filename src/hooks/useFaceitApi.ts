@@ -32,6 +32,8 @@ export const useFaceitApi = () => {
       throw new Error('API key not available');
     }
 
+    console.log(`Making API call to: ${API_BASE}${endpoint}`);
+    
     const response = await fetch(`${API_BASE}${endpoint}`, {
       headers: {
         'Authorization': `Bearer ${apiKey}`,
@@ -41,15 +43,19 @@ export const useFaceitApi = () => {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
+      console.error('API Error:', errorData);
       throw new Error(`API Error: ${errorData.error || response.statusText}`);
     }
 
-    return response.json();
+    const data = await response.json();
+    console.log('API Response:', data);
+    return data;
   };
 
   const getPlayerStats = async (playerId: string) => {
     try {
       const data = await makeApiCall(`/players/${playerId}/stats/cs2`);
+      console.log('Player stats response:', data);
       return data;
     } catch (error) {
       console.error('Error fetching player stats:', error);
@@ -64,7 +70,9 @@ export const useFaceitApi = () => {
 
   const getPlayerMatches = async (playerId: string, limit: number = 10) => {
     try {
+      console.log(`Fetching matches for player: ${playerId}`);
       const data = await makeApiCall(`/players/${playerId}/history?game=cs2&limit=${limit}`);
+      console.log('Player matches response:', data);
       return data.items || [];
     } catch (error) {
       console.error('Error fetching player matches:', error);
@@ -79,10 +87,24 @@ export const useFaceitApi = () => {
 
   const getMatchDetails = async (matchId: string) => {
     try {
+      console.log(`Fetching match details for: ${matchId}`);
       const data = await makeApiCall(`/matches/${matchId}`);
+      console.log('Match details response:', data);
       return data;
     } catch (error) {
       console.error('Error fetching match details:', error);
+      return null;
+    }
+  };
+
+  const getMatchStats = async (matchId: string) => {
+    try {
+      console.log(`Fetching match stats for: ${matchId}`);
+      const data = await makeApiCall(`/matches/${matchId}/stats`);
+      console.log('Match stats response:', data);
+      return data;
+    } catch (error) {
+      console.error('Error fetching match stats:', error);
       return null;
     }
   };
@@ -124,6 +146,7 @@ export const useFaceitApi = () => {
     getPlayerStats,
     getPlayerMatches,
     getMatchDetails,
+    getMatchStats,
     getLeaderboard,
     searchPlayer
   };
