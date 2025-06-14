@@ -230,7 +230,7 @@ export const PlayerModal = ({
     }
     
     // Try to find ELO data in match results
-    if (matchDetail.results && matchDetail.results.elo_change) {
+    if (matchDetail && matchDetail.results && matchDetail.results.elo_change) {
       const playerEloData = matchDetail.results.elo_change.find((elo: any) => elo.player_id === player.player_id);
       if (playerEloData) {
         console.log('Found ELO data in results:', playerEloData);
@@ -255,12 +255,10 @@ export const PlayerModal = ({
       const scores = Object.values(match.results.score);
       console.log('Match results score:', scores);
       
-      // Make sure we have two numeric scores
-      if (scores.length === 2 && scores.every(score => typeof score === 'number' && score >= 0)) {
-        // Sort to show higher score first for better display
-        const sortedScores = [...scores].sort((a, b) => b - a);
-        return `${sortedScores[0]} - ${sortedScores[1]}`;
-      }
+      // Convert to numbers and sort to show higher score first for better display
+      const numericScores = scores.map(score => Number(score));
+      const sortedScores = [...numericScores].sort((a, b) => b - a);
+      return `${sortedScores[0]} - ${sortedScores[1]}`;
     }
     
     // Try from match detail results
@@ -269,7 +267,8 @@ export const PlayerModal = ({
       console.log('Match detail results score:', scores);
       
       if (scores.length === 2 && scores.every(score => typeof score === 'number' && score >= 0)) {
-        const sortedScores = [...scores].sort((a, b) => b - a);
+        const numericScores = scores.map(score => Number(score));
+        const sortedScores = [...numericScores].sort((a, b) => b - a);
         return `${sortedScores[0]} - ${sortedScores[1]}`;
       }
     }
@@ -282,8 +281,8 @@ export const PlayerModal = ({
         const team2Stats = matchDetail.teams[teamIds[1]].team_stats;
         
         if (team1Stats && team2Stats && team1Stats['Final Score'] && team2Stats['Final Score']) {
-          const score1 = parseInt(team1Stats['Final Score']);
-          const score2 = parseInt(team2Stats['Final Score']);
+          const score1 = Number(team1Stats['Final Score']);
+          const score2 = Number(team2Stats['Final Score']);
           if (!isNaN(score1) && !isNaN(score2)) {
             return `${Math.max(score1, score2)} - ${Math.min(score1, score2)}`;
           }
