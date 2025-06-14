@@ -1,299 +1,350 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { UserPlus, Users, Target, RefreshCw, Search } from "lucide-react";
 import { Player } from "@/types/Player";
-import { UserPlus, Users, Trash2, RefreshCw } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
-import { useFriendsAutoUpdate } from "@/hooks/useFriendsAutoUpdate";
-import { PasswordDialog } from "./PasswordDialog";
+import { useFaceitApi } from "@/hooks/useFaceitApi";
 
 interface FriendsSectionProps {
   friends: Player[];
   onAddFriend: (player: Player) => void;
+  onUpdateFriend: (playerId: string, updatedData: Partial<Player>) => void;
   onRemoveFriend: (playerId: string) => void;
   onShowPlayerDetails: (player: Player) => void;
-  onUpdateFriend?: (player: Player) => void;
-  onReloadFriends?: () => void;
+  onReloadFriends: () => void;
 }
 
-const API_KEY = '5d81df9c-db61-494c-8e0a-d94c89bb7913';
-const API_BASE = 'https://open.faceit.com/data/v4';
-
-export const FriendsSection = ({ 
-  friends, 
-  onAddFriend, 
-  onRemoveFriend, 
-  onShowPlayerDetails,
+export const FriendsSection = ({
+  friends,
+  onAddFriend,
   onUpdateFriend,
+  onRemoveFriend,
+  onShowPlayerDetails,
   onReloadFriends
 }: FriendsSectionProps) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
-  const [pendingAction, setPendingAction] = useState<{
-    type: 'add' | 'remove';
-    player?: Player;
-    playerId?: string;
-  } | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<Player[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const { searchPlayer, getPlayerStats, loading: apiLoading } = useFaceitApi();
 
-  // Auto-update friends data every 5 minutes
-  const { isUpdating, updateAllFriends } = useFriendsAutoUpdate({
-    friends,
-    updateFriend: onUpdateFriend || (() => {}),
-    reloadFriends: onReloadFriends || (() => {}),
-    enabled: true
-  });
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return;
 
-  const searchPlayer = async () => {
-    if (!searchTerm.trim()) return;
-    
-    setLoading(true);
+    setSearching(true);
     try {
-      const response = await fetch(
-        `${API_BASE}/players?nickname=${encodeURIComponent(searchTerm.trim())}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${API_KEY}`
-          }
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Jucătorul nu a fost găsit');
-      }
-
-      const playerData = await response.json();
+      const results = await searchPlayer(searchQuery.trim());
       
-      const statsResponse = await fetch(`${API_BASE}/players/${playerData.player_id}/stats/cs2`, {
-        headers: { 'Authorization': `Bearer ${API_KEY}` }
-      });
-      let statsData = {};
-      if (statsResponse.ok) {
-        statsData = await statsResponse.json();
-      }
-
-      const player: Player = {
-        player_id: playerData.player_id,
-        nickname: playerData.nickname,
-        avatar: playerData.avatar || '/placeholder.svg',
-        level: playerData.games?.cs2?.skill_level || 0,
-        elo: playerData.games?.cs2?.faceit_elo || 0,
-        wins: parseInt((statsData as any).lifetime?.Wins) || 0,
-        winRate: Math.round((parseInt((statsData as any).lifetime?.Wins) / parseInt((statsData as any).lifetime?.Matches)) * 100) || 0,
-        hsRate: parseFloat((statsData as any).lifetime?.['Average Headshots %']) || 0,
-        kdRatio: parseFloat((statsData as any).lifetime?.['Average K/D Ratio']) || 0,
-      };
-
-      setPendingAction({ type: 'add', player });
-      setShowPasswordDialog(true);
-
+      // Get detailed stats for each player
+      const detailedResults = await Promise.all(
+        results.slice(0, 5).map(async (player: any) => {
+          try {
+            const stats = await getPlayerStats(player.player_id);
+            const playerStats = stats?.segments?.[0]?.stats || {};
+            
+            return {
+              player_id: player.player_id,
+              nickname: player.nickname,
+              avatar: player.avatar || '/placeholder.svg',
+              level: player.skill_level,
+              elo: player.faceit_elo,
+              wins: parseInt(playerStats.Wins?.value || '0'),
+              winRate: parseFloat(playerStats['Win Rate %']?.value || '0'),
+              hsRate: parseFloat(playerStats['Headshots %']?.value || '0'),
+              kdRatio: parseFloat(playerStats['K/D Ratio']?.value || '0')
+            };
+          } catch (error) {
+            console.error('Error fetching player stats:', error);
+            return {
+              player_id: player.player_id,
+              nickname: player.nickname,
+              avatar: player.avatar || '/placeholder.svg',
+              level: player.skill_level,
+              elo: player.faceit_elo,
+              wins: 0,
+              winRate: 0,
+              hsRate: 0,
+              kdRatio: 0
+            };
+          }
+        })
+      );
+      
+      setSearchResults(detailedResults);
     } catch (error) {
-      toast({
-        title: "Eroare la căutare",
-        description: "Jucătorul nu a fost găsit sau a apărut o eroare.",
-        variant: "destructive",
-      });
+      console.error('Search error:', error);
+      setSearchResults([]);
     } finally {
-      setLoading(false);
+      setSearching(false);
     }
   };
 
-  const handleAddFriend = (player: Player) => {
-    setPendingAction({ type: 'add', player });
-    setShowPasswordDialog(true);
-  };
-
-  const handleRemoveFriend = (playerId: string) => {
-    setPendingAction({ type: 'remove', playerId });
-    setShowPasswordDialog(true);
-  };
-
-  const confirmAction = () => {
-    if (pendingAction) {
-      if (pendingAction.type === 'add' && pendingAction.player) {
-        onAddFriend(pendingAction.player);
-        setSearchTerm('');
-      } else if (pendingAction.type === 'remove' && pendingAction.playerId) {
-        onRemoveFriend(pendingAction.playerId);
+  const handleRefreshStats = async () => {
+    setRefreshing(true);
+    try {
+      for (const friend of friends) {
+        try {
+          const stats = await getPlayerStats(friend.player_id);
+          const playerStats = stats?.segments?.[0]?.stats || {};
+          
+          const updatedData = {
+            wins: parseInt(playerStats.Wins?.value || '0'),
+            winRate: parseFloat(playerStats['Win Rate %']?.value || '0'),
+            hsRate: parseFloat(playerStats['Headshots %']?.value || '0'),
+            kdRatio: parseFloat(playerStats['K/D Ratio']?.value || '0')
+          };
+          
+          onUpdateFriend(friend.player_id, updatedData);
+        } catch (error) {
+          console.error(`Error updating stats for ${friend.nickname}:`, error);
+        }
       }
-      setPendingAction(null);
+    } catch (error) {
+      console.error('Error refreshing stats:', error);
+    } finally {
+      setRefreshing(false);
     }
   };
 
   const getLevelColor = (level: number) => {
-    if (level >= 9) return 'bg-red-500';
-    if (level >= 7) return 'bg-purple-500';
-    if (level >= 5) return 'bg-blue-500';
-    if (level >= 3) return 'bg-green-500';
-    return 'bg-gray-500';
+    if (level >= 9) return 'from-red-500 to-red-600';
+    if (level >= 7) return 'from-purple-500 to-purple-600';
+    if (level >= 5) return 'from-blue-500 to-blue-600';
+    if (level >= 3) return 'from-green-500 to-green-600';
+    return 'from-gray-500 to-gray-600';
   };
-
-  const getLevelBorder = (level: number) => {
-    if (level >= 9) return 'border-red-400';
-    if (level >= 7) return 'border-purple-400';
-    if (level >= 5) return 'border-blue-400';
-    if (level >= 3) return 'border-green-400';
-    return 'border-gray-400';
-  };
-
-  const sortedFriends = [...friends].sort((a, b) => (b.elo || 0) - (a.elo || 0));
 
   return (
-    <div className="space-y-6 px-4 md:px-0">
-      {/* Friends List */}
-      <Card className="bg-[#1a1d21] border-[#2a2f36] shadow-xl">
-        <div className="p-6 md:p-8">
-          <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 md:mb-8 gap-4">
-            <h2 className="text-2xl md:text-3xl font-bold text-white flex items-center gap-4">
-              <div className="w-10 h-10 md:w-12 md:h-12 bg-[#ff6500] rounded-lg flex items-center justify-center shadow-lg">
-                <Users size={20} className="md:w-6 md:h-6 text-white" />
-              </div>
-              <span className="text-lg md:text-3xl">Prietenii Mei ({friends.length})</span>
-            </h2>
-            
-            <div className="flex flex-col md:flex-row items-start md:items-center gap-4">
-              <span className="text-xs md:text-sm text-[#9f9f9f]">
-                Actualizare automată la 5 min
-              </span>
-              <Button
-                onClick={updateAllFriends}
-                disabled={isUpdating}
-                size="lg"
-                className="bg-transparent border-2 border-[#ff6500] text-[#ff6500] hover:bg-[#ff6500] hover:text-white rounded-lg h-10 md:h-12 px-4 md:px-6 font-bold"
+    <div className="space-y-6">
+      {/* Add Friend Section */}
+      <div className="bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-sm rounded-xl border border-white/10 p-6">
+        <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-2">
+          <UserPlus className="w-6 h-6 text-orange-400" />
+          Adaugă Prieten Nou
+        </h2>
+        
+        <div className="flex gap-3 mb-4">
+          <Input
+            placeholder="Caută jucător după nickname..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+            className="bg-white/10 border-white/20 text-white placeholder-gray-400 flex-1"
+            disabled={apiLoading || searching}
+          />
+          <Button
+            onClick={handleSearch}
+            disabled={!searchQuery.trim() || apiLoading || searching}
+            className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white"
+          >
+            {searching ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+            ) : (
+              <>
+                <Search size={16} className="mr-2" />
+                Caută
+              </>
+            )}
+          </Button>
+        </div>
+
+        {/* Search Results */}
+        {searchResults.length > 0 && (
+          <div className="space-y-2">
+            <h3 className="text-lg font-semibold text-white">Rezultate căutare:</h3>
+            {searchResults.map((player) => (
+              <div
+                key={player.player_id}
+                className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10"
               >
-                <RefreshCw size={16} className={`md:w-5 md:h-5 mr-2 ${isUpdating ? 'animate-spin' : ''}`} />
-                {isUpdating ? 'Actualizare...' : 'Actualizează acum'}
+                <div className="flex items-center gap-3">
+                  <img
+                    src={player.avatar}
+                    alt={player.nickname}
+                    className="w-10 h-10 rounded-full border-2 border-orange-400"
+                  />
+                  <div>
+                    <div className="text-white font-medium">{player.nickname}</div>
+                    <div className="flex items-center gap-2">
+                      <Badge className={`bg-gradient-to-r ${getLevelColor(player.level || 0)} text-white border-0 text-xs`}>
+                        Level {player.level}
+                      </Badge>
+                      <span className="text-blue-400 text-sm">{player.elo} ELO</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      onAddFriend(player);
+                      setSearchResults([]);
+                      setSearchQuery("");
+                    }}
+                    className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white"
+                  >
+                    <UserPlus size={14} className="mr-1" />
+                    Adaugă
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => onShowPlayerDetails(player)}
+                    className="border-orange-400 text-orange-400 hover:bg-orange-400 hover:text-white"
+                  >
+                    <Target size={14} className="mr-1" />
+                    Detalii
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Friends List */}
+      <div className="bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-sm rounded-xl border border-white/10 overflow-hidden">
+        <div className="p-4 sm:p-6 border-b border-white/10">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Users className="w-6 h-6 text-orange-400" />
+              <h2 className="text-xl sm:text-2xl font-bold text-white">
+                Lista Prieteni ({friends.length})
+              </h2>
+            </div>
+            
+            <div className="flex gap-2">
+              <Button
+                onClick={handleRefreshStats}
+                disabled={refreshing || friends.length === 0}
+                className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white"
+                size="sm"
+              >
+                {refreshing ? (
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                ) : (
+                  <RefreshCw size={16} className="mr-2" />
+                )}
+                Actualizează Stats
+              </Button>
+              
+              <Button
+                onClick={onReloadFriends}
+                variant="outline"
+                className="border-orange-400 text-orange-400 hover:bg-orange-400 hover:text-white"
+                size="sm"
+              >
+                <RefreshCw size={16} className="mr-2" />
+                Reîncarcă
               </Button>
             </div>
           </div>
-          
-          {friends.length === 0 ? (
-            <div className="text-center py-12 md:py-16">
-              <div className="w-20 h-20 md:w-24 md:h-24 bg-[#ff6500] rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-                <Users size={40} className="md:w-12 md:h-12 text-white" />
+        </div>
+
+        {friends.length === 0 ? (
+          <div className="text-center py-12">
+            <Users size={48} className="mx-auto text-gray-600 mb-4" />
+            <h3 className="text-xl font-semibold text-gray-400 mb-2">
+              Nu ai prieteni adăugați încă
+            </h3>
+            <p className="text-gray-500 mb-6">
+              Caută și adaugă jucători pentru a-i urmări progresul
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <div className="min-w-full">
+              {/* Header */}
+              <div className="grid grid-cols-12 gap-2 sm:gap-4 p-3 sm:p-4 border-b border-white/10 text-gray-400 text-xs sm:text-sm font-medium">
+                <div className="col-span-4 sm:col-span-3">Jucător</div>
+                <div className="col-span-2 text-center">Nivel</div>
+                <div className="col-span-2 text-center">ELO</div>
+                <div className="col-span-1 text-center">W%</div>
+                <div className="col-span-1 text-center">HS%</div>
+                <div className="col-span-1 text-center">K/D</div>
+                <div className="col-span-1 text-center">Acțiuni</div>
               </div>
-              <h3 className="text-xl md:text-2xl font-bold text-white mb-3">Niciun prieten adăugat</h3>
-              <p className="text-[#9f9f9f] text-base md:text-lg mb-8">Caută și adaugă prieteni pentru a-i vedea în clasamentul tău personal!</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {sortedFriends.map((friend, index) => (
-                <div
-                  key={friend.player_id}
-                  className="bg-[#2a2f36] rounded-lg p-4 md:p-6 border border-[#3a4048] hover:border-[#ff6500]/50 transition-all duration-300 shadow-lg"
-                >
-                  <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 lg:gap-6">
-                    <div className="flex items-center gap-4 md:gap-6 w-full lg:w-auto">
-                      <div className="text-2xl md:text-3xl font-bold text-[#ff6500] min-w-[3rem] md:min-w-[4rem]">
-                        #{index + 1}
-                      </div>
-                      
+
+              {/* Friends List */}
+              <div className="space-y-1">
+                {friends.map((friend) => (
+                  <div
+                    key={friend.player_id}
+                    className="grid grid-cols-12 gap-2 sm:gap-4 p-3 sm:p-4 hover:bg-white/5 transition-colors cursor-pointer group"
+                    onClick={() => onShowPlayerDetails(friend)}
+                  >
+                    {/* Player Info */}
+                    <div className="col-span-4 sm:col-span-3 flex items-center gap-2 sm:gap-3">
                       <img
                         src={friend.avatar}
                         alt={friend.nickname}
-                        className="w-12 h-12 md:w-16 md:h-16 rounded-lg border-2 border-[#ff6500] shadow-lg"
+                        className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border-2 border-orange-400"
                       />
-                      
-                      <div className="min-w-0 flex-1">
-                        <h3 className="text-lg md:text-xl font-bold text-white truncate">{friend.nickname}</h3>
-                        <div className="flex flex-wrap items-center gap-2 md:gap-3 mt-2">
-                          <Badge className={`${getLevelColor(friend.level || 0)} text-white border-0 px-2 md:px-3 py-1 text-xs md:text-sm`}>
-                            Nivel {friend.level}
-                          </Badge>
-                          <span className="text-[#ff6500] font-bold text-sm md:text-lg">{friend.elo} ELO</span>
+                      <div className="min-w-0">
+                        <div className="text-white font-medium text-sm sm:text-base truncate">
+                          {friend.nickname}
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-4 md:gap-8 text-sm md:text-base w-full lg:w-auto justify-between lg:justify-end">
-                      <div className="text-center">
-                        <div className="text-white font-bold text-lg md:text-xl">{friend.wins}</div>
-                        <div className="text-[#9f9f9f] text-xs md:text-sm">Victorii</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-white font-bold text-lg md:text-xl">{friend.winRate}%</div>
-                        <div className="text-[#9f9f9f] text-xs md:text-sm">Win Rate</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-white font-bold text-lg md:text-xl">{friend.hsRate}%</div>
-                        <div className="text-[#9f9f9f] text-xs md:text-sm">HS%</div>
-                      </div>
-                      <div className="text-center">
-                        <div className="text-white font-bold text-lg md:text-xl">{friend.kdRatio}</div>
-                        <div className="text-[#9f9f9f] text-xs md:text-sm">K/D</div>
-                      </div>
-                      
-                      <div className="flex gap-2 md:gap-3">
-                        <Button 
-                          size="lg"
-                          onClick={() => onShowPlayerDetails(friend)}
-                          className={`bg-transparent border-2 ${getLevelBorder(friend.level || 0)} text-white hover:bg-[#ff6500] hover:border-[#ff6500] rounded-lg px-3 md:px-4 h-10 md:h-12 font-bold text-xs md:text-sm`}
-                        >
-                          Detalii
-                        </Button>
-                        <Button 
-                          size="lg"
-                          onClick={() => handleRemoveFriend(friend.player_id)}
-                          className="bg-transparent border-2 border-red-400 text-red-400 hover:bg-red-500 hover:border-red-500 hover:text-white rounded-lg px-3 md:px-4 h-10 md:h-12 font-bold"
-                        >
-                          <Trash2 size={16} className="md:w-5 md:h-5" />
-                        </Button>
+                    {/* Level */}
+                    <div className="col-span-2 flex items-center justify-center">
+                      <Badge className={`bg-gradient-to-r ${getLevelColor(friend.level || 0)} text-white border-0 text-xs px-2 py-1`}>
+                        {friend.level}
+                      </Badge>
+                    </div>
+
+                    {/* ELO */}
+                    <div className="col-span-2 flex items-center justify-center">
+                      <div className="text-blue-400 font-bold text-sm">
+                        {friend.elo?.toLocaleString()}
                       </div>
                     </div>
+
+                    {/* Win Rate */}
+                    <div className="col-span-1 flex items-center justify-center">
+                      <div className="text-green-400 font-bold text-xs">
+                        {friend.winRate?.toFixed(0)}%
+                      </div>
+                    </div>
+
+                    {/* Headshot Rate */}
+                    <div className="col-span-1 flex items-center justify-center">
+                      <div className="text-red-400 font-bold text-xs">
+                        {friend.hsRate?.toFixed(0)}%
+                      </div>
+                    </div>
+
+                    {/* K/D Ratio */}
+                    <div className="col-span-1 flex items-center justify-center">
+                      <div className="text-purple-400 font-bold text-xs">
+                        {friend.kdRatio?.toFixed(2)}
+                      </div>
+                    </div>
+
+                    {/* Actions */}
+                    <div className="col-span-1 flex items-center justify-center">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="border-orange-400 text-orange-400 hover:bg-orange-400 hover:text-white text-xs px-2 py-1"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onShowPlayerDetails(friend);
+                        }}
+                      >
+                        <Target size={12} />
+                      </Button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          )}
-        </div>
-      </Card>
-
-      {/* Search Section - moved to bottom */}
-      <Card className="bg-[#1a1d21] border-[#2a2f36] shadow-xl">
-        <div className="p-6 md:p-8">
-          <h2 className="text-2xl md:text-3xl font-bold text-white mb-6 md:mb-8 flex items-center gap-4">
-            <div className="w-10 h-10 md:w-12 md:h-12 bg-[#ff6500] rounded-lg flex items-center justify-center shadow-lg">
-              <UserPlus size={20} className="md:w-6 md:h-6 text-white" />
-            </div>
-            <span className="text-lg md:text-3xl">Adaugă Prieteni</span>
-          </h2>
-          
-          <div className="flex flex-col md:flex-row gap-4">
-            <Input
-              placeholder="Introdu nickname-ul prietenului..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && searchPlayer()}
-              className="bg-[#2a2f36] border-[#3a4048] text-white placeholder:text-[#9f9f9f] focus:border-[#ff6500] rounded-lg h-12"
-            />
-            <Button
-              onClick={searchPlayer}
-              disabled={loading || !searchTerm.trim()}
-              className="bg-[#ff6500] hover:bg-[#e55a00] text-white border-0 px-6 md:px-8 h-12 rounded-lg shadow-lg font-bold"
-            >
-              {loading ? 'Caută...' : 'Adaugă'}
-            </Button>
           </div>
-        </div>
-      </Card>
-
-      <PasswordDialog
-        isOpen={showPasswordDialog}
-        onClose={() => {
-          setShowPasswordDialog(false);
-          setPendingAction(null);
-        }}
-        onConfirm={confirmAction}
-        title={pendingAction?.type === 'add' ? 'Adaugă Prieten' : 'Șterge Prieten'}
-        description={
-          pendingAction?.type === 'add' 
-            ? `Vrei să adaugi ${pendingAction.player?.nickname} în lista de prieteni?`
-            : 'Vrei să ștergi acest prieten din listă?'
-        }
-      />
+        )}
+      </div>
     </div>
   );
 };

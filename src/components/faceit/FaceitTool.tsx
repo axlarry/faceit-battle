@@ -1,149 +1,71 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Badge } from "@/components/ui/badge";
+import { Search, UserPlus, Target } from "lucide-react";
 import { Player } from "@/types/Player";
-import { Search, User, Trophy, Sword, Crosshair, BarChart2 } from "lucide-react";
-import { toast } from "@/hooks/use-toast";
-import { PasswordDialog } from "./PasswordDialog";
+import { useFaceitApi } from "@/hooks/useFaceitApi";
 
 interface FaceitToolProps {
   onShowPlayerDetails: (player: Player) => void;
-  onAddFriend: (player: Player) => Promise<void>;
-}
-
-const FACEIT_API_KEY = '6bb8f3be-53d3-400b-9766-bca9106ea411';
-const FACEIT_API_BASE = 'https://open.faceit.com/data/v4';
-const PROXY_SERVER = 'https://lacurte.ro:3000';
-
-interface StatsData {
-  lifetime?: {
-    Wins?: string;
-    Matches?: string;
-    'Average Headshots %'?: string;
-    'Average K/D Ratio'?: string;
-  };
+  onAddFriend: (player: Player) => void;
 }
 
 export const FaceitTool = ({ onShowPlayerDetails, onAddFriend }: FaceitToolProps) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [searchType, setSearchType] = useState<'steam' | 'nickname'>('steam');
-  const [loading, setLoading] = useState(false);
-  const [playerData, setPlayerData] = useState<Player | null>(null);
-  const [apiError, setApiError] = useState<string | null>(null);
-  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
-  const [pendingPlayer, setPendingPlayer] = useState<Player | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<Player[]>([]);
+  const [searching, setSearching] = useState(false);
+  const { searchPlayer, getPlayerStats, loading: apiLoading } = useFaceitApi();
 
-  const extractSteamVanity = (input: string): string => {
-    if (input.includes('steamcommunity.com')) {
-      const match = input.match(/steamcommunity\.com\/id\/([^\/]+)/);
-      return match ? match[1] : input;
-    }
-    return input.trim();
-  };
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return;
 
-  const getSteamID64 = async (input: string) => {
+    setSearching(true);
     try {
-      const vanityName = extractSteamVanity(input);
-      const response = await fetch(
-        `${PROXY_SERVER}/api/steamid?vanityurl=${vanityName}`
+      const results = await searchPlayer(searchQuery.trim());
+      
+      // Get detailed stats for each player
+      const detailedResults = await Promise.all(
+        results.slice(0, 10).map(async (player: any) => {
+          try {
+            const stats = await getPlayerStats(player.player_id);
+            const playerStats = stats?.segments?.[0]?.stats || {};
+            
+            return {
+              player_id: player.player_id,
+              nickname: player.nickname,
+              avatar: player.avatar || '/placeholder.svg',
+              level: player.skill_level,
+              elo: player.faceit_elo,
+              wins: parseInt(playerStats.Wins?.value || '0'),
+              winRate: parseFloat(playerStats['Win Rate %']?.value || '0'),
+              hsRate: parseFloat(playerStats['Headshots %']?.value || '0'),
+              kdRatio: parseFloat(playerStats['K/D Ratio']?.value || '0')
+            };
+          } catch (error) {
+            console.error('Error fetching player stats:', error);
+            return {
+              player_id: player.player_id,
+              nickname: player.nickname,
+              avatar: player.avatar || '/placeholder.svg',
+              level: player.skill_level,
+              elo: player.faceit_elo,
+              wins: 0,
+              winRate: 0,
+              hsRate: 0,
+              kdRatio: 0
+            };
+          }
+        })
       );
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Eroare la conexiunea cu serverul proxy');
-      }
-
-      const data = await response.json();
-
-      if (data.error) {
-        throw new Error(data.error);
-      }
-
-      if (!data.steamid) {
-        throw new Error('Profil Steam nu a fost găsit');
-      }
-
-      return data.steamid;
+      
+      setSearchResults(detailedResults);
     } catch (error) {
-      let errorMessage = 'Eroare la obținerea SteamID';
-      if (error instanceof Error) {
-        errorMessage += `: ${error.message}`;
-      }
-      throw new Error(errorMessage);
-    }
-  };
-
-  const searchPlayer = async () => {
-    if (!searchTerm.trim()) {
-      setApiError('Te rog introdu un termen de căutare');
-      return;
-    }
-
-    setLoading(true);
-    setPlayerData(null);
-    setApiError(null);
-
-    try {
-      let playerResponse;
-
-      if (searchType === 'steam') {
-        try {
-          const steamID64 = await getSteamID64(searchTerm);
-          playerResponse = await fetch(
-            `${FACEIT_API_BASE}/players?game=cs2&game_player_id=${steamID64}`,
-            { headers: { 'Authorization': `Bearer ${FACEIT_API_KEY}` } }
-          );
-        } catch (error) {
-          throw new Error(error instanceof Error ? error.message : 'Profilul Steam nu a fost găsit');
-        }
-      } else {
-        playerResponse = await fetch(
-          `${FACEIT_API_BASE}/players?nickname=${encodeURIComponent(searchTerm.trim())}`,
-          { headers: { 'Authorization': `Bearer ${FACEIT_API_KEY}` } }
-        );
-      }
-
-      if (!playerResponse.ok) {
-        const errorData = await playerResponse.json();
-        throw new Error(errorData.message || 'Fraierul nu are cont Faceit');
-      }
-
-      const playerInfo = await playerResponse.json();
-      const statsResponse = await fetch(`${FACEIT_API_BASE}/players/${playerInfo.player_id}/stats/cs2`, {
-        headers: { 'Authorization': `Bearer ${FACEIT_API_KEY}` }
-      });
-
-      let statsData: StatsData = {};
-      if (statsResponse.ok) {
-        statsData = await statsResponse.json();
-      }
-
-      const player: Player = {
-        player_id: playerInfo.player_id,
-        nickname: playerInfo.nickname,
-        avatar: playerInfo.avatar || '/placeholder.svg',
-        level: playerInfo.games?.cs2?.skill_level || 0,
-        elo: playerInfo.games?.cs2?.faceit_elo || 0,
-        wins: parseInt(statsData.lifetime?.Wins || '0') || 0,
-        winRate: Math.round((parseInt(statsData.lifetime?.Wins || '0') / parseInt(statsData.lifetime?.Matches || '1')) * 100) || 0,
-        hsRate: parseFloat(statsData.lifetime?.['Average Headshots %'] || '0') || 0,
-        kdRatio: parseFloat(statsData.lifetime?.['Average K/D Ratio'] || '0') || 0,
-      };
-
-      setPlayerData(player);
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Eroare necunoscută';
-      setApiError(errorMessage);
-
-      toast({
-        title: "ATENTIE!!!",
-        description: errorMessage,
-        variant: "destructive",
-      });
+      console.error('Search error:', error);
+      setSearchResults([]);
     } finally {
-      setLoading(false);
+      setSearching(false);
     }
   };
 
@@ -155,185 +77,165 @@ export const FaceitTool = ({ onShowPlayerDetails, onAddFriend }: FaceitToolProps
     return 'from-gray-500 to-gray-600';
   };
 
-  const handleAddFriend = (player: Player) => {
-    setPendingPlayer(player);
-    setShowPasswordDialog(true);
-  };
-
-  const confirmAddFriend = async () => {
-    if (pendingPlayer) {
-      await onAddFriend(pendingPlayer);
-      setPendingPlayer(null);
-    }
-  };
-
   return (
     <div className="space-y-6">
       {/* Search Section */}
-      <Card className="bg-white/5 backdrop-blur-lg border-white/10">
-        <div className="p-6">
-          <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
-            <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-full"></div>
-            Caută Jucător FACEIT
-          </h2>
-
-          {/* Error Display */}
-          {apiError && (
-            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400">
-              {apiError}
-            </div>
-          )}
-
-          <div className="flex items-center justify-center gap-3 mb-4">
-            <span className={`text-sm font-medium ${searchType === 'nickname' ? 'text-orange-400' : 'text-gray-400'}`}>
-              FACEIT ID
-            </span>
-
-            <button
-              onClick={() => {
-                setSearchType(searchType === 'nickname' ? 'steam' : 'nickname');
-                setApiError(null);
-              }}
-              className="relative inline-flex items-center h-7 rounded-full w-14 bg-gray-800 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-orange-500 border border-gray-700"
-            >
-              <span className={`absolute flex items-center justify-center w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-300 ${
-                searchType === 'steam' ? 'translate-x-7 bg-gradient-to-br from-orange-500 to-amber-500' : 'translate-x-1 bg-gradient-to-br from-gray-500 to-gray-600'
-              }`}></span>
-            </button>
-
-            <span className={`text-sm font-medium ${searchType === 'steam' ? 'text-amber-400' : 'text-gray-400'}`}>
-              STEAM ID/URL
-            </span>
-          </div>
-
-          <div className="flex gap-3">
-            <Input
-              placeholder={
-                searchType === 'steam'
-                  ? "Introdu Steam URL sau ID (ex: donk666 sau https://steamcommunity.com/id/donk666/)"
-                  : "Introdu FACEIT Nickname"
-              }
-              value={searchTerm}
-              onChange={(e) => {
-                setSearchTerm(e.target.value);
-                setApiError(null);
-              }}
-              onKeyPress={(e) => e.key === 'Enter' && searchPlayer()}
-              className="bg-white/10 border-orange-400/30 text-white placeholder:text-gray-400 focus:border-orange-400"
-            />
-            <Button
-              onClick={searchPlayer}
-              disabled={loading || !searchTerm.trim()}
-              className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white border-0 px-8"
-            >
-              {loading ? 'Caută...' : 'Caută'}
-            </Button>
-          </div>
+      <div className="bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-sm rounded-xl border border-white/10 p-6">
+        <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-2">
+          <Search className="w-6 h-6 text-orange-400" />
+          Căutare Jucători FACEIT
+        </h2>
+        
+        <div className="flex gap-3">
+          <Input
+            placeholder="Introdu nickname-ul jucătorului..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+            className="bg-white/10 border-white/20 text-white placeholder-gray-400 flex-1"
+            disabled={apiLoading || searching}
+          />
+          <Button
+            onClick={handleSearch}
+            disabled={!searchQuery.trim() || apiLoading || searching}
+            className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white"
+          >
+            {searching ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+            ) : (
+              <>
+                <Search size={16} className="mr-2" />
+                Caută
+              </>
+            )}
+          </Button>
         </div>
-      </Card>
+      </div>
 
-      {/* Player Results */}
-      {playerData && (
-        <Card className="bg-white/5 backdrop-blur-lg border-white/10">
-          <div className="p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-xl font-bold text-white flex items-center gap-3">
-                <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-full"></div>
-                Rezultate Căutare
-              </h3>
-              <Badge className="bg-gradient-to-r from-orange-500/10 to-red-500/10 text-orange-400 border border-orange-400/30">
-                CS2 Stats
-              </Badge>
-            </div>
+      {/* Search Results */}
+      {searchResults.length > 0 && (
+        <div className="bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-sm rounded-xl border border-white/10 overflow-hidden">
+          <div className="p-4 border-b border-white/10">
+            <h3 className="text-xl font-bold text-white">
+              Rezultate căutare ({searchResults.length})
+            </h3>
+          </div>
 
-            <div className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-white/10 hover:bg-white/10 transition-all duration-300">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <div className="text-2xl font-bold text-orange-400 min-w-[3rem]">
-                    #{playerData.level}
-                  </div>
-
-                  <img
-                    src={playerData.avatar}
-                    alt={playerData.nickname}
-                    className="w-12 h-12 rounded-full border-2 border-orange-400"
-                  />
-
-                  <div>
-                    <h3 className="text-lg font-semibold text-white">{playerData.nickname}</h3>
-                    <div className="flex items-center gap-2 mt-1">
-                      <Badge className={`bg-gradient-to-r ${getLevelColor(playerData.level || 0)} text-white border-0`}>
-                        Nivel {playerData.level}
-                      </Badge>
-                      <span className="text-orange-400 font-medium">{playerData.elo} ELO</span>
+          <div className="space-y-1">
+            {searchResults.map((player) => (
+              <div
+                key={player.player_id}
+                className="p-4 hover:bg-white/5 transition-colors cursor-pointer group border-b border-white/5 last:border-b-0"
+                onClick={() => onShowPlayerDetails(player)}
+              >
+                <div className="flex items-center justify-between gap-4">
+                  {/* Player Info */}
+                  <div className="flex items-center gap-3 flex-1 min-w-0">
+                    <img
+                      src={player.avatar}
+                      alt={player.nickname}
+                      className="w-12 h-12 rounded-full border-2 border-orange-400"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="text-white font-bold text-lg truncate">
+                        {player.nickname}
+                      </div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge className={`bg-gradient-to-r ${getLevelColor(player.level || 0)} text-white border-0 text-xs`}>
+                          Level {player.level}
+                        </Badge>
+                        <span className="text-blue-400 font-medium text-sm">
+                          {player.elo?.toLocaleString()} ELO
+                        </span>
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                <div className="flex items-center gap-6 text-sm">
-                  <div className="text-center">
-                    <div className="flex items-center gap-1 mb-1 text-orange-400">
-                      <Trophy size={14} />
+                  {/* Stats */}
+                  <div className="hidden md:grid grid-cols-4 gap-4 text-center">
+                    <div>
+                      <div className="text-green-400 font-bold">{player.wins}</div>
+                      <div className="text-gray-400 text-xs">Victorii</div>
                     </div>
-                    <div className="text-white font-medium">{playerData.wins}</div>
-                    <div className="text-gray-400">Victorii</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="flex items-center gap-1 mb-1 text-orange-400">
-                      <BarChart2 size={14} />
+                    <div>
+                      <div className="text-blue-400 font-bold">{player.winRate.toFixed(1)}%</div>
+                      <div className="text-gray-400 text-xs">Win Rate</div>
                     </div>
-                    <div className="text-white font-medium">{playerData.winRate}%</div>
-                    <div className="text-gray-400">Win Rate</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="flex items-center gap-1 mb-1 text-orange-400">
-                      <Crosshair size={14} />
+                    <div>
+                      <div className="text-red-400 font-bold">{player.hsRate.toFixed(1)}%</div>
+                      <div className="text-gray-400 text-xs">HS%</div>
                     </div>
-                    <div className="text-white font-medium">{playerData.hsRate}%</div>
-                    <div className="text-gray-400">HS%</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="flex items-center gap-1 mb-1 text-orange-400">
-                      <Sword size={14} />
+                    <div>
+                      <div className="text-purple-400 font-bold">{player.kdRatio.toFixed(2)}</div>
+                      <div className="text-gray-400 text-xs">K/D</div>
                     </div>
-                    <div className="text-white font-medium">{playerData.kdRatio}</div>
-                    <div className="text-gray-400">K/D</div>
                   </div>
 
+                  {/* Actions */}
                   <div className="flex gap-2">
                     <Button
                       size="sm"
-                      variant="outline"
-                      onClick={() => onShowPlayerDetails(playerData)}
-                      className="border-orange-400 text-orange-400 hover:bg-orange-400 hover:text-white"
+                      className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white border-0"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onAddFriend(player);
+                      }}
                     >
-                      Detalii
+                      <UserPlus size={14} className="mr-1" />
+                      Adaugă
                     </Button>
+                    
                     <Button
                       size="sm"
-                      onClick={() => handleAddFriend(playerData)}
-                      className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white border-0"
+                      variant="outline"
+                      className="border-orange-400 text-orange-400 hover:bg-orange-400 hover:text-white"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onShowPlayerDetails(player);
+                      }}
                     >
-                      Adaugă
+                      <Target size={14} className="mr-1" />
+                      Detalii
                     </Button>
                   </div>
                 </div>
+
+                {/* Mobile Stats */}
+                <div className="md:hidden mt-3 grid grid-cols-4 gap-2 text-center">
+                  <div>
+                    <div className="text-green-400 font-bold text-sm">{player.wins}</div>
+                    <div className="text-gray-400 text-xs">Victorii</div>
+                  </div>
+                  <div>
+                    <div className="text-blue-400 font-bold text-sm">{player.winRate.toFixed(1)}%</div>
+                    <div className="text-gray-400 text-xs">Win Rate</div>
+                  </div>
+                  <div>
+                    <div className="text-red-400 font-bold text-sm">{player.hsRate.toFixed(1)}%</div>
+                    <div className="text-gray-400 text-xs">HS%</div>
+                  </div>
+                  <div>
+                    <div className="text-purple-400 font-bold text-sm">{player.kdRatio.toFixed(2)}</div>
+                    <div className="text-gray-400 text-xs">K/D</div>
+                  </div>
+                </div>
               </div>
-            </div>
+            ))}
           </div>
-        </Card>
+        </div>
       )}
 
-      <PasswordDialog
-        isOpen={showPasswordDialog}
-        onClose={() => {
-          setShowPasswordDialog(false);
-          setPendingPlayer(null);
-        }}
-        onConfirm={confirmAddFriend}
-        title="Adaugă Prieten"
-        description={`Vrei să adaugi ${pendingPlayer?.nickname} în lista de prieteni?`}
-      />
+      {/* No Results Message */}
+      {searchResults.length === 0 && searchQuery && !searching && (
+        <div className="bg-gradient-to-br from-slate-900/95 to-slate-800/95 backdrop-blur-sm rounded-xl border border-white/10 p-8 text-center">
+          <div className="text-gray-400 text-lg">
+            Nu s-au găsit jucători pentru "{searchQuery}"
+          </div>
+          <div className="text-gray-500 text-sm mt-2">
+            Încearcă un alt nickname sau verifică ortografia
+          </div>
+        </div>
+      )}
     </div>
   );
 };

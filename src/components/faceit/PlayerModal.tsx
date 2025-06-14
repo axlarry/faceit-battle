@@ -1,3 +1,4 @@
+
 import {
   Dialog,
   DialogContent,
@@ -12,7 +13,7 @@ import { UserPlus, UserMinus, ExternalLink, Trophy, Calendar, Users, Target, Tre
 import { useState, useEffect } from "react";
 import { PasswordDialog } from "./PasswordDialog";
 import { toast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { useFaceitApi } from "@/hooks/useFaceitApi";
 
 interface PlayerModalProps {
   player: Player | null;
@@ -22,8 +23,6 @@ interface PlayerModalProps {
   onRemoveFriend: (playerId: string) => void;
   isFriend: boolean;
 }
-
-const API_BASE = 'https://open.faceit.com/data/v4';
 
 export const PlayerModal = ({ 
   player, 
@@ -38,83 +37,39 @@ export const PlayerModal = ({
   const [matches, setMatches] = useState<Match[]>([]);
   const [loadingMatches, setLoadingMatches] = useState(false);
   const [matchesDetails, setMatchesDetails] = useState<{[key: string]: any}>({});
-  const [apiError, setApiError] = useState<string | null>(null);
-  const [apiKey, setApiKey] = useState<string | null>(null);
-
-  // Load API key from Supabase secrets
-  useEffect(() => {
-    const loadApiKey = async () => {
-      try {
-        const { data, error } = await supabase.functions.invoke('get-faceit-api-key');
-        if (error) throw error;
-        setApiKey(data.apiKey);
-      } catch (error) {
-        console.error('Error loading API key:', error);
-        // Fallback to hardcoded key for now
-        setApiKey('f1755f40-8f84-4d62-b315-5f09dc25eef5');
-      }
-    };
-    loadApiKey();
-  }, []);
+  const { getPlayerMatches, getMatchDetails, loading: apiLoading } = useFaceitApi();
 
   // Load matches when player changes and modal is open
   useEffect(() => {
-    if (player && isOpen && apiKey) {
+    if (player && isOpen) {
       loadPlayerMatches();
     }
-  }, [player, isOpen, apiKey]);
+  }, [player, isOpen]);
 
   const loadPlayerMatches = async () => {
-    if (!player || !apiKey) return;
+    if (!player) return;
     
     setLoadingMatches(true);
-    setApiError(null);
     
     try {
       console.log('Loading matches for player:', player.player_id);
       
-      const response = await fetch(
-        `${API_BASE}/players/${player.player_id}/history?game=cs2&limit=10`,
-        {
-          headers: {
-            'Authorization': `Bearer ${apiKey}`
-          }
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error('API Error:', errorData);
-        throw new Error(`API Error: ${errorData.error || response.statusText}`);
-      }
-
-      const data = await response.json();
-      console.log('Matches response:', data);
-      const matchesData = data.items || [];
-      setMatches(matchesData);
+      const matchesData = await getPlayerMatches(player.player_id, 10);
+      console.log('Matches response:', matchesData);
+      setMatches(matchesData || []);
 
       // Load detailed stats for each match
-      if (matchesData.length > 0) {
+      if (matchesData && matchesData.length > 0) {
         const detailsPromises = matchesData.map(async (match: Match) => {
           try {
             console.log('Loading details for match:', match.match_id);
-            const matchResponse = await fetch(
-              `${API_BASE}/matches/${match.match_id}`,
-              {
-                headers: {
-                  'Authorization': `Bearer ${apiKey}`
-                }
-              }
-            );
-            if (matchResponse.ok) {
-              const matchDetail = await matchResponse.json();
-              console.log('Match detail response:', matchDetail);
-              return { [match.match_id]: matchDetail };
-            }
+            const matchDetail = await getMatchDetails(match.match_id);
+            console.log('Match detail response:', matchDetail);
+            return matchDetail ? { [match.match_id]: matchDetail } : {};
           } catch (error) {
             console.error('Error loading match details:', error);
+            return {};
           }
-          return {};
         });
 
         const detailsResults = await Promise.all(detailsPromises);
@@ -125,14 +80,7 @@ export const PlayerModal = ({
 
     } catch (error) {
       console.error('Error loading matches:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      setApiError(errorMessage);
-      
-      toast({
-        title: "Eroare la încărcarea meciurilor",
-        description: `Nu s-au putut încărca meciurile: ${errorMessage}`,
-        variant: "destructive",
-      });
+      setMatches([]);
     } finally {
       setLoadingMatches(false);
     }
@@ -274,9 +222,12 @@ export const PlayerModal = ({
       console.log('Match results score:', scores);
       
       if (scores.length === 2) {
-        const numericScores = scores.map(score => Number(score)).filter(score => !isNaN(score));
+        const numericScores = scores.map(score => {
+          const num = Number(score);
+          return isNaN(num) ? 0 : num;
+        });
+        
         if (numericScores.length === 2) {
-          // Show scores in format winner-loser
           const [score1, score2] = numericScores;
           return score1 >= score2 ? `${score1} - ${score2}` : `${score2} - ${score1}`;
         }
@@ -289,7 +240,11 @@ export const PlayerModal = ({
       console.log('Match detail results score:', scores);
       
       if (scores.length === 2) {
-        const numericScores = scores.map(score => Number(score)).filter(score => !isNaN(score));
+        const numericScores = scores.map(score => {
+          const num = Number(score);
+          return isNaN(num) ? 0 : num;
+        });
+        
         if (numericScores.length === 2) {
           const [score1, score2] = numericScores;
           return score1 >= score2 ? `${score1} - ${score2}` : `${score2} - ${score1}`;
@@ -428,20 +383,7 @@ export const PlayerModal = ({
                 <h3 className="text-lg font-bold text-white">Meciurile Recente (Ultimele 10)</h3>
               </div>
               
-              {apiError ? (
-                <div className="text-center py-6">
-                  <div className="text-red-400 font-medium">Eroare API: {apiError}</div>
-                  <div className="text-gray-400 text-sm mt-2">
-                    Nu se pot încărca meciurile în acest moment.
-                  </div>
-                  <Button 
-                    onClick={loadPlayerMatches}
-                    className="mt-3 bg-orange-500 hover:bg-orange-600 text-white text-sm px-4 py-2"
-                  >
-                    Încearcă din nou
-                  </Button>
-                </div>
-              ) : loadingMatches ? (
+              {loadingMatches || apiLoading ? (
                 <div className="text-center py-6">
                   <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-400 mx-auto"></div>
                   <div className="text-gray-400 mt-2 text-sm">Se încarcă meciurile...</div>
