@@ -115,53 +115,54 @@ export const MatchesTable = ({ player, matches, matchesStats, loadingMatches }: 
   const getMatchScore = (match: Match) => {
     console.log('Getting match score for:', match.match_id);
     
-    // Try to get score from results first
-    if (match.results && match.results.score) {
-      const scores = Object.values(match.results.score);
-      console.log('Scores from results:', scores);
-      if (scores.length === 2) {
-        const numericScores = scores.map(score => Number(score)).filter(score => !isNaN(score));
-        if (numericScores.length === 2) {
-          const sortedScores = numericScores.sort((a, b) => b - a);
-          return `${sortedScores[0]} - ${sortedScores[1]}`;
-        }
-      }
-    }
-
-    // Try to get score from match stats
+    // Try from match stats data first (most detailed)
     const matchStatsData = matchesStats[match.match_id];
     if (matchStatsData) {
       console.log('Checking match stats for score:', matchStatsData);
       
-      if (matchStatsData.rounds && Array.isArray(matchStatsData.rounds)) {
-        // Get the final round for the score
+      // Check in rounds for final score
+      if (matchStatsData.rounds && Array.isArray(matchStatsData.rounds) && matchStatsData.rounds.length > 0) {
+        // Get the last round for final score
         const lastRound = matchStatsData.rounds[matchStatsData.rounds.length - 1];
         if (lastRound && lastRound.round_stats && lastRound.round_stats.Score) {
           const scores = Object.values(lastRound.round_stats.Score);
+          console.log('Final round scores:', scores);
           if (scores.length === 2) {
             const numericScores = scores.map(score => Number(score)).filter(score => !isNaN(score));
             if (numericScores.length === 2) {
-              const sortedScores = numericScores.sort((a, b) => b - a);
-              return `${sortedScores[0]} - ${sortedScores[1]}`;
+              return `${Math.max(...numericScores)} - ${Math.min(...numericScores)}`;
             }
           }
         }
       }
       
+      // Check in match stats results
       if (matchStatsData.results && matchStatsData.results.score) {
         const scores = Object.values(matchStatsData.results.score);
+        console.log('Match stats result scores:', scores);
         if (scores.length === 2) {
           const numericScores = scores.map(score => Number(score)).filter(score => !isNaN(score));
           if (numericScores.length === 2) {
-            const sortedScores = numericScores.sort((a, b) => b - a);
-            return `${sortedScores[0]} - ${sortedScores[1]}`;
+            return `${Math.max(...numericScores)} - ${Math.min(...numericScores)}`;
           }
         }
       }
     }
 
-    console.log('No score found for match:', match.match_id);
-    return null;
+    // Fallback to match results
+    if (match.results && match.results.score) {
+      const scores = Object.values(match.results.score);
+      console.log('Match results scores:', scores);
+      if (scores.length === 2) {
+        const numericScores = scores.map(score => Number(score)).filter(score => !isNaN(score));
+        if (numericScores.length === 2) {
+          return `${Math.max(...numericScores)} - ${Math.min(...numericScores)}`;
+        }
+      }
+    }
+
+    console.log('No valid score found for match:', match.match_id);
+    return 'N/A';
   };
 
   const getMapInfo = (match: Match) => {
@@ -332,27 +333,40 @@ export const MatchesTable = ({ player, matches, matchesStats, loadingMatches }: 
     
     console.log('Checking match stats for ELO:', matchStatsData);
     
-    // Check if calculate_elo exists and is an array
+    // Check if calculate_elo exists and is an array (this is the most reliable source)
     if (matchStatsData.calculate_elo && Array.isArray(matchStatsData.calculate_elo)) {
       const playerEloData = matchStatsData.calculate_elo.find((elo: any) => elo.player_id === player.player_id);
-      if (playerEloData) {
-        console.log('Found ELO data:', playerEloData);
-        return playerEloData;
+      if (playerEloData && typeof playerEloData.elo_change === 'number') {
+        console.log('Found ELO data in calculate_elo:', playerEloData);
+        return { elo_change: playerEloData.elo_change };
       }
     }
     
-    // Check in rounds for ELO data
+    // Check in rounds for player ELO data
     if (matchStatsData.rounds && Array.isArray(matchStatsData.rounds)) {
       for (const round of matchStatsData.rounds) {
         if (round.teams) {
           for (const team of Object.values(round.teams) as any[]) {
             if (team.players) {
               const playerData = team.players.find((p: any) => p.player_id === player.player_id);
-              if (playerData && playerData.elo_change) {
+              if (playerData && typeof playerData.elo_change === 'number') {
                 console.log('Found ELO change in rounds:', playerData.elo_change);
                 return { elo_change: playerData.elo_change };
               }
             }
+          }
+        }
+      }
+    }
+    
+    // Check in teams for player ELO data
+    if (matchStatsData.teams) {
+      for (const team of Object.values(matchStatsData.teams) as any[]) {
+        if (team.players) {
+          const playerData = team.players.find((p: any) => p.player_id === player.player_id);
+          if (playerData && typeof playerData.elo_change === 'number') {
+            console.log('Found ELO change in teams:', playerData.elo_change);
+            return { elo_change: playerData.elo_change };
           }
         }
       }
@@ -447,7 +461,7 @@ export const MatchesTable = ({ player, matches, matchesStats, loadingMatches }: 
                     {/* Score */}
                     <TableCell>
                       <span className="text-white font-bold">
-                        {matchScore || '-'}
+                        {matchScore}
                       </span>
                     </TableCell>
 
@@ -494,7 +508,7 @@ export const MatchesTable = ({ player, matches, matchesStats, loadingMatches }: 
 
                     {/* ELO Change */}
                     <TableCell>
-                      {eloChange ? (
+                      {eloChange && typeof eloChange.elo_change === 'number' ? (
                         <div className="flex items-center gap-1">
                           {eloChange.elo_change > 0 ? (
                             <TrendingUp className="w-4 h-4 text-green-400" />
