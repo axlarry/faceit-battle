@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -142,35 +143,6 @@ export const FriendsSection = ({
 
   return (
     <div className="space-y-6 px-4 md:px-0">
-      {/* Search Section */}
-      <Card className="bg-[#1a1d21] border-[#2a2f36] shadow-xl">
-        <div className="p-6 md:p-8">
-          <h2 className="text-2xl md:text-3xl font-bold text-white mb-6 md:mb-8 flex items-center gap-4">
-            <div className="w-10 h-10 md:w-12 md:h-12 bg-[#ff6500] rounded-lg flex items-center justify-center shadow-lg">
-              <UserPlus size={20} className="md:w-6 md:h-6 text-white" />
-            </div>
-            <span className="text-lg md:text-3xl">Adaugă Prieteni</span>
-          </h2>
-          
-          <div className="flex flex-col md:flex-row gap-4">
-            <Input
-              placeholder="Introdu nickname-ul prietenului..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && searchPlayer()}
-              className="bg-[#2a2f36] border-[#3a4048] text-white placeholder:text-[#9f9f9f] focus:border-[#ff6500] rounded-lg h-12"
-            />
-            <Button
-              onClick={searchPlayer}
-              disabled={loading || !searchTerm.trim()}
-              className="bg-[#ff6500] hover:bg-[#e55a00] text-white border-0 px-6 md:px-8 h-12 rounded-lg shadow-lg font-bold"
-            >
-              {loading ? 'Caută...' : 'Adaugă'}
-            </Button>
-          </div>
-        </div>
-      </Card>
-
       {/* Friends List */}
       <Card className="bg-[#1a1d21] border-[#2a2f36] shadow-xl">
         <div className="p-6 md:p-8">
@@ -276,6 +248,35 @@ export const FriendsSection = ({
               ))}
             </div>
           )}
+        </div>
+      </Card>
+
+      {/* Search Section - moved to bottom */}
+      <Card className="bg-[#1a1d21] border-[#2a2f36] shadow-xl">
+        <div className="p-6 md:p-8">
+          <h2 className="text-2xl md:text-3xl font-bold text-white mb-6 md:mb-8 flex items-center gap-4">
+            <div className="w-10 h-10 md:w-12 md:h-12 bg-[#ff6500] rounded-lg flex items-center justify-center shadow-lg">
+              <UserPlus size={20} className="md:w-6 md:h-6 text-white" />
+            </div>
+            <span className="text-lg md:text-3xl">Adaugă Prieteni</span>
+          </h2>
+          
+          <div className="flex flex-col md:flex-row gap-4">
+            <Input
+              placeholder="Introdu nickname-ul prietenului..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && searchPlayer()}
+              className="bg-[#2a2f36] border-[#3a4048] text-white placeholder:text-[#9f9f9f] focus:border-[#ff6500] rounded-lg h-12"
+            />
+            <Button
+              onClick={searchPlayer}
+              disabled={loading || !searchTerm.trim()}
+              className="bg-[#ff6500] hover:bg-[#e55a00] text-white border-0 px-6 md:px-8 h-12 rounded-lg shadow-lg font-bold"
+            >
+              {loading ? 'Caută...' : 'Adaugă'}
+            </Button>
+          </div>
         </div>
       </Card>
 
