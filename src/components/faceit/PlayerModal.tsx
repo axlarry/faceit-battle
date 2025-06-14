@@ -1,3 +1,4 @@
+
 import {
   Dialog,
   DialogContent,
@@ -7,12 +8,20 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Player, Match } from "@/types/Player";
-import { UserPlus, UserMinus, ExternalLink, Trophy, Calendar, Users, Target, TrendingUp, TrendingDown, Minus, MapPin, Clock } from "lucide-react";
+import { UserPlus, UserMinus, ExternalLink, Trophy, Calendar, Users, Target, TrendingUp, TrendingDown, Minus, MapPin, Clock, Shield, Zap, Crosshair } from "lucide-react";
 import { useState, useEffect } from "react";
 import { PasswordDialog } from "./PasswordDialog";
 import { toast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
+import { useFaceitApi } from "@/hooks/useFaceitApi";
 
 interface PlayerModalProps {
   player: Player | null;
@@ -22,8 +31,6 @@ interface PlayerModalProps {
   onRemoveFriend: (playerId: string) => void;
   isFriend: boolean;
 }
-
-const API_BASE = 'https://open.faceit.com/data/v4';
 
 export const PlayerModal = ({ 
   player, 
@@ -38,59 +45,24 @@ export const PlayerModal = ({
   const [matches, setMatches] = useState<Match[]>([]);
   const [loadingMatches, setLoadingMatches] = useState(false);
   const [matchesDetails, setMatchesDetails] = useState<{[key: string]: any}>({});
-  const [apiError, setApiError] = useState<string | null>(null);
-  const [apiKey, setApiKey] = useState<string | null>(null);
-
-  // Load API key from Supabase secrets
-  useEffect(() => {
-    const loadApiKey = async () => {
-      try {
-        const { data, error } = await supabase.functions.invoke('get-faceit-api-key');
-        if (error) throw error;
-        setApiKey(data.apiKey);
-      } catch (error) {
-        console.error('Error loading API key:', error);
-        // Fallback to hardcoded key for now
-        setApiKey('f1755f40-8f84-4d62-b315-5f09dc25eef5');
-      }
-    };
-    loadApiKey();
-  }, []);
+  const { getPlayerMatches, getMatchDetails } = useFaceitApi();
 
   // Load matches when player changes and modal is open
   useEffect(() => {
-    if (player && isOpen && apiKey) {
+    if (player && isOpen) {
       loadPlayerMatches();
     }
-  }, [player, isOpen, apiKey]);
+  }, [player, isOpen]);
 
   const loadPlayerMatches = async () => {
-    if (!player || !apiKey) return;
+    if (!player) return;
     
     setLoadingMatches(true);
-    setApiError(null);
     
     try {
       console.log('Loading matches for player:', player.player_id);
       
-      const response = await fetch(
-        `${API_BASE}/players/${player.player_id}/history?game=cs2&limit=10`,
-        {
-          headers: {
-            'Authorization': `Bearer ${apiKey}`
-          }
-        }
-      );
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error('API Error:', errorData);
-        throw new Error(`API Error: ${errorData.error || response.statusText}`);
-      }
-
-      const data = await response.json();
-      console.log('Matches response:', data);
-      const matchesData = data.items || [];
+      const matchesData = await getPlayerMatches(player.player_id, 10);
       setMatches(matchesData);
 
       // Load detailed stats for each match
@@ -98,16 +70,8 @@ export const PlayerModal = ({
         const detailsPromises = matchesData.map(async (match: Match) => {
           try {
             console.log('Loading details for match:', match.match_id);
-            const matchResponse = await fetch(
-              `${API_BASE}/matches/${match.match_id}`,
-              {
-                headers: {
-                  'Authorization': `Bearer ${apiKey}`
-                }
-              }
-            );
-            if (matchResponse.ok) {
-              const matchDetail = await matchResponse.json();
+            const matchDetail = await getMatchDetails(match.match_id);
+            if (matchDetail) {
               console.log('Match detail response:', matchDetail);
               return { [match.match_id]: matchDetail };
             }
@@ -125,14 +89,6 @@ export const PlayerModal = ({
 
     } catch (error) {
       console.error('Error loading matches:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      setApiError(errorMessage);
-      
-      toast({
-        title: "Eroare la încărcarea meciurilor",
-        description: `Nu s-au putut încărca meciurile: ${errorMessage}`,
-        variant: "destructive",
-      });
     } finally {
       setLoadingMatches(false);
     }
@@ -193,11 +149,7 @@ export const PlayerModal = ({
       }
     }
     
-    if (playerTeamId === winnerTeamId) {
-      return 'VICTORIE';
-    } else {
-      return 'ÎNFRÂNGERE';
-    }
+    return playerTeamId === winnerTeamId;
   };
 
   const getPlayerStats = (match: Match) => {
@@ -213,150 +165,71 @@ export const PlayerModal = ({
     return null;
   };
 
-  const getTeammates = (match: Match) => {
-    if (!match.teams) return [];
-    
-    for (const teamId of Object.keys(match.teams)) {
-      const team = match.teams[teamId];
-      const isPlayerInTeam = team.players?.some(p => p.player_id === player.player_id);
-      if (isPlayerInTeam) {
-        // Return all teammates (should be 4 other players)
-        return team.players?.filter(p => p.player_id !== player.player_id) || [];
-      }
-    }
-    return [];
-  };
-
   const getEloChange = (match: Match) => {
     const matchDetail = matchesDetails[match.match_id];
     if (!matchDetail) return null;
-    
-    console.log('Getting ELO change for match:', match.match_id, matchDetail);
     
     // Check if calculate_elo exists and is an array
     if (matchDetail.calculate_elo && Array.isArray(matchDetail.calculate_elo)) {
       const playerEloData = matchDetail.calculate_elo.find((elo: any) => elo.player_id === player.player_id);
       if (playerEloData) {
-        console.log('Found ELO data:', playerEloData);
         return playerEloData;
       }
     }
     
-    // Alternative: check if there's ELO data in the match itself
-    if (match.elo_change && match.elo_change.player_id === player.player_id) {
-      return match.elo_change;
-    }
-    
-    // Try to find ELO data in match results
-    if (matchDetail && matchDetail.results && matchDetail.results.elo_change) {
-      const playerEloData = matchDetail.results.elo_change.find((elo: any) => elo.player_id === player.player_id);
-      if (playerEloData) {
-        console.log('Found ELO data in results:', playerEloData);
-        return playerEloData;
-      }
-    }
-    
-    console.log('No ELO data found for player');
     return null;
   };
 
   const getMatchScore = (match: Match) => {
-    const matchDetail = matchesDetails[match.match_id];
-    
-    console.log('Getting match score for:', match.match_id, {
-      match: match,
-      matchDetail: matchDetail
-    });
-    
-    // First try to get score from match.results.score
     if (match.results && match.results.score) {
       const scores = Object.values(match.results.score);
-      console.log('Match results score:', scores);
-      
-      if (scores.length === 2) {
-        const numericScores = scores.map(score => Number(score)).filter(score => !isNaN(score));
-        if (numericScores.length === 2) {
-          // Show scores in format winner-loser
-          const [score1, score2] = numericScores;
-          return score1 >= score2 ? `${score1} - ${score2}` : `${score2} - ${score1}`;
-        }
-      }
-    }
-    
-    // Try from match detail results
-    if (matchDetail && matchDetail.results && matchDetail.results.score) {
-      const scores = Object.values(matchDetail.results.score);
-      console.log('Match detail results score:', scores);
-      
       if (scores.length === 2) {
         const numericScores = scores.map(score => Number(score)).filter(score => !isNaN(score));
         if (numericScores.length === 2) {
           const [score1, score2] = numericScores;
-          return score1 >= score2 ? `${score1} - ${score2}` : `${score2} - ${score1}`;
+          return `${Math.max(score1, score2)} - ${Math.min(score1, score2)}`;
         }
       }
     }
-    
-    // Try to get from team stats - Final Score or Round Score
-    if (matchDetail && matchDetail.teams) {
-      const teamIds = Object.keys(matchDetail.teams);
-      if (teamIds.length === 2) {
-        const team1Stats = matchDetail.teams[teamIds[0]].team_stats;
-        const team2Stats = matchDetail.teams[teamIds[1]].team_stats;
-        
-        // Try Final Score first
-        if (team1Stats && team2Stats && team1Stats['Final Score'] && team2Stats['Final Score']) {
-          const score1 = Number(team1Stats['Final Score']);
-          const score2 = Number(team2Stats['Final Score']);
-          if (!isNaN(score1) && !isNaN(score2)) {
-            return score1 >= score2 ? `${score1} - ${score2}` : `${score2} - ${score1}`;
-          }
-        }
-        
-        // Try Round Score
-        if (team1Stats && team2Stats && team1Stats['Round Score'] && team2Stats['Round Score']) {
-          const score1 = Number(team1Stats['Round Score']);
-          const score2 = Number(team2Stats['Round Score']);
-          if (!isNaN(score1) && !isNaN(score2)) {
-            return score1 >= score2 ? `${score1} - ${score2}` : `${score2} - ${score1}`;
-          }
-        }
-      }
-    }
-    
-    // Last resort: show win/loss status
-    const result = getMatchResult(match);
-    return result;
+    return null;
   };
 
   const getMapInfo = (match: Match) => {
     const matchDetail = matchesDetails[match.match_id];
-    if (!matchDetail) return null;
-    
-    // Try different possible locations for map info
-    let mapName = 'Unknown';
+    if (!matchDetail) return 'Unknown';
     
     if (matchDetail.voting?.map?.pick?.[0]) {
-      mapName = matchDetail.voting.map.pick[0];
+      return matchDetail.voting.map.pick[0];
     } else if (matchDetail.voting?.location?.pick?.[0]) {
-      mapName = matchDetail.voting.location.pick[0];
-    } else if (matchDetail.voting?.map?.entity_id) {
-      mapName = matchDetail.voting.map.entity_id;
+      return matchDetail.voting.location.pick[0];
     }
     
-    return { map: mapName };
+    return 'Unknown';
   };
 
   const formatMatchDuration = (startTime: number, endTime: number) => {
     const duration = endTime - startTime;
     const minutes = Math.floor(duration / 60);
-    return `${minutes} min`;
+    return `${minutes}m`;
+  };
+
+  const getKDRatio = (stats: any) => {
+    if (stats.Kills && stats.Deaths) {
+      const kills = parseInt(stats.Kills);
+      const deaths = parseInt(stats.Deaths);
+      return deaths > 0 ? (kills / deaths).toFixed(2) : kills.toString();
+    }
+    return stats['K/D Ratio'] || '0.00';
+  };
+
+  const getADR = (stats: any) => {
+    return stats.ADR || stats['Average Damage'] || '0';
   };
 
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="bg-gradient-to-br from-slate-900 to-slate-800 border border-white/20 text-white max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="bg-gradient-to-br from-slate-900 to-slate-800 border border-white/20 text-white max-w-6xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold text-center">
               Profil Jucător - Detalii Complete
@@ -421,178 +294,184 @@ export const PlayerModal = ({
               </div>
             </div>
 
-            {/* Recent Matches Section - Compact Design */}
-            <div className="space-y-3">
+            {/* Recent Matches Section with Table */}
+            <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <Trophy className="w-5 h-5 text-orange-400" />
                 <h3 className="text-lg font-bold text-white">Meciurile Recente (Ultimele 10)</h3>
               </div>
               
-              {apiError ? (
-                <div className="text-center py-6">
-                  <div className="text-red-400 font-medium">Eroare API: {apiError}</div>
-                  <div className="text-gray-400 text-sm mt-2">
-                    Nu se pot încărca meciurile în acest moment.
-                  </div>
-                  <Button 
-                    onClick={loadPlayerMatches}
-                    className="mt-3 bg-orange-500 hover:bg-orange-600 text-white text-sm px-4 py-2"
-                  >
-                    Încearcă din nou
-                  </Button>
-                </div>
-              ) : loadingMatches ? (
-                <div className="text-center py-6">
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-400 mx-auto"></div>
-                  <div className="text-gray-400 mt-2 text-sm">Se încarcă meciurile...</div>
+              {loadingMatches ? (
+                <div className="text-center py-8">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-400 mx-auto"></div>
+                  <div className="text-gray-400 mt-3">Se încarcă meciurile...</div>
                 </div>
               ) : matches.length === 0 ? (
-                <div className="text-center py-6">
-                  <div className="text-gray-400 text-sm">Nu s-au găsit meciuri recente</div>
+                <div className="text-center py-8">
+                  <div className="text-gray-400">Nu s-au găsit meciuri recente</div>
                 </div>
               ) : (
-                <div className="space-y-2 max-h-64 overflow-y-auto pr-2">
-                  {matches.map((match) => {
-                    const result = getMatchResult(match);
-                    const playerStats = getPlayerStats(match);
-                    const teammates = getTeammates(match);
-                    const eloChange = getEloChange(match);
-                    const mapInfo = getMapInfo(match);
-                    const matchScore = getMatchScore(match);
-                    const isWin = result === 'VICTORIE';
-                    
-                    return (
-                      <div
-                        key={match.match_id}
-                        className={`relative overflow-hidden rounded-lg border transition-all duration-200 ${
-                          isWin 
-                            ? 'bg-gradient-to-r from-green-500/10 to-green-600/10 border-green-500/20 hover:border-green-400/40' 
-                            : 'bg-gradient-to-r from-red-500/10 to-red-600/10 border-red-500/20 hover:border-red-400/40'
-                        }`}
-                      >
-                        <div className="p-2 space-y-2">
-                          {/* Match Header - More Compact */}
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <Badge className={`text-xs font-bold px-2 py-0.5 ${
+                <div className="bg-white/5 rounded-lg border border-white/10 overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-white/10 hover:bg-white/5">
+                        <TableHead className="text-gray-300 font-semibold">Rezultat</TableHead>
+                        <TableHead className="text-gray-300 font-semibold">Hartă</TableHead>
+                        <TableHead className="text-gray-300 font-semibold">Scor</TableHead>
+                        <TableHead className="text-gray-300 font-semibold">K/D/A</TableHead>
+                        <TableHead className="text-gray-300 font-semibold">K/D</TableHead>
+                        <TableHead className="text-gray-300 font-semibold">HS%</TableHead>
+                        <TableHead className="text-gray-300 font-semibold">ADR</TableHead>
+                        <TableHead className="text-gray-300 font-semibold">ELO</TableHead>
+                        <TableHead className="text-gray-300 font-semibold">Data</TableHead>
+                        <TableHead className="text-gray-300 font-semibold">Durată</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {matches.map((match) => {
+                        const isWin = getMatchResult(match);
+                        const playerStats = getPlayerStats(match);
+                        const eloChange = getEloChange(match);
+                        const mapName = getMapInfo(match);
+                        const matchScore = getMatchScore(match);
+                        
+                        return (
+                          <TableRow 
+                            key={match.match_id}
+                            className={`border-white/10 hover:bg-white/5 transition-colors ${
+                              isWin ? 'bg-green-500/5' : 'bg-red-500/5'
+                            }`}
+                          >
+                            {/* Result */}
+                            <TableCell>
+                              <Badge className={`${
                                 isWin 
-                                  ? 'bg-green-500 text-white' 
-                                  : 'bg-red-500 text-white'
-                              } border-0`}>
-                                {result}
+                                  ? 'bg-green-500/20 text-green-400 border-green-500/30' 
+                                  : 'bg-red-500/20 text-red-400 border-red-500/30'
+                              } border font-semibold`}>
+                                {isWin ? 'W' : 'L'}
                               </Badge>
-                              <span className="text-white font-medium text-xs truncate max-w-24">{match.competition_name}</span>
-                              {mapInfo?.map && (
-                                <div className="flex items-center gap-1 bg-orange-500/20 border border-orange-500/30 rounded px-1 py-0.5">
-                                  <MapPin className="w-3 h-3 text-orange-400" />
-                                  <span className="text-orange-400 text-xs font-medium">{mapInfo.map}</span>
+                            </TableCell>
+
+                            {/* Map */}
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <MapPin className="w-4 h-4 text-orange-400" />
+                                <span className="text-white font-medium">{mapName}</span>
+                              </div>
+                            </TableCell>
+
+                            {/* Score */}
+                            <TableCell>
+                              <span className="text-white font-bold">
+                                {matchScore || '-'}
+                              </span>
+                            </TableCell>
+
+                            {/* K/D/A */}
+                            <TableCell>
+                              {playerStats ? (
+                                <div className="flex items-center gap-1">
+                                  <span className="text-green-400 font-bold">{playerStats.Kills || '0'}</span>
+                                  <span className="text-gray-400">/</span>
+                                  <span className="text-red-400 font-bold">{playerStats.Deaths || '0'}</span>
+                                  <span className="text-gray-400">/</span>
+                                  <span className="text-blue-400 font-bold">{playerStats.Assists || '0'}</span>
                                 </div>
+                              ) : (
+                                <span className="text-gray-400">-</span>
                               )}
-                            </div>
-                            
-                            {/* ELO Change - More Prominent */}
-                            {eloChange && (
-                              <div className="flex items-center gap-1 bg-white/10 border border-white/20 rounded px-2 py-1">
-                                {eloChange.elo_change > 0 ? (
-                                  <TrendingUp className="w-4 h-4 text-green-400" />
-                                ) : eloChange.elo_change < 0 ? (
-                                  <TrendingDown className="w-4 h-4 text-red-400" />
-                                ) : (
-                                  <Minus className="w-4 h-4 text-gray-400" />
-                                )}
-                                <span className={`text-sm font-bold ${
-                                  eloChange.elo_change > 0 ? 'text-green-400' : 
-                                  eloChange.elo_change < 0 ? 'text-red-400' : 'text-gray-400'
-                                }`}>
-                                  {eloChange.elo_change > 0 ? '+' : ''}{eloChange.elo_change} ELO
+                            </TableCell>
+
+                            {/* K/D Ratio */}
+                            <TableCell>
+                              {playerStats ? (
+                                <div className="flex items-center gap-1">
+                                  <Target className="w-3 h-3 text-blue-400" />
+                                  <span className="text-blue-400 font-bold">
+                                    {getKDRatio(playerStats)}
+                                  </span>
+                                </div>
+                              ) : (
+                                <span className="text-gray-400">-</span>
+                              )}
+                            </TableCell>
+
+                            {/* Headshot % */}
+                            <TableCell>
+                              {playerStats && playerStats['Headshots %'] ? (
+                                <div className="flex items-center gap-1">
+                                  <Crosshair className="w-3 h-3 text-red-400" />
+                                  <span className="text-red-400 font-bold">
+                                    {Math.round(parseFloat(playerStats['Headshots %']))}%
+                                  </span>
+                                </div>
+                              ) : (
+                                <span className="text-gray-400">-</span>
+                              )}
+                            </TableCell>
+
+                            {/* ADR */}
+                            <TableCell>
+                              {playerStats ? (
+                                <div className="flex items-center gap-1">
+                                  <Zap className="w-3 h-3 text-yellow-400" />
+                                  <span className="text-yellow-400 font-bold">
+                                    {getADR(playerStats)}
+                                  </span>
+                                </div>
+                              ) : (
+                                <span className="text-gray-400">-</span>
+                              )}
+                            </TableCell>
+
+                            {/* ELO Change */}
+                            <TableCell>
+                              {eloChange ? (
+                                <div className="flex items-center gap-1">
+                                  {eloChange.elo_change > 0 ? (
+                                    <TrendingUp className="w-4 h-4 text-green-400" />
+                                  ) : eloChange.elo_change < 0 ? (
+                                    <TrendingDown className="w-4 h-4 text-red-400" />
+                                  ) : (
+                                    <Minus className="w-4 h-4 text-gray-400" />
+                                  )}
+                                  <span className={`font-bold ${
+                                    eloChange.elo_change > 0 ? 'text-green-400' : 
+                                    eloChange.elo_change < 0 ? 'text-red-400' : 'text-gray-400'
+                                  }`}>
+                                    {eloChange.elo_change > 0 ? '+' : ''}{eloChange.elo_change}
+                                  </span>
+                                </div>
+                              ) : (
+                                <span className="text-gray-400">-</span>
+                              )}
+                            </TableCell>
+
+                            {/* Date */}
+                            <TableCell>
+                              <div className="flex items-center gap-1">
+                                <Calendar className="w-3 h-3 text-gray-400" />
+                                <span className="text-gray-300 text-sm">
+                                  {formatDate(match.started_at)}
                                 </span>
                               </div>
-                            )}
-                          </div>
+                            </TableCell>
 
-                          {/* Match Info Row - More Compact */}
-                          <div className="flex items-center justify-between text-xs text-gray-300">
-                            <div className="flex items-center gap-2">
+                            {/* Duration */}
+                            <TableCell>
                               <div className="flex items-center gap-1">
-                                <Calendar className="w-3 h-3" />
-                                <span className="text-xs">{formatDate(match.started_at)}</span>
+                                <Clock className="w-3 h-3 text-gray-400" />
+                                <span className="text-gray-300 text-sm">
+                                  {formatMatchDuration(match.started_at, match.finished_at)}
+                                </span>
                               </div>
-                              <div className="flex items-center gap-1">
-                                <Clock className="w-3 h-3" />
-                                <span className="text-xs">{formatMatchDuration(match.started_at, match.finished_at)}</span>
-                              </div>
-                            </div>
-                            
-                            {/* Match Score */}
-                            {matchScore && (
-                              <div className="flex items-center gap-1 bg-white/10 rounded px-2 py-1">
-                                <Trophy className="w-3 h-3 text-orange-400" />
-                                <span className="text-white font-bold text-sm">{matchScore}</span>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Player Stats - More Compact Grid */}
-                          {playerStats && (
-                            <div className="bg-white/5 rounded p-2 border border-white/10">
-                              <div className="grid grid-cols-6 gap-1">
-                                <div className="text-center">
-                                  <div className="text-white font-bold text-xs">{playerStats.Kills || '0'}</div>
-                                  <div className="text-gray-400 text-xs">K</div>
-                                </div>
-                                <div className="text-center">
-                                  <div className="text-white font-bold text-xs">{playerStats.Deaths || '0'}</div>
-                                  <div className="text-gray-400 text-xs">D</div>
-                                </div>
-                                <div className="text-center">
-                                  <div className="text-white font-bold text-xs">{playerStats.Assists || '0'}</div>
-                                  <div className="text-gray-400 text-xs">A</div>
-                                </div>
-                                {playerStats['Headshots %'] && (
-                                  <div className="text-center">
-                                    <div className="text-red-400 font-bold text-xs">{Math.round(parseFloat(playerStats['Headshots %']))}%</div>
-                                    <div className="text-gray-400 text-xs">HS</div>
-                                  </div>
-                                )}
-                                {playerStats['K/D Ratio'] && (
-                                  <div className="text-center">
-                                    <div className="text-blue-400 font-bold text-xs">{parseFloat(playerStats['K/D Ratio']).toFixed(1)}</div>
-                                    <div className="text-gray-400 text-xs">K/D</div>
-                                  </div>
-                                )}
-                                {playerStats.MVPs && (
-                                  <div className="text-center">
-                                    <div className="text-yellow-400 font-bold text-xs">{playerStats.MVPs}</div>
-                                    <div className="text-gray-400 text-xs">MVP</div>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Teammates - Show all 4 teammates */}
-                          {teammates.length > 0 && (
-                            <div className="space-y-1">
-                              <div className="flex items-center gap-1">
-                                <Users className="w-3 h-3 text-blue-400" />
-                                <span className="text-blue-400 text-xs font-medium">Coechipieri ({teammates.length}):</span>
-                              </div>
-                              <div className="flex flex-wrap gap-1">
-                                {teammates.map((teammate) => (
-                                  <Badge 
-                                    key={teammate.player_id}
-                                    className="bg-blue-500/20 text-blue-400 border-blue-500/30 px-1 py-0.5 text-xs"
-                                  >
-                                    {teammate.nickname.length > 8 ? teammate.nickname.substring(0, 8) + '...' : teammate.nickname}
-                                  </Badge>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
                 </div>
               )}
             </div>
