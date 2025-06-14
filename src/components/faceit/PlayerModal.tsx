@@ -1,4 +1,3 @@
-
 import {
   Dialog,
   DialogContent,
@@ -8,7 +7,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Player, Match } from "@/types/Player";
-import { UserPlus, UserMinus, ExternalLink, Trophy, Calendar, Users, Target } from "lucide-react";
+import { UserPlus, UserMinus, ExternalLink, Trophy, Calendar, Users, Target, TrendingUp, TrendingDown, Minus, MapPin, Clock } from "lucide-react";
 import { useState, useEffect } from "react";
 import { PasswordDialog } from "./PasswordDialog";
 import { toast } from "@/hooks/use-toast";
@@ -37,6 +36,7 @@ export const PlayerModal = ({
   const [pendingAction, setPendingAction] = useState<'add' | 'remove' | null>(null);
   const [matches, setMatches] = useState<Match[]>([]);
   const [loadingMatches, setLoadingMatches] = useState(false);
+  const [matchesDetails, setMatchesDetails] = useState<{[key: string]: any}>({});
 
   // Load matches when player changes and modal is open
   useEffect(() => {
@@ -64,7 +64,34 @@ export const PlayerModal = ({
       }
 
       const data = await response.json();
-      setMatches(data.items || []);
+      const matchesData = data.items || [];
+      setMatches(matchesData);
+
+      // Load detailed stats for each match
+      const detailsPromises = matchesData.map(async (match: Match) => {
+        try {
+          const matchResponse = await fetch(
+            `${API_BASE}/matches/${match.match_id}`,
+            {
+              headers: {
+                'Authorization': `Bearer ${API_KEY}`
+              }
+            }
+          );
+          if (matchResponse.ok) {
+            const matchDetail = await matchResponse.json();
+            return { [match.match_id]: matchDetail };
+          }
+        } catch (error) {
+          console.error('Error loading match details:', error);
+        }
+        return {};
+      });
+
+      const detailsResults = await Promise.all(detailsPromises);
+      const combinedDetails = detailsResults.reduce((acc, curr) => ({ ...acc, ...curr }), {});
+      setMatchesDetails(combinedDetails);
+
     } catch (error) {
       console.error('Error loading matches:', error);
       toast({
@@ -152,10 +179,48 @@ export const PlayerModal = ({
     return null;
   };
 
+  const getTeammates = (match: Match) => {
+    if (!match.teams) return [];
+    
+    for (const teamId of Object.keys(match.teams)) {
+      const team = match.teams[teamId];
+      const isPlayerInTeam = team.players?.some(p => p.player_id === player.player_id);
+      if (isPlayerInTeam) {
+        return team.players?.filter(p => p.player_id !== player.player_id) || [];
+      }
+    }
+    return [];
+  };
+
+  const getEloChange = (match: Match) => {
+    const matchDetail = matchesDetails[match.match_id];
+    if (!matchDetail || !matchDetail.calculate_elo) return null;
+    
+    // Try to find ELO change from match details
+    const playerEloData = matchDetail.calculate_elo?.find((elo: any) => elo.player_id === player.player_id);
+    return playerEloData;
+  };
+
+  const getMapInfo = (match: Match) => {
+    const matchDetail = matchesDetails[match.match_id];
+    if (!matchDetail) return null;
+    
+    return {
+      map: matchDetail.voting?.map?.pick?.[0] || matchDetail.voting?.location?.pick?.[0] || 'Unknown',
+      score: matchDetail.results?.score || {}
+    };
+  };
+
+  const formatMatchDuration = (startTime: number, endTime: number) => {
+    const duration = endTime - startTime;
+    const minutes = Math.floor(duration / 60);
+    return `${minutes} min`;
+  };
+
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="bg-gradient-to-br from-slate-900 to-slate-800 border border-white/20 text-white max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="bg-gradient-to-br from-slate-900 to-slate-800 border border-white/20 text-white max-w-6xl max-h-[95vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold text-center">
               Profil Jucător - Detalii Complete
@@ -217,7 +282,7 @@ export const PlayerModal = ({
               </div>
             </div>
 
-            {/* Recent Matches Section */}
+            {/* Recent Matches Section - Enhanced */}
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <Trophy className="w-6 h-6 text-orange-400" />
@@ -233,64 +298,167 @@ export const PlayerModal = ({
                   <div className="text-gray-400">Nu s-au găsit meciuri recente</div>
                 </div>
               ) : (
-                <div className="space-y-3 max-h-96 overflow-y-auto">
+                <div className="space-y-4 max-h-96 overflow-y-auto">
                   {matches.map((match) => {
                     const result = getMatchResult(match);
                     const playerStats = getPlayerStats(match);
+                    const teammates = getTeammates(match);
+                    const eloChange = getEloChange(match);
+                    const mapInfo = getMapInfo(match);
                     const isWin = result === 'VICTORIE';
                     
                     return (
                       <div
                         key={match.match_id}
-                        className={`p-4 rounded-lg border ${
+                        className={`p-5 rounded-lg border ${
                           isWin 
                             ? 'bg-green-500/10 border-green-500/30' 
                             : 'bg-red-500/10 border-red-500/30'
                         }`}
                       >
-                        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-3">
-                              <Badge className={`${
-                                isWin ? 'bg-green-500' : 'bg-red-500'
-                              } text-white border-0`}>
-                                {result}
-                              </Badge>
-                              <span className="text-white font-medium">{match.competition_name}</span>
+                        <div className="space-y-4">
+                          {/* Match Header */}
+                          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-3 flex-wrap">
+                                <Badge className={`${
+                                  isWin ? 'bg-green-500' : 'bg-red-500'
+                                } text-white border-0`}>
+                                  {result}
+                                </Badge>
+                                <span className="text-white font-medium">{match.competition_name}</span>
+                                {mapInfo?.map && (
+                                  <div className="flex items-center gap-1 text-orange-400">
+                                    <MapPin className="w-4 h-4" />
+                                    <span className="text-sm font-medium">{mapInfo.map}</span>
+                                  </div>
+                                )}
+                              </div>
+                              
+                              <div className="flex items-center gap-4 text-sm text-gray-400 flex-wrap">
+                                <div className="flex items-center gap-1">
+                                  <Calendar className="w-4 h-4" />
+                                  {formatDate(match.started_at)}
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Clock className="w-4 h-4" />
+                                  {formatMatchDuration(match.started_at, match.finished_at)}
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Users className="w-4 h-4" />
+                                  {match.game_mode}
+                                </div>
+                              </div>
                             </div>
                             
-                            <div className="flex items-center gap-4 text-sm text-gray-400">
-                              <div className="flex items-center gap-1">
-                                <Calendar className="w-4 h-4" />
-                                {formatDate(match.started_at)}
+                            {/* ELO Change */}
+                            {eloChange && (
+                              <div className="text-center">
+                                <div className={`flex items-center gap-2 text-lg font-bold ${
+                                  eloChange.elo_change > 0 ? 'text-green-400' : 
+                                  eloChange.elo_change < 0 ? 'text-red-400' : 'text-gray-400'
+                                }`}>
+                                  {eloChange.elo_change > 0 ? (
+                                    <TrendingUp className="w-5 h-5" />
+                                  ) : eloChange.elo_change < 0 ? (
+                                    <TrendingDown className="w-5 h-5" />
+                                  ) : (
+                                    <Minus className="w-5 h-5" />
+                                  )}
+                                  {eloChange.elo_change > 0 ? '+' : ''}{eloChange.elo_change} ELO
+                                </div>
+                                <div className="text-gray-400 text-sm">
+                                  {eloChange.elo_before} → {eloChange.elo_after}
+                                </div>
                               </div>
-                              <div className="flex items-center gap-1">
-                                <Users className="w-4 h-4" />
-                                {match.game_mode}
-                              </div>
-                            </div>
+                            )}
                           </div>
-                          
+
+                          {/* Player Stats */}
                           {playerStats && (
-                            <div className="flex gap-4 text-sm">
-                              <div className="text-center">
-                                <div className="text-white font-bold">{playerStats.Kills || '0'}</div>
-                                <div className="text-gray-400">K</div>
-                              </div>
-                              <div className="text-center">
-                                <div className="text-white font-bold">{playerStats.Deaths || '0'}</div>
-                                <div className="text-gray-400">D</div>
-                              </div>
-                              <div className="text-center">
-                                <div className="text-white font-bold">{playerStats.Assists || '0'}</div>
-                                <div className="text-gray-400">A</div>
-                              </div>
-                              {playerStats['Headshots %'] && (
+                            <div className="bg-white/5 rounded-lg p-4">
+                              <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
+                                <Target className="w-4 h-4" />
+                                Statisticile Mele
+                              </h4>
+                              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                                 <div className="text-center">
-                                  <div className="text-white font-bold">{Math.round(parseFloat(playerStats['Headshots %']))}%</div>
-                                  <div className="text-gray-400">HS</div>
+                                  <div className="text-white font-bold text-lg">{playerStats.Kills || '0'}</div>
+                                  <div className="text-gray-400 text-xs">Kills</div>
+                                </div>
+                                <div className="text-center">
+                                  <div className="text-white font-bold text-lg">{playerStats.Deaths || '0'}</div>
+                                  <div className="text-gray-400 text-xs">Deaths</div>
+                                </div>
+                                <div className="text-center">
+                                  <div className="text-white font-bold text-lg">{playerStats.Assists || '0'}</div>
+                                  <div className="text-gray-400 text-xs">Assists</div>
+                                </div>
+                                {playerStats['Headshots %'] && (
+                                  <div className="text-center">
+                                    <div className="text-white font-bold text-lg">{Math.round(parseFloat(playerStats['Headshots %']))}%</div>
+                                    <div className="text-gray-400 text-xs">HS%</div>
+                                  </div>
+                                )}
+                                {playerStats['K/D Ratio'] && (
+                                  <div className="text-center">
+                                    <div className="text-white font-bold text-lg">{parseFloat(playerStats['K/D Ratio']).toFixed(2)}</div>
+                                    <div className="text-gray-400 text-xs">K/D</div>
+                                  </div>
+                                )}
+                                {playerStats.MVPs && (
+                                  <div className="text-center">
+                                    <div className="text-white font-bold text-lg">{playerStats.MVPs}</div>
+                                    <div className="text-gray-400 text-xs">MVPs</div>
+                                  </div>
+                                )}
+                              </div>
+                              
+                              {playerStats.ADR && (
+                                <div className="mt-3 flex justify-center gap-6">
+                                  <div className="text-center">
+                                    <div className="text-white font-bold">{Math.round(parseFloat(playerStats.ADR))}</div>
+                                    <div className="text-gray-400 text-xs">ADR</div>
+                                  </div>
+                                  {playerStats.KAST && (
+                                    <div className="text-center">
+                                      <div className="text-white font-bold">{Math.round(parseFloat(playerStats.KAST))}%</div>
+                                      <div className="text-gray-400 text-xs">KAST</div>
+                                    </div>
+                                  )}
                                 </div>
                               )}
+                            </div>
+                          )}
+
+                          {/* Teammates */}
+                          {teammates.length > 0 && (
+                            <div className="bg-white/5 rounded-lg p-4">
+                              <h4 className="text-white font-semibold mb-3 flex items-center gap-2">
+                                <Users className="w-4 h-4" />
+                                Coechipieri ({teammates.length})
+                              </h4>
+                              <div className="flex flex-wrap gap-2">
+                                {teammates.map((teammate) => (
+                                  <Badge 
+                                    key={teammate.player_id}
+                                    variant="secondary"
+                                    className="bg-blue-500/20 text-blue-400 border border-blue-500/30"
+                                  >
+                                    {teammate.nickname}
+                                  </Badge>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Match Score */}
+                          {mapInfo?.score && Object.keys(mapInfo.score).length > 0 && (
+                            <div className="text-center">
+                              <div className="text-gray-400 text-sm">Scor Final</div>
+                              <div className="text-white font-bold text-lg">
+                                {Object.values(mapInfo.score).join(' - ')}
+                              </div>
                             </div>
                           )}
                         </div>

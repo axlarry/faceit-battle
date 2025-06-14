@@ -47,4 +47,16 @@ export interface Match {
       [key: string]: string;
     };
   };
+  elo_change?: {
+    player_id: string;
+    elo_before: number;
+    elo_after: number;
+    elo_change: number;
+  };
+  match_details?: {
+    map: string;
+    score_team1: number;
+    score_team2: number;
+    rounds_played: number;
+  };
 }
