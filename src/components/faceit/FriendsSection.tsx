@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,7 +9,7 @@ import { useFaceitApi } from "@/hooks/useFaceitApi";
 interface FriendsSectionProps {
   friends: Player[];
   onAddFriend: (player: Player) => void;
-  onUpdateFriend: (playerId: string, updatedData: Partial<Player>) => void;
+  onUpdateFriend: (updatedPlayer: Player) => void;
   onRemoveFriend: (playerId: string) => void;
   onShowPlayerDetails: (player: Player) => void;
   onReloadFriends: () => void;
@@ -89,14 +88,15 @@ export const FriendsSection = ({
           const stats = await getPlayerStats(friend.player_id);
           const playerStats = stats?.segments?.[0]?.stats || {};
           
-          const updatedData = {
+          const updatedPlayer: Player = {
+            ...friend,
             wins: parseInt(playerStats.Wins?.value || '0'),
             winRate: parseFloat(playerStats['Win Rate %']?.value || '0'),
             hsRate: parseFloat(playerStats['Headshots %']?.value || '0'),
             kdRatio: parseFloat(playerStats['K/D Ratio']?.value || '0')
           };
           
-          onUpdateFriend(friend.player_id, updatedData);
+          onUpdateFriend(updatedPlayer);
         } catch (error) {
           console.error(`Error updating stats for ${friend.nickname}:`, error);
         }
