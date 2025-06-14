@@ -1,8 +1,10 @@
+
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -50,6 +52,7 @@ export const PlayerModal = ({
     
     setLoadingMatches(true);
     try {
+      console.log('Loading matches for player:', player.player_id);
       const response = await fetch(
         `${API_BASE}/players/${player.player_id}/history?game=cs2&limit=10`,
         {
@@ -64,12 +67,14 @@ export const PlayerModal = ({
       }
 
       const data = await response.json();
+      console.log('Matches response:', data);
       const matchesData = data.items || [];
       setMatches(matchesData);
 
       // Load detailed stats for each match
       const detailsPromises = matchesData.map(async (match: Match) => {
         try {
+          console.log('Loading details for match:', match.match_id);
           const matchResponse = await fetch(
             `${API_BASE}/matches/${match.match_id}`,
             {
@@ -80,6 +85,7 @@ export const PlayerModal = ({
           );
           if (matchResponse.ok) {
             const matchDetail = await matchResponse.json();
+            console.log('Match detail response:', matchDetail);
             return { [match.match_id]: matchDetail };
           }
         } catch (error) {
@@ -90,6 +96,7 @@ export const PlayerModal = ({
 
       const detailsResults = await Promise.all(detailsPromises);
       const combinedDetails = detailsResults.reduce((acc, curr) => ({ ...acc, ...curr }), {});
+      console.log('Combined match details:', combinedDetails);
       setMatchesDetails(combinedDetails);
 
     } catch (error) {
@@ -194,11 +201,22 @@ export const PlayerModal = ({
 
   const getEloChange = (match: Match) => {
     const matchDetail = matchesDetails[match.match_id];
-    if (!matchDetail || !matchDetail.calculate_elo) return null;
+    if (!matchDetail) return null;
     
-    // Try to find ELO change from match details
-    const playerEloData = matchDetail.calculate_elo?.find((elo: any) => elo.player_id === player.player_id);
-    return playerEloData;
+    console.log('Getting ELO change for match:', match.match_id, matchDetail);
+    
+    // Check if calculate_elo exists and is an array
+    if (matchDetail.calculate_elo && Array.isArray(matchDetail.calculate_elo)) {
+      const playerEloData = matchDetail.calculate_elo.find((elo: any) => elo.player_id === player.player_id);
+      return playerEloData;
+    }
+    
+    // Alternative: check if there's ELO data in the match itself
+    if (match.elo_change && match.elo_change.player_id === player.player_id) {
+      return match.elo_change;
+    }
+    
+    return null;
   };
 
   const getMapInfo = (match: Match) => {
@@ -225,6 +243,9 @@ export const PlayerModal = ({
             <DialogTitle className="text-2xl font-bold text-center">
               Profil Jucător - Detalii Complete
             </DialogTitle>
+            <DialogDescription className="text-gray-400 text-center">
+              Informații detaliate despre jucător și istoricul meciurilor recente
+            </DialogDescription>
           </DialogHeader>
           
           <div className="space-y-6">
