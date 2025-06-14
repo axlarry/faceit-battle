@@ -23,7 +23,8 @@ interface PlayerModalProps {
   isFriend: boolean;
 }
 
-const API_KEY = '5d81df9c-db61-494c-8e0a-d94c89bb7913';
+// Updated API key - you may need to replace this with a valid one
+const API_KEY = 'YOUR_VALID_FACEIT_API_KEY_HERE';
 const API_BASE = 'https://open.faceit.com/data/v4';
 
 export const PlayerModal = ({ 
@@ -39,6 +40,7 @@ export const PlayerModal = ({
   const [matches, setMatches] = useState<Match[]>([]);
   const [loadingMatches, setLoadingMatches] = useState(false);
   const [matchesDetails, setMatchesDetails] = useState<{[key: string]: any}>({});
+  const [apiError, setApiError] = useState<string | null>(null);
 
   // Load matches when player changes and modal is open
   useEffect(() => {
@@ -51,8 +53,16 @@ export const PlayerModal = ({
     if (!player) return;
     
     setLoadingMatches(true);
+    setApiError(null);
+    
     try {
       console.log('Loading matches for player:', player.player_id);
+      
+      // Check if API key is set
+      if (API_KEY === 'YOUR_VALID_FACEIT_API_KEY_HERE') {
+        throw new Error('API key not configured');
+      }
+      
       const response = await fetch(
         `${API_BASE}/players/${player.player_id}/history?game=cs2&limit=10`,
         {
@@ -63,7 +73,9 @@ export const PlayerModal = ({
       );
 
       if (!response.ok) {
-        throw new Error('Failed to load matches');
+        const errorData = await response.json().catch(() => ({}));
+        console.error('API Error:', errorData);
+        throw new Error(`API Error: ${errorData.error || response.statusText}`);
       }
 
       const data = await response.json();
@@ -72,40 +84,60 @@ export const PlayerModal = ({
       setMatches(matchesData);
 
       // Load detailed stats for each match
-      const detailsPromises = matchesData.map(async (match: Match) => {
-        try {
-          console.log('Loading details for match:', match.match_id);
-          const matchResponse = await fetch(
-            `${API_BASE}/matches/${match.match_id}`,
-            {
-              headers: {
-                'Authorization': `Bearer ${API_KEY}`
+      if (matchesData.length > 0) {
+        const detailsPromises = matchesData.map(async (match: Match) => {
+          try {
+            console.log('Loading details for match:', match.match_id);
+            const matchResponse = await fetch(
+              `${API_BASE}/matches/${match.match_id}`,
+              {
+                headers: {
+                  'Authorization': `Bearer ${API_KEY}`
+                }
               }
+            );
+            if (matchResponse.ok) {
+              const matchDetail = await matchResponse.json();
+              console.log('Match detail response:', matchDetail);
+              return { [match.match_id]: matchDetail };
             }
-          );
-          if (matchResponse.ok) {
-            const matchDetail = await matchResponse.json();
-            console.log('Match detail response:', matchDetail);
-            return { [match.match_id]: matchDetail };
+          } catch (error) {
+            console.error('Error loading match details:', error);
           }
-        } catch (error) {
-          console.error('Error loading match details:', error);
-        }
-        return {};
-      });
+          return {};
+        });
 
-      const detailsResults = await Promise.all(detailsPromises);
-      const combinedDetails = detailsResults.reduce((acc, curr) => ({ ...acc, ...curr }), {});
-      console.log('Combined match details:', combinedDetails);
-      setMatchesDetails(combinedDetails);
+        const detailsResults = await Promise.all(detailsPromises);
+        const combinedDetails = detailsResults.reduce((acc, curr) => ({ ...acc, ...curr }), {});
+        console.log('Combined match details:', combinedDetails);
+        setMatchesDetails(combinedDetails);
+      }
 
     } catch (error) {
       console.error('Error loading matches:', error);
-      toast({
-        title: "Eroare la încărcarea meciurilor",
-        description: "Nu s-au putut încărca meciurile jucătorului.",
-        variant: "destructive",
-      });
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      setApiError(errorMessage);
+      
+      // Show user-friendly error message
+      if (errorMessage.includes('API key not configured')) {
+        toast({
+          title: "Configurare API necesară",
+          description: "API key-ul FACEIT nu este configurat. Contactați administratorul.",
+          variant: "destructive",
+        });
+      } else if (errorMessage.includes('invalid_token')) {
+        toast({
+          title: "Token invalid",
+          description: "API key-ul FACEIT a expirat. Contactați administratorul.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Eroare la încărcarea meciurilor",
+          description: "Nu s-au putut încărca meciurile jucătorului.",
+          variant: "destructive",
+        });
+      }
     } finally {
       setLoadingMatches(false);
     }
@@ -245,76 +277,26 @@ export const PlayerModal = ({
       }
     }
     
-    // Try to get score from match detail teams (if they have stats)
-    if (matchDetail && matchDetail.teams) {
-      const teamIds = Object.keys(matchDetail.teams);
-      if (teamIds.length === 2) {
-        const team1 = matchDetail.teams[teamIds[0]];
-        const team2 = matchDetail.teams[teamIds[1]];
-        
-        // Check if teams have stats property in the detailed match data
-        if (team1.stats && team2.stats) {
-          const team1Score = team1.stats['Final Score'] || 
-                            team1.stats.Score || 
-                            team1.stats['Round Wins'] || 0;
-          const team2Score = team2.stats['Final Score'] || 
-                            team2.stats.Score || 
-                            team2.stats['Round Wins'] || 0;
-          
-          console.log('Match detail team scores:', { team1Score, team2Score });
-          
-          if (team1Score !== 0 || team2Score !== 0) {
-            return `${team1Score} - ${team2Score}`;
-          }
-        }
-      }
-    }
-    
-    // Try to aggregate player stats to get team scores
-    if (match.teams) {
-      const teamIds = Object.keys(match.teams);
-      if (teamIds.length === 2) {
-        const team1 = match.teams[teamIds[0]];
-        const team2 = match.teams[teamIds[1]];
-        
-        // Try to calculate team scores from player stats (rounds won, etc.)
-        let team1Score = 0;
-        let team2Score = 0;
-        
-        // Check if we can derive score from individual player stats
-        if (team1.players && team1.players.length > 0) {
-          const firstPlayer = team1.players[0];
-          if (firstPlayer.player_stats && firstPlayer.player_stats['Result']) {
-            // Some matches have Result as "1" for win, "0" for loss
-            team1Score = parseInt(firstPlayer.player_stats['Result']) || 0;
-          }
-        }
-        
-        if (team2.players && team2.players.length > 0) {
-          const firstPlayer = team2.players[0];
-          if (firstPlayer.player_stats && firstPlayer.player_stats['Result']) {
-            team2Score = parseInt(firstPlayer.player_stats['Result']) || 0;
-          }
-        }
-        
-        if (team1Score !== 0 || team2Score !== 0) {
-          return `${team1Score} - ${team2Score}`;
-        }
-      }
-    }
-    
     // If we still don't have a proper score, try to derive it from the winner info
     if (match.results && match.results.winner && match.teams) {
       const winnerTeamId = match.results.winner;
       const teamIds = Object.keys(match.teams);
       
       if (teamIds.includes(winnerTeamId)) {
-        // Return a generic score showing winner
-        return winnerTeamId === teamIds[0] ? "W - L" : "L - W";
+        // For now, we'll show a generic W/L indicator when we can't get the actual score
+        const playerTeamId = teamIds.find(teamId => 
+          match.teams![teamId].players?.some(p => p.player_id === player.player_id)
+        );
+        
+        if (playerTeamId === winnerTeamId) {
+          return "VICTORIE";
+        } else {
+          return "ÎNFRÂNGERE";
+        }
       }
     }
     
-    return null;
+    return "Scor indisponibil";
   };
 
   const getMapInfo = (match: Match) => {
@@ -335,7 +317,7 @@ export const PlayerModal = ({
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="bg-gradient-to-br from-slate-900 to-slate-800 border border-white/20 text-white max-w-5xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="bg-gradient-to-br from-slate-900 to-slate-800 border border-white/20 text-white max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold text-center">
               Profil Jucător - Detalii Complete
@@ -351,10 +333,10 @@ export const PlayerModal = ({
               <img
                 src={player.avatar}
                 alt={player.nickname}
-                className="w-24 h-24 rounded-full border-4 border-orange-400 mx-auto"
+                className="w-20 h-20 rounded-full border-4 border-orange-400 mx-auto"
               />
               <div>
-                <h2 className="text-3xl font-bold text-white">{player.nickname}</h2>
+                <h2 className="text-2xl font-bold text-white">{player.nickname}</h2>
                 {player.position && (
                   <p className="text-orange-400 font-medium">#{player.position} în clasament</p>
                 )}
@@ -362,62 +344,78 @@ export const PlayerModal = ({
             </div>
 
             {/* Stats Cards */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 text-center">
-                <div className="text-3xl font-bold text-orange-400">{player.level}</div>
-                <div className="text-gray-400">Nivel</div>
-                <Badge className={`mt-2 bg-gradient-to-r ${getLevelColor(player.level || 0)} text-white border-0`}>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 text-center">
+                <div className="text-2xl font-bold text-orange-400">{player.level}</div>
+                <div className="text-gray-400 text-sm">Nivel</div>
+                <Badge className={`mt-2 bg-gradient-to-r ${getLevelColor(player.level || 0)} text-white border-0 text-xs`}>
                   Skill Level {player.level}
                 </Badge>
               </div>
               
-              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 text-center">
-                <div className="text-3xl font-bold text-blue-400">{player.elo}</div>
-                <div className="text-gray-400">ELO Points</div>
+              <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 text-center">
+                <div className="text-2xl font-bold text-blue-400">{player.elo}</div>
+                <div className="text-gray-400 text-sm">ELO Points</div>
               </div>
             </div>
 
             {/* Detailed Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="bg-gradient-to-r from-green-500/20 to-green-600/20 rounded-lg p-3 text-center border border-green-500/30">
-                <div className="text-xl font-bold text-green-400">{player.wins}</div>
-                <div className="text-gray-400 text-sm">Victorii</div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="bg-gradient-to-r from-green-500/20 to-green-600/20 rounded-lg p-2 text-center border border-green-500/30">
+                <div className="text-lg font-bold text-green-400">{player.wins}</div>
+                <div className="text-gray-400 text-xs">Victorii</div>
               </div>
               
-              <div className="bg-gradient-to-r from-blue-500/20 to-blue-600/20 rounded-lg p-3 text-center border border-blue-500/30">
-                <div className="text-xl font-bold text-blue-400">{player.winRate}%</div>
-                <div className="text-gray-400 text-sm">Win Rate</div>
+              <div className="bg-gradient-to-r from-blue-500/20 to-blue-600/20 rounded-lg p-2 text-center border border-blue-500/30">
+                <div className="text-lg font-bold text-blue-400">{player.winRate}%</div>
+                <div className="text-gray-400 text-xs">Win Rate</div>
               </div>
               
-              <div className="bg-gradient-to-r from-red-500/20 to-red-600/20 rounded-lg p-3 text-center border border-red-500/30">
-                <div className="text-xl font-bold text-red-400">{player.hsRate}%</div>
-                <div className="text-gray-400 text-sm">Headshot %</div>
+              <div className="bg-gradient-to-r from-red-500/20 to-red-600/20 rounded-lg p-2 text-center border border-red-500/30">
+                <div className="text-lg font-bold text-red-400">{player.hsRate}%</div>
+                <div className="text-gray-400 text-xs">Headshot %</div>
               </div>
               
-              <div className="bg-gradient-to-r from-purple-500/20 to-purple-600/20 rounded-lg p-3 text-center border border-purple-500/30">
-                <div className="text-xl font-bold text-purple-400">{player.kdRatio}</div>
-                <div className="text-gray-400 text-sm">K/D Ratio</div>
+              <div className="bg-gradient-to-r from-purple-500/20 to-purple-600/20 rounded-lg p-2 text-center border border-purple-500/30">
+                <div className="text-lg font-bold text-purple-400">{player.kdRatio}</div>
+                <div className="text-gray-400 text-xs">K/D Ratio</div>
               </div>
             </div>
 
             {/* Recent Matches Section - Compact Design */}
-            <div className="space-y-4">
+            <div className="space-y-3">
               <div className="flex items-center gap-2">
-                <Trophy className="w-6 h-6 text-orange-400" />
-                <h3 className="text-xl font-bold text-white">Meciurile Recente (Ultimele 10)</h3>
+                <Trophy className="w-5 h-5 text-orange-400" />
+                <h3 className="text-lg font-bold text-white">Meciurile Recente (Ultimele 10)</h3>
               </div>
               
-              {loadingMatches ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-400 mx-auto"></div>
-                  <div className="text-gray-400 mt-2">Se încarcă meciurile...</div>
+              {apiError ? (
+                <div className="text-center py-6">
+                  <div className="text-red-400 font-medium">Eroare API: {apiError}</div>
+                  <div className="text-gray-400 text-sm mt-2">
+                    {apiError.includes('API key') ? 
+                      'API key-ul FACEIT trebuie configurat de administrator.' :
+                      'Nu se pot încărca meciurile în acest moment.'
+                    }
+                  </div>
+                  <Button 
+                    onClick={loadPlayerMatches}
+                    className="mt-3 bg-orange-500 hover:bg-orange-600 text-white text-sm px-4 py-2"
+                  >
+                    Încearcă din nou
+                  </Button>
+                </div>
+              ) : loadingMatches ? (
+                <div className="text-center py-6">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-400 mx-auto"></div>
+                  <div className="text-gray-400 mt-2 text-sm">Se încarcă meciurile...</div>
                 </div>
               ) : matches.length === 0 ? (
-                <div className="text-center py-8">
-                  <div className="text-gray-400">Nu s-au găsit meciuri recente</div>
+                <div className="text-center py-6">
+                  <div className="text-gray-400 text-sm">Nu s-au găsit meciuri recente</div>
                 </div>
               ) : (
-                <div className="space-y-2 max-h-80 overflow-y-auto pr-2">
+                <div className="space-y-2 max-h-64 overflow-y-auto pr-2">
                   {matches.map((match) => {
                     const result = getMatchResult(match);
                     const playerStats = getPlayerStats(match);
@@ -436,18 +434,18 @@ export const PlayerModal = ({
                             : 'bg-gradient-to-r from-red-500/10 to-red-600/10 border-red-500/20 hover:border-red-400/40'
                         }`}
                       >
-                        <div className="p-3 space-y-2">
+                        <div className="p-2 space-y-2">
                           {/* Match Header - More Compact */}
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <Badge className={`text-xs font-bold px-2 py-1 ${
+                              <Badge className={`text-xs font-bold px-2 py-0.5 ${
                                 isWin 
                                   ? 'bg-green-500 text-white' 
                                   : 'bg-red-500 text-white'
                               } border-0`}>
                                 {result}
                               </Badge>
-                              <span className="text-white font-medium text-sm truncate max-w-32">{match.competition_name}</span>
+                              <span className="text-white font-medium text-xs truncate max-w-24">{match.competition_name}</span>
                               {mapInfo?.map && (
                                 <div className="flex items-center gap-1 bg-orange-500/20 border border-orange-500/30 rounded px-1 py-0.5">
                                   <MapPin className="w-3 h-3 text-orange-400" />
@@ -458,13 +456,13 @@ export const PlayerModal = ({
                             
                             {/* ELO Change - Compact */}
                             {eloChange && (
-                              <div className="flex items-center gap-1 text-sm font-bold">
+                              <div className="flex items-center gap-1 text-xs font-bold">
                                 {eloChange.elo_change > 0 ? (
-                                  <TrendingUp className="w-4 h-4 text-green-400" />
+                                  <TrendingUp className="w-3 h-3 text-green-400" />
                                 ) : eloChange.elo_change < 0 ? (
-                                  <TrendingDown className="w-4 h-4 text-red-400" />
+                                  <TrendingDown className="w-3 h-3 text-red-400" />
                                 ) : (
-                                  <Minus className="w-4 h-4 text-gray-400" />
+                                  <Minus className="w-3 h-3 text-gray-400" />
                                 )}
                                 <span className={`${
                                   eloChange.elo_change > 0 ? 'text-green-400' : 
@@ -478,20 +476,20 @@ export const PlayerModal = ({
 
                           {/* Match Info Row - More Compact */}
                           <div className="flex items-center justify-between text-xs text-gray-300">
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2">
                               <div className="flex items-center gap-1">
                                 <Calendar className="w-3 h-3" />
-                                {formatDate(match.started_at)}
+                                <span className="text-xs">{formatDate(match.started_at)}</span>
                               </div>
                               <div className="flex items-center gap-1">
                                 <Clock className="w-3 h-3" />
-                                {formatMatchDuration(match.started_at, match.finished_at)}
+                                <span className="text-xs">{formatMatchDuration(match.started_at, match.finished_at)}</span>
                               </div>
                             </div>
                             
                             {/* Match Score */}
                             {matchScore && (
-                              <div className="flex items-center gap-1 bg-white/10 rounded px-2 py-0.5">
+                              <div className="flex items-center gap-1 bg-white/10 rounded px-1 py-0.5">
                                 <Trophy className="w-3 h-3 text-orange-400" />
                                 <span className="text-white font-bold text-xs">{matchScore}</span>
                               </div>
@@ -546,7 +544,7 @@ export const PlayerModal = ({
                                     key={teammate.player_id}
                                     className="bg-blue-500/20 text-blue-400 border-blue-500/30 px-1 py-0.5 text-xs"
                                   >
-                                    {teammate.nickname.length > 8 ? teammate.nickname.substring(0, 8) + '...' : teammate.nickname}
+                                    {teammate.nickname.length > 6 ? teammate.nickname.substring(0, 6) + '...' : teammate.nickname}
                                   </Badge>
                                 ))}
                                 {teammates.length > 3 && (
@@ -569,7 +567,7 @@ export const PlayerModal = ({
             <div className="flex gap-3 justify-center">
               <Button
                 onClick={handleFriendAction}
-                className={`px-6 py-3 font-medium ${
+                className={`px-4 py-2 font-medium text-sm ${
                   isFriend
                     ? 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700'
                     : 'bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600'
@@ -577,12 +575,12 @@ export const PlayerModal = ({
               >
                 {isFriend ? (
                   <>
-                    <UserMinus size={16} className="mr-2" />
+                    <UserMinus size={14} className="mr-2" />
                     Șterge din Prieteni
                   </>
                 ) : (
                   <>
-                    <UserPlus size={16} className="mr-2" />
+                    <UserPlus size={14} className="mr-2" />
                     Adaugă la Prieteni
                   </>
                 )}
@@ -590,10 +588,10 @@ export const PlayerModal = ({
               
               <Button
                 variant="outline"
-                className="border-orange-400 text-orange-400 hover:bg-orange-400 hover:text-white px-6 py-3"
+                className="border-orange-400 text-orange-400 hover:bg-orange-400 hover:text-white px-4 py-2 text-sm"
                 onClick={() => window.open(`https://www.faceit.com/en/players/${player.nickname}`, '_blank')}
               >
-                <ExternalLink size={16} className="mr-2" />
+                <ExternalLink size={14} className="mr-2" />
                 Vezi pe FACEIT
               </Button>
             </div>
