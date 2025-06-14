@@ -181,6 +181,7 @@ export const PlayerModal = ({
   };
 
   const getMatchScore = (match: Match) => {
+    // Try to get score from results first
     if (match.results && match.results.score) {
       const scores = Object.values(match.results.score);
       if (scores.length === 2) {
@@ -191,17 +192,54 @@ export const PlayerModal = ({
         }
       }
     }
+
+    // Try to get score from match details
+    const matchDetail = matchesDetails[match.match_id];
+    if (matchDetail && matchDetail.results && matchDetail.results.score) {
+      const scores = Object.values(matchDetail.results.score);
+      if (scores.length === 2) {
+        const numericScores = scores.map(score => Number(score)).filter(score => !isNaN(score));
+        if (numericScores.length === 2) {
+          const [score1, score2] = numericScores;
+          return `${Math.max(score1, score2)} - ${Math.min(score1, score2)}`;
+        }
+      }
+    }
+
+    // Try to get round stats if available
+    if (match.round_stats) {
+      const roundScores = Object.values(match.round_stats);
+      if (roundScores.length >= 2) {
+        const scores = roundScores.map((rs: any) => rs.score ? Number(rs.score) : 0);
+        if (scores.length >= 2) {
+          return `${Math.max(...scores)} - ${Math.min(...scores)}`;
+        }
+      }
+    }
+
     return null;
   };
 
   const getMapInfo = (match: Match) => {
+    // Try to get map from match details first
     const matchDetail = matchesDetails[match.match_id];
-    if (!matchDetail) return 'Unknown';
+    if (matchDetail) {
+      // Check voting section
+      if (matchDetail.voting?.map?.pick?.[0]) {
+        return matchDetail.voting.map.pick[0];
+      }
+      if (matchDetail.voting?.location?.pick?.[0]) {
+        return matchDetail.voting.location.pick[0];
+      }
+      // Check if map is directly available
+      if (matchDetail.map) {
+        return matchDetail.map;
+      }
+    }
     
-    if (matchDetail.voting?.map?.pick?.[0]) {
-      return matchDetail.voting.map.pick[0];
-    } else if (matchDetail.voting?.location?.pick?.[0]) {
-      return matchDetail.voting.location.pick[0];
+    // Fallback to match competition name or type
+    if (match.competition_name && match.competition_name !== 'CS2') {
+      return match.competition_name;
     }
     
     return 'Unknown';
@@ -214,16 +252,80 @@ export const PlayerModal = ({
   };
 
   const getKDRatio = (stats: any) => {
+    if (!stats) return '0.00';
+    
+    // Try different possible field names for K/D ratio
+    if (stats['K/D Ratio']) {
+      return parseFloat(stats['K/D Ratio']).toFixed(2);
+    }
+    
     if (stats.Kills && stats.Deaths) {
       const kills = parseInt(stats.Kills);
       const deaths = parseInt(stats.Deaths);
       return deaths > 0 ? (kills / deaths).toFixed(2) : kills.toString();
     }
-    return stats['K/D Ratio'] || '0.00';
+    
+    if (stats.kills && stats.deaths) {
+      const kills = parseInt(stats.kills);
+      const deaths = parseInt(stats.deaths);
+      return deaths > 0 ? (kills / deaths).toFixed(2) : kills.toString();
+    }
+    
+    return '0.00';
+  };
+
+  const getHeadshotPercentage = (stats: any) => {
+    if (!stats) return '0';
+    
+    // Try different possible field names
+    if (stats['Headshots %']) {
+      return Math.round(parseFloat(stats['Headshots %']));
+    }
+    
+    if (stats['Headshot %']) {
+      return Math.round(parseFloat(stats['Headshot %']));
+    }
+    
+    if (stats.headshots_percentage) {
+      return Math.round(parseFloat(stats.headshots_percentage));
+    }
+    
+    if (stats.Headshots && stats.Kills) {
+      const headshots = parseInt(stats.Headshots);
+      const kills = parseInt(stats.Kills);
+      return kills > 0 ? Math.round((headshots / kills) * 100) : 0;
+    }
+    
+    return '0';
   };
 
   const getADR = (stats: any) => {
-    return stats.ADR || stats['Average Damage'] || '0';
+    if (!stats) return '0';
+    
+    // Try different possible field names for ADR
+    if (stats.ADR) {
+      return Math.round(parseFloat(stats.ADR));
+    }
+    
+    if (stats['Average Damage per Round']) {
+      return Math.round(parseFloat(stats['Average Damage per Round']));
+    }
+    
+    if (stats.average_damage) {
+      return Math.round(parseFloat(stats.average_damage));
+    }
+    
+    return '0';
+  };
+
+  const getKDA = (stats: any) => {
+    if (!stats) return { kills: '0', deaths: '0', assists: '0' };
+    
+    return {
+      kills: stats.Kills || stats.kills || '0',
+      deaths: stats.Deaths || stats.deaths || '0',
+      assists: stats.Assists || stats.assists || '0'
+    };
   };
 
   return (
@@ -334,6 +436,15 @@ export const PlayerModal = ({
                         const eloChange = getEloChange(match);
                         const mapName = getMapInfo(match);
                         const matchScore = getMatchScore(match);
+                        const kda = getKDA(playerStats);
+                        
+                        console.log('Match stats for debugging:', {
+                          matchId: match.match_id,
+                          playerStats,
+                          eloChange,
+                          matchScore,
+                          kda
+                        });
                         
                         return (
                           <TableRow 
@@ -370,59 +481,43 @@ export const PlayerModal = ({
 
                             {/* K/D/A */}
                             <TableCell>
-                              {playerStats ? (
-                                <div className="flex items-center gap-1">
-                                  <span className="text-green-400 font-bold">{playerStats.Kills || '0'}</span>
-                                  <span className="text-gray-400">/</span>
-                                  <span className="text-red-400 font-bold">{playerStats.Deaths || '0'}</span>
-                                  <span className="text-gray-400">/</span>
-                                  <span className="text-blue-400 font-bold">{playerStats.Assists || '0'}</span>
-                                </div>
-                              ) : (
-                                <span className="text-gray-400">-</span>
-                              )}
+                              <div className="flex items-center gap-1">
+                                <span className="text-green-400 font-bold">{kda.kills}</span>
+                                <span className="text-gray-400">/</span>
+                                <span className="text-red-400 font-bold">{kda.deaths}</span>
+                                <span className="text-gray-400">/</span>
+                                <span className="text-blue-400 font-bold">{kda.assists}</span>
+                              </div>
                             </TableCell>
 
                             {/* K/D Ratio */}
                             <TableCell>
-                              {playerStats ? (
-                                <div className="flex items-center gap-1">
-                                  <Target className="w-3 h-3 text-blue-400" />
-                                  <span className="text-blue-400 font-bold">
-                                    {getKDRatio(playerStats)}
-                                  </span>
-                                </div>
-                              ) : (
-                                <span className="text-gray-400">-</span>
-                              )}
+                              <div className="flex items-center gap-1">
+                                <Target className="w-3 h-3 text-blue-400" />
+                                <span className="text-blue-400 font-bold">
+                                  {getKDRatio(playerStats)}
+                                </span>
+                              </div>
                             </TableCell>
 
                             {/* Headshot % */}
                             <TableCell>
-                              {playerStats && playerStats['Headshots %'] ? (
-                                <div className="flex items-center gap-1">
-                                  <Crosshair className="w-3 h-3 text-red-400" />
-                                  <span className="text-red-400 font-bold">
-                                    {Math.round(parseFloat(playerStats['Headshots %']))}%
-                                  </span>
-                                </div>
-                              ) : (
-                                <span className="text-gray-400">-</span>
-                              )}
+                              <div className="flex items-center gap-1">
+                                <Crosshair className="w-3 h-3 text-red-400" />
+                                <span className="text-red-400 font-bold">
+                                  {getHeadshotPercentage(playerStats)}%
+                                </span>
+                              </div>
                             </TableCell>
 
                             {/* ADR */}
                             <TableCell>
-                              {playerStats ? (
-                                <div className="flex items-center gap-1">
-                                  <Zap className="w-3 h-3 text-yellow-400" />
-                                  <span className="text-yellow-400 font-bold">
-                                    {getADR(playerStats)}
-                                  </span>
-                                </div>
-                              ) : (
-                                <span className="text-gray-400">-</span>
-                              )}
+                              <div className="flex items-center gap-1">
+                                <Zap className="w-3 h-3 text-yellow-400" />
+                                <span className="text-yellow-400 font-bold">
+                                  {getADR(playerStats)}
+                                </span>
+                              </div>
                             </TableCell>
 
                             {/* ELO Change */}
