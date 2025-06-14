@@ -12,6 +12,7 @@ import { UserPlus, UserMinus, ExternalLink, Trophy, Calendar, Users, Target, Tre
 import { useState, useEffect } from "react";
 import { PasswordDialog } from "./PasswordDialog";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface PlayerModalProps {
   player: Player | null;
@@ -22,7 +23,6 @@ interface PlayerModalProps {
   isFriend: boolean;
 }
 
-const API_KEY = 'f1755f40-8f84-4d62-b315-5f09dc25eef5';
 const API_BASE = 'https://open.faceit.com/data/v4';
 
 export const PlayerModal = ({ 
@@ -39,16 +39,33 @@ export const PlayerModal = ({
   const [loadingMatches, setLoadingMatches] = useState(false);
   const [matchesDetails, setMatchesDetails] = useState<{[key: string]: any}>({});
   const [apiError, setApiError] = useState<string | null>(null);
+  const [apiKey, setApiKey] = useState<string | null>(null);
+
+  // Load API key from Supabase secrets
+  useEffect(() => {
+    const loadApiKey = async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('get-faceit-api-key');
+        if (error) throw error;
+        setApiKey(data.apiKey);
+      } catch (error) {
+        console.error('Error loading API key:', error);
+        // Fallback to hardcoded key for now
+        setApiKey('f1755f40-8f84-4d62-b315-5f09dc25eef5');
+      }
+    };
+    loadApiKey();
+  }, []);
 
   // Load matches when player changes and modal is open
   useEffect(() => {
-    if (player && isOpen) {
+    if (player && isOpen && apiKey) {
       loadPlayerMatches();
     }
-  }, [player, isOpen]);
+  }, [player, isOpen, apiKey]);
 
   const loadPlayerMatches = async () => {
-    if (!player) return;
+    if (!player || !apiKey) return;
     
     setLoadingMatches(true);
     setApiError(null);
@@ -60,7 +77,7 @@ export const PlayerModal = ({
         `${API_BASE}/players/${player.player_id}/history?game=cs2&limit=10`,
         {
           headers: {
-            'Authorization': `Bearer ${API_KEY}`
+            'Authorization': `Bearer ${apiKey}`
           }
         }
       );
@@ -85,7 +102,7 @@ export const PlayerModal = ({
               `${API_BASE}/matches/${match.match_id}`,
               {
                 headers: {
-                  'Authorization': `Bearer ${API_KEY}`
+                  'Authorization': `Bearer ${apiKey}`
                 }
               }
             );
@@ -203,6 +220,7 @@ export const PlayerModal = ({
       const team = match.teams[teamId];
       const isPlayerInTeam = team.players?.some(p => p.player_id === player.player_id);
       if (isPlayerInTeam) {
+        // Return all teammates (should be 4 other players)
         return team.players?.filter(p => p.player_id !== player.player_id) || [];
       }
     }
@@ -250,15 +268,19 @@ export const PlayerModal = ({
       matchDetail: matchDetail
     });
     
-    // Try to get the actual numeric scores from match results
+    // First try to get score from match.results.score
     if (match.results && match.results.score) {
       const scores = Object.values(match.results.score);
       console.log('Match results score:', scores);
       
-      // Convert to numbers and sort to show higher score first for better display
-      const numericScores = scores.map(score => Number(score));
-      const sortedScores = [...numericScores].sort((a, b) => b - a);
-      return `${sortedScores[0]} - ${sortedScores[1]}`;
+      if (scores.length === 2) {
+        const numericScores = scores.map(score => Number(score)).filter(score => !isNaN(score));
+        if (numericScores.length === 2) {
+          // Show scores in format winner-loser
+          const [score1, score2] = numericScores;
+          return score1 >= score2 ? `${score1} - ${score2}` : `${score2} - ${score1}`;
+        }
+      }
     }
     
     // Try from match detail results
@@ -266,38 +288,39 @@ export const PlayerModal = ({
       const scores = Object.values(matchDetail.results.score);
       console.log('Match detail results score:', scores);
       
-      if (scores.length === 2 && scores.every(score => typeof score === 'number' && score >= 0)) {
-        const numericScores = scores.map(score => Number(score));
-        const sortedScores = [...numericScores].sort((a, b) => b - a);
-        return `${sortedScores[0]} - ${sortedScores[1]}`;
+      if (scores.length === 2) {
+        const numericScores = scores.map(score => Number(score)).filter(score => !isNaN(score));
+        if (numericScores.length === 2) {
+          const [score1, score2] = numericScores;
+          return score1 >= score2 ? `${score1} - ${score2}` : `${score2} - ${score1}`;
+        }
       }
     }
     
-    // Try to get from match stats if available
+    // Try to get from team stats - Final Score or Round Score
     if (matchDetail && matchDetail.teams) {
       const teamIds = Object.keys(matchDetail.teams);
       if (teamIds.length === 2) {
         const team1Stats = matchDetail.teams[teamIds[0]].team_stats;
         const team2Stats = matchDetail.teams[teamIds[1]].team_stats;
         
+        // Try Final Score first
         if (team1Stats && team2Stats && team1Stats['Final Score'] && team2Stats['Final Score']) {
           const score1 = Number(team1Stats['Final Score']);
           const score2 = Number(team2Stats['Final Score']);
           if (!isNaN(score1) && !isNaN(score2)) {
-            return `${Math.max(score1, score2)} - ${Math.min(score1, score2)}`;
+            return score1 >= score2 ? `${score1} - ${score2}` : `${score2} - ${score1}`;
           }
         }
-      }
-    }
-    
-    // If we still can't get scores, try to show rounds won if available
-    if (matchDetail && matchDetail.rounds && Array.isArray(matchDetail.rounds)) {
-      const roundsData = matchDetail.rounds;
-      const team1Rounds = roundsData.filter((round: any) => round.round_stats && round.round_stats.Winner === matchDetail.teams ? Object.keys(matchDetail.teams)[0] : null).length;
-      const team2Rounds = roundsData.filter((round: any) => round.round_stats && round.round_stats.Winner === matchDetail.teams ? Object.keys(matchDetail.teams)[1] : null).length;
-      
-      if (team1Rounds > 0 || team2Rounds > 0) {
-        return `${Math.max(team1Rounds, team2Rounds)} - ${Math.min(team1Rounds, team2Rounds)}`;
+        
+        // Try Round Score
+        if (team1Stats && team2Stats && team1Stats['Round Score'] && team2Stats['Round Score']) {
+          const score1 = Number(team1Stats['Round Score']);
+          const score2 = Number(team2Stats['Round Score']);
+          if (!isNaN(score1) && !isNaN(score2)) {
+            return score1 >= score2 ? `${score1} - ${score2}` : `${score2} - ${score1}`;
+          }
+        }
       }
     }
     
@@ -547,24 +570,22 @@ export const PlayerModal = ({
                             </div>
                           )}
 
-                          {/* Teammates - More Compact */}
+                          {/* Teammates - Show all 4 teammates */}
                           {teammates.length > 0 && (
-                            <div className="flex items-center gap-2">
-                              <Users className="w-3 h-3 text-blue-400" />
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-1">
+                                <Users className="w-3 h-3 text-blue-400" />
+                                <span className="text-blue-400 text-xs font-medium">Coechipieri ({teammates.length}):</span>
+                              </div>
                               <div className="flex flex-wrap gap-1">
-                                {teammates.slice(0, 3).map((teammate) => (
+                                {teammates.map((teammate) => (
                                   <Badge 
                                     key={teammate.player_id}
                                     className="bg-blue-500/20 text-blue-400 border-blue-500/30 px-1 py-0.5 text-xs"
                                   >
-                                    {teammate.nickname.length > 6 ? teammate.nickname.substring(0, 6) + '...' : teammate.nickname}
+                                    {teammate.nickname.length > 8 ? teammate.nickname.substring(0, 8) + '...' : teammate.nickname}
                                   </Badge>
                                 ))}
-                                {teammates.length > 3 && (
-                                  <Badge className="bg-gray-500/20 text-gray-400 border-gray-500/30 px-1 py-0.5 text-xs">
-                                    +{teammates.length - 3}
-                                  </Badge>
-                                )}
                               </div>
                             </div>
                           )}
