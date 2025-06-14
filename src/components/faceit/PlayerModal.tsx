@@ -245,44 +245,57 @@ export const PlayerModal = ({
       }
     }
     
-    // Try from teams stats
-    if (match.teams) {
-      const teamIds = Object.keys(match.teams);
-      if (teamIds.length === 2) {
-        const team1 = match.teams[teamIds[0]];
-        const team2 = match.teams[teamIds[1]];
-        
-        // Look for various score fields in team stats
-        const team1Score = team1.stats?.['Final Score'] || 
-                          team1.stats?.Score || 
-                          team1.stats?.['Team Win'] || 0;
-        const team2Score = team2.stats?.['Final Score'] || 
-                          team2.stats?.Score || 
-                          team2.stats?.['Team Win'] || 0;
-        
-        console.log('Team scores from stats:', { team1Score, team2Score });
-        
-        if (team1Score !== 0 || team2Score !== 0) {
-          return `${team1Score} - ${team2Score}`;
-        }
-      }
-    }
-    
-    // Try from match detail teams
+    // Try to get score from match detail teams (if they have stats)
     if (matchDetail && matchDetail.teams) {
       const teamIds = Object.keys(matchDetail.teams);
       if (teamIds.length === 2) {
         const team1 = matchDetail.teams[teamIds[0]];
         const team2 = matchDetail.teams[teamIds[1]];
         
-        const team1Score = team1.stats?.['Final Score'] || 
-                          team1.stats?.Score || 
-                          team1.stats?.['Round Wins'] || 0;
-        const team2Score = team2.stats?.['Final Score'] || 
-                          team2.stats?.Score || 
-                          team2.stats?.['Round Wins'] || 0;
+        // Check if teams have stats property in the detailed match data
+        if (team1.stats && team2.stats) {
+          const team1Score = team1.stats['Final Score'] || 
+                            team1.stats.Score || 
+                            team1.stats['Round Wins'] || 0;
+          const team2Score = team2.stats['Final Score'] || 
+                            team2.stats.Score || 
+                            team2.stats['Round Wins'] || 0;
+          
+          console.log('Match detail team scores:', { team1Score, team2Score });
+          
+          if (team1Score !== 0 || team2Score !== 0) {
+            return `${team1Score} - ${team2Score}`;
+          }
+        }
+      }
+    }
+    
+    // Try to aggregate player stats to get team scores
+    if (match.teams) {
+      const teamIds = Object.keys(match.teams);
+      if (teamIds.length === 2) {
+        const team1 = match.teams[teamIds[0]];
+        const team2 = match.teams[teamIds[1]];
         
-        console.log('Match detail team scores:', { team1Score, team2Score });
+        // Try to calculate team scores from player stats (rounds won, etc.)
+        let team1Score = 0;
+        let team2Score = 0;
+        
+        // Check if we can derive score from individual player stats
+        if (team1.players && team1.players.length > 0) {
+          const firstPlayer = team1.players[0];
+          if (firstPlayer.player_stats && firstPlayer.player_stats['Result']) {
+            // Some matches have Result as "1" for win, "0" for loss
+            team1Score = parseInt(firstPlayer.player_stats['Result']) || 0;
+          }
+        }
+        
+        if (team2.players && team2.players.length > 0) {
+          const firstPlayer = team2.players[0];
+          if (firstPlayer.player_stats && firstPlayer.player_stats['Result']) {
+            team2Score = parseInt(firstPlayer.player_stats['Result']) || 0;
+          }
+        }
         
         if (team1Score !== 0 || team2Score !== 0) {
           return `${team1Score} - ${team2Score}`;
@@ -296,10 +309,8 @@ export const PlayerModal = ({
       const teamIds = Object.keys(match.teams);
       
       if (teamIds.includes(winnerTeamId)) {
-        // Basic assumption: winner gets 16, loser gets less
-        const winnerIndex = teamIds.indexOf(winnerTeamId);
-        const scores = winnerIndex === 0 ? ['16', '14'] : ['14', '16'];
-        return `${scores[0]} - ${scores[1]}`;
+        // Return a generic score showing winner
+        return winnerTeamId === teamIds[0] ? "W - L" : "L - W";
       }
     }
     
@@ -324,7 +335,7 @@ export const PlayerModal = ({
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="bg-gradient-to-br from-slate-900 to-slate-800 border border-white/20 text-white max-w-6xl max-h-[95vh] overflow-y-auto">
+        <DialogContent className="bg-gradient-to-br from-slate-900 to-slate-800 border border-white/20 text-white max-w-5xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold text-center">
               Profil Jucător - Detalii Complete
@@ -406,7 +417,7 @@ export const PlayerModal = ({
                   <div className="text-gray-400">Nu s-au găsit meciuri recente</div>
                 </div>
               ) : (
-                <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+                <div className="space-y-2 max-h-80 overflow-y-auto pr-2">
                   {matches.map((match) => {
                     const result = getMatchResult(match);
                     const playerStats = getPlayerStats(match);
@@ -421,24 +432,24 @@ export const PlayerModal = ({
                         key={match.match_id}
                         className={`relative overflow-hidden rounded-lg border transition-all duration-200 ${
                           isWin 
-                            ? 'bg-gradient-to-r from-green-500/15 to-green-600/15 border-green-500/30 hover:border-green-400/50' 
-                            : 'bg-gradient-to-r from-red-500/15 to-red-600/15 border-red-500/30 hover:border-red-400/50'
+                            ? 'bg-gradient-to-r from-green-500/10 to-green-600/10 border-green-500/20 hover:border-green-400/40' 
+                            : 'bg-gradient-to-r from-red-500/10 to-red-600/10 border-red-500/20 hover:border-red-400/40'
                         }`}
                       >
-                        <div className="p-4 space-y-3">
-                          {/* Match Header - Compact */}
+                        <div className="p-3 space-y-2">
+                          {/* Match Header - More Compact */}
                           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                             <div className="flex items-center gap-2 flex-wrap">
-                              <Badge className={`text-xs font-bold px-3 py-1 ${
+                              <Badge className={`text-xs font-bold px-2 py-1 ${
                                 isWin 
                                   ? 'bg-green-500 text-white' 
                                   : 'bg-red-500 text-white'
                               } border-0`}>
                                 {result}
                               </Badge>
-                              <span className="text-white font-medium text-sm">{match.competition_name}</span>
+                              <span className="text-white font-medium text-sm truncate max-w-32">{match.competition_name}</span>
                               {mapInfo?.map && (
-                                <div className="flex items-center gap-1 bg-orange-500/20 border border-orange-500/30 rounded px-2 py-1">
+                                <div className="flex items-center gap-1 bg-orange-500/20 border border-orange-500/30 rounded px-1 py-0.5">
                                   <MapPin className="w-3 h-3 text-orange-400" />
                                   <span className="text-orange-400 text-xs font-medium">{mapInfo.map}</span>
                                 </div>
@@ -465,9 +476,9 @@ export const PlayerModal = ({
                             )}
                           </div>
 
-                          {/* Match Info Row */}
+                          {/* Match Info Row - More Compact */}
                           <div className="flex items-center justify-between text-xs text-gray-300">
-                            <div className="flex items-center gap-4">
+                            <div className="flex items-center gap-3">
                               <div className="flex items-center gap-1">
                                 <Calendar className="w-3 h-3" />
                                 {formatDate(match.started_at)}
@@ -478,46 +489,46 @@ export const PlayerModal = ({
                               </div>
                             </div>
                             
-                            {/* Match Score - Fixed */}
+                            {/* Match Score */}
                             {matchScore && (
-                              <div className="flex items-center gap-1 bg-white/10 rounded px-2 py-1">
+                              <div className="flex items-center gap-1 bg-white/10 rounded px-2 py-0.5">
                                 <Trophy className="w-3 h-3 text-orange-400" />
-                                <span className="text-white font-bold">{matchScore}</span>
+                                <span className="text-white font-bold text-xs">{matchScore}</span>
                               </div>
                             )}
                           </div>
 
-                          {/* Player Stats - Compact Grid */}
+                          {/* Player Stats - More Compact Grid */}
                           {playerStats && (
-                            <div className="bg-white/5 rounded-lg p-3 border border-white/10">
-                              <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
+                            <div className="bg-white/5 rounded p-2 border border-white/10">
+                              <div className="grid grid-cols-6 gap-1">
                                 <div className="text-center">
-                                  <div className="text-white font-bold text-sm">{playerStats.Kills || '0'}</div>
+                                  <div className="text-white font-bold text-xs">{playerStats.Kills || '0'}</div>
                                   <div className="text-gray-400 text-xs">K</div>
                                 </div>
                                 <div className="text-center">
-                                  <div className="text-white font-bold text-sm">{playerStats.Deaths || '0'}</div>
+                                  <div className="text-white font-bold text-xs">{playerStats.Deaths || '0'}</div>
                                   <div className="text-gray-400 text-xs">D</div>
                                 </div>
                                 <div className="text-center">
-                                  <div className="text-white font-bold text-sm">{playerStats.Assists || '0'}</div>
+                                  <div className="text-white font-bold text-xs">{playerStats.Assists || '0'}</div>
                                   <div className="text-gray-400 text-xs">A</div>
                                 </div>
                                 {playerStats['Headshots %'] && (
                                   <div className="text-center">
-                                    <div className="text-red-400 font-bold text-sm">{Math.round(parseFloat(playerStats['Headshots %']))}%</div>
+                                    <div className="text-red-400 font-bold text-xs">{Math.round(parseFloat(playerStats['Headshots %']))}%</div>
                                     <div className="text-gray-400 text-xs">HS</div>
                                   </div>
                                 )}
                                 {playerStats['K/D Ratio'] && (
                                   <div className="text-center">
-                                    <div className="text-blue-400 font-bold text-sm">{parseFloat(playerStats['K/D Ratio']).toFixed(1)}</div>
+                                    <div className="text-blue-400 font-bold text-xs">{parseFloat(playerStats['K/D Ratio']).toFixed(1)}</div>
                                     <div className="text-gray-400 text-xs">K/D</div>
                                   </div>
                                 )}
                                 {playerStats.MVPs && (
                                   <div className="text-center">
-                                    <div className="text-yellow-400 font-bold text-sm">{playerStats.MVPs}</div>
+                                    <div className="text-yellow-400 font-bold text-xs">{playerStats.MVPs}</div>
                                     <div className="text-gray-400 text-xs">MVP</div>
                                   </div>
                                 )}
@@ -525,19 +536,24 @@ export const PlayerModal = ({
                             </div>
                           )}
 
-                          {/* Teammates - Compact */}
+                          {/* Teammates - More Compact */}
                           {teammates.length > 0 && (
                             <div className="flex items-center gap-2">
-                              <Users className="w-4 h-4 text-blue-400" />
+                              <Users className="w-3 h-3 text-blue-400" />
                               <div className="flex flex-wrap gap-1">
-                                {teammates.slice(0, 4).map((teammate) => (
+                                {teammates.slice(0, 3).map((teammate) => (
                                   <Badge 
                                     key={teammate.player_id}
-                                    className="bg-blue-500/20 text-blue-400 border-blue-500/30 px-2 py-1 text-xs"
+                                    className="bg-blue-500/20 text-blue-400 border-blue-500/30 px-1 py-0.5 text-xs"
                                   >
-                                    {teammate.nickname}
+                                    {teammate.nickname.length > 8 ? teammate.nickname.substring(0, 8) + '...' : teammate.nickname}
                                   </Badge>
                                 ))}
+                                {teammates.length > 3 && (
+                                  <Badge className="bg-gray-500/20 text-gray-400 border-gray-500/30 px-1 py-0.5 text-xs">
+                                    +{teammates.length - 3}
+                                  </Badge>
+                                )}
                               </div>
                             </div>
                           )}
