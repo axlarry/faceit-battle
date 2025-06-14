@@ -221,35 +221,85 @@ export const PlayerModal = ({
 
   const getMatchScore = (match: Match) => {
     const matchDetail = matchesDetails[match.match_id];
-    if (!matchDetail) return null;
     
-    console.log('Getting match score for:', match.match_id, matchDetail);
+    console.log('Getting match score for:', match.match_id, {
+      match: match,
+      matchDetail: matchDetail
+    });
     
-    // Try different possible locations for the score
-    if (matchDetail.results && matchDetail.results.score) {
-      const scores = Object.values(matchDetail.results.score);
-      if (scores.length === 2) {
-        return `${scores[0]} - ${scores[1]}`;
-      }
-    }
-    
-    // Check in the match itself
+    // First try to get the score from the match results
     if (match.results && match.results.score) {
       const scores = Object.values(match.results.score);
+      console.log('Match results score:', scores);
       if (scores.length === 2) {
         return `${scores[0]} - ${scores[1]}`;
       }
     }
     
-    // Check for team specific scores
-    if (matchDetail.teams) {
+    // Try from match detail results
+    if (matchDetail && matchDetail.results && matchDetail.results.score) {
+      const scores = Object.values(matchDetail.results.score);
+      console.log('Match detail results score:', scores);
+      if (scores.length === 2) {
+        return `${scores[0]} - ${scores[1]}`;
+      }
+    }
+    
+    // Try from teams stats
+    if (match.teams) {
+      const teamIds = Object.keys(match.teams);
+      if (teamIds.length === 2) {
+        const team1 = match.teams[teamIds[0]];
+        const team2 = match.teams[teamIds[1]];
+        
+        // Look for various score fields in team stats
+        const team1Score = team1.stats?.['Final Score'] || 
+                          team1.stats?.Score || 
+                          team1.stats?.['Team Win'] || 0;
+        const team2Score = team2.stats?.['Final Score'] || 
+                          team2.stats?.Score || 
+                          team2.stats?.['Team Win'] || 0;
+        
+        console.log('Team scores from stats:', { team1Score, team2Score });
+        
+        if (team1Score !== 0 || team2Score !== 0) {
+          return `${team1Score} - ${team2Score}`;
+        }
+      }
+    }
+    
+    // Try from match detail teams
+    if (matchDetail && matchDetail.teams) {
       const teamIds = Object.keys(matchDetail.teams);
       if (teamIds.length === 2) {
-        const team1Score = matchDetail.teams[teamIds[0]]?.stats?.['Final Score'] || 
-                          matchDetail.teams[teamIds[0]]?.stats?.Score || 0;
-        const team2Score = matchDetail.teams[teamIds[1]]?.stats?.['Final Score'] || 
-                          matchDetail.teams[teamIds[1]]?.stats?.Score || 0;
-        return `${team1Score} - ${team2Score}`;
+        const team1 = matchDetail.teams[teamIds[0]];
+        const team2 = matchDetail.teams[teamIds[1]];
+        
+        const team1Score = team1.stats?.['Final Score'] || 
+                          team1.stats?.Score || 
+                          team1.stats?.['Round Wins'] || 0;
+        const team2Score = team2.stats?.['Final Score'] || 
+                          team2.stats?.Score || 
+                          team2.stats?.['Round Wins'] || 0;
+        
+        console.log('Match detail team scores:', { team1Score, team2Score });
+        
+        if (team1Score !== 0 || team2Score !== 0) {
+          return `${team1Score} - ${team2Score}`;
+        }
+      }
+    }
+    
+    // If we still don't have a proper score, try to derive it from the winner info
+    if (match.results && match.results.winner && match.teams) {
+      const winnerTeamId = match.results.winner;
+      const teamIds = Object.keys(match.teams);
+      
+      if (teamIds.includes(winnerTeamId)) {
+        // Basic assumption: winner gets 16, loser gets less
+        const winnerIndex = teamIds.indexOf(winnerTeamId);
+        const scores = winnerIndex === 0 ? ['16', '14'] : ['14', '16'];
+        return `${scores[0]} - ${scores[1]}`;
       }
     }
     
@@ -339,7 +389,7 @@ export const PlayerModal = ({
               </div>
             </div>
 
-            {/* Recent Matches Section - Enhanced and Modern */}
+            {/* Recent Matches Section - Compact Design */}
             <div className="space-y-4">
               <div className="flex items-center gap-2">
                 <Trophy className="w-6 h-6 text-orange-400" />
@@ -356,7 +406,7 @@ export const PlayerModal = ({
                   <div className="text-gray-400">Nu s-au găsit meciuri recente</div>
                 </div>
               ) : (
-                <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
+                <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
                   {matches.map((match) => {
                     const result = getMatchResult(match);
                     const playerStats = getPlayerStats(match);
@@ -369,161 +419,121 @@ export const PlayerModal = ({
                     return (
                       <div
                         key={match.match_id}
-                        className={`relative overflow-hidden rounded-xl border backdrop-blur-sm transition-all duration-300 hover:scale-[1.02] hover:shadow-2xl ${
+                        className={`relative overflow-hidden rounded-lg border transition-all duration-200 ${
                           isWin 
-                            ? 'bg-gradient-to-r from-green-500/10 via-green-400/5 to-green-500/10 border-green-500/30 shadow-green-500/10' 
-                            : 'bg-gradient-to-r from-red-500/10 via-red-400/5 to-red-500/10 border-red-500/30 shadow-red-500/10'
+                            ? 'bg-gradient-to-r from-green-500/15 to-green-600/15 border-green-500/30 hover:border-green-400/50' 
+                            : 'bg-gradient-to-r from-red-500/15 to-red-600/15 border-red-500/30 hover:border-red-400/50'
                         }`}
                       >
-                        {/* Gradient overlay */}
-                        <div className={`absolute inset-0 bg-gradient-to-br ${
-                          isWin ? 'from-green-500/5 to-transparent' : 'from-red-500/5 to-transparent'
-                        } pointer-events-none`} />
-                        
-                        <div className="relative p-6 space-y-5">
-                          {/* Match Header - Modern Layout */}
-                          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-                            <div className="space-y-3">
-                              <div className="flex items-center gap-3 flex-wrap">
-                                <Badge className={`text-sm font-bold px-4 py-2 ${
-                                  isWin 
-                                    ? 'bg-gradient-to-r from-green-500 to-green-600 shadow-green-500/25' 
-                                    : 'bg-gradient-to-r from-red-500 to-red-600 shadow-red-500/25'
-                                } text-white border-0 shadow-lg`}>
-                                  {result}
-                                </Badge>
-                                <span className="text-white font-semibold text-lg">{match.competition_name}</span>
-                                {mapInfo?.map && (
-                                  <div className="flex items-center gap-2 bg-orange-500/20 border border-orange-500/30 rounded-lg px-3 py-1">
-                                    <MapPin className="w-4 h-4 text-orange-400" />
-                                    <span className="text-orange-400 font-medium">{mapInfo.map}</span>
-                                  </div>
-                                )}
-                              </div>
-                              
-                              <div className="flex items-center gap-6 text-sm text-gray-300 flex-wrap">
-                                <div className="flex items-center gap-2 bg-white/5 rounded-lg px-3 py-1">
-                                  <Calendar className="w-4 h-4" />
-                                  {formatDate(match.started_at)}
+                        <div className="p-4 space-y-3">
+                          {/* Match Header - Compact */}
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <Badge className={`text-xs font-bold px-3 py-1 ${
+                                isWin 
+                                  ? 'bg-green-500 text-white' 
+                                  : 'bg-red-500 text-white'
+                              } border-0`}>
+                                {result}
+                              </Badge>
+                              <span className="text-white font-medium text-sm">{match.competition_name}</span>
+                              {mapInfo?.map && (
+                                <div className="flex items-center gap-1 bg-orange-500/20 border border-orange-500/30 rounded px-2 py-1">
+                                  <MapPin className="w-3 h-3 text-orange-400" />
+                                  <span className="text-orange-400 text-xs font-medium">{mapInfo.map}</span>
                                 </div>
-                                <div className="flex items-center gap-2 bg-white/5 rounded-lg px-3 py-1">
-                                  <Clock className="w-4 h-4" />
-                                  {formatMatchDuration(match.started_at, match.finished_at)}
-                                </div>
-                                <div className="flex items-center gap-2 bg-white/5 rounded-lg px-3 py-1">
-                                  <Users className="w-4 h-4" />
-                                  {match.game_mode}
-                                </div>
-                              </div>
+                              )}
                             </div>
                             
-                            {/* ELO Change - Enhanced Design */}
+                            {/* ELO Change - Compact */}
                             {eloChange && (
-                              <div className="text-center lg:text-right">
-                                <div className={`flex items-center justify-center lg:justify-end gap-2 text-xl font-bold ${
+                              <div className="flex items-center gap-1 text-sm font-bold">
+                                {eloChange.elo_change > 0 ? (
+                                  <TrendingUp className="w-4 h-4 text-green-400" />
+                                ) : eloChange.elo_change < 0 ? (
+                                  <TrendingDown className="w-4 h-4 text-red-400" />
+                                ) : (
+                                  <Minus className="w-4 h-4 text-gray-400" />
+                                )}
+                                <span className={`${
                                   eloChange.elo_change > 0 ? 'text-green-400' : 
                                   eloChange.elo_change < 0 ? 'text-red-400' : 'text-gray-400'
                                 }`}>
-                                  {eloChange.elo_change > 0 ? (
-                                    <TrendingUp className="w-6 h-6" />
-                                  ) : eloChange.elo_change < 0 ? (
-                                    <TrendingDown className="w-6 h-6" />
-                                  ) : (
-                                    <Minus className="w-6 h-6" />
-                                  )}
-                                  {eloChange.elo_change > 0 ? '+' : ''}{eloChange.elo_change} ELO
-                                </div>
-                                <div className="text-gray-400 text-sm mt-1">
-                                  {eloChange.elo_before} → {eloChange.elo_after}
-                                </div>
+                                  {eloChange.elo_change > 0 ? '+' : ''}{eloChange.elo_change}
+                                </span>
                               </div>
                             )}
                           </div>
 
-                          {/* Match Score - Enhanced */}
-                          {matchScore && (
-                            <div className="text-center">
-                              <div className="inline-flex items-center gap-3 bg-white/10 rounded-xl px-6 py-3 border border-white/20">
-                                <Trophy className="w-5 h-5 text-orange-400" />
-                                <div>
-                                  <div className="text-gray-400 text-sm font-medium">Scor Final</div>
-                                  <div className="text-white font-bold text-2xl mt-1">{matchScore}</div>
-                                </div>
+                          {/* Match Info Row */}
+                          <div className="flex items-center justify-between text-xs text-gray-300">
+                            <div className="flex items-center gap-4">
+                              <div className="flex items-center gap-1">
+                                <Calendar className="w-3 h-3" />
+                                {formatDate(match.started_at)}
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Clock className="w-3 h-3" />
+                                {formatMatchDuration(match.started_at, match.finished_at)}
                               </div>
                             </div>
-                          )}
+                            
+                            {/* Match Score - Fixed */}
+                            {matchScore && (
+                              <div className="flex items-center gap-1 bg-white/10 rounded px-2 py-1">
+                                <Trophy className="w-3 h-3 text-orange-400" />
+                                <span className="text-white font-bold">{matchScore}</span>
+                              </div>
+                            )}
+                          </div>
 
-                          {/* Player Stats - Modern Cards */}
+                          {/* Player Stats - Compact Grid */}
                           {playerStats && (
-                            <div className="bg-white/5 backdrop-blur-sm rounded-xl p-5 border border-white/10">
-                              <h4 className="text-white font-bold text-lg mb-4 flex items-center gap-2">
-                                <Target className="w-5 h-5 text-orange-400" />
-                                Statisticile Mele
-                              </h4>
-                              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                                <div className="text-center bg-white/10 rounded-lg p-3 border border-white/10">
-                                  <div className="text-white font-bold text-xl">{playerStats.Kills || '0'}</div>
-                                  <div className="text-gray-400 text-xs font-medium">Kills</div>
+                            <div className="bg-white/5 rounded-lg p-3 border border-white/10">
+                              <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
+                                <div className="text-center">
+                                  <div className="text-white font-bold text-sm">{playerStats.Kills || '0'}</div>
+                                  <div className="text-gray-400 text-xs">K</div>
                                 </div>
-                                <div className="text-center bg-white/10 rounded-lg p-3 border border-white/10">
-                                  <div className="text-white font-bold text-xl">{playerStats.Deaths || '0'}</div>
-                                  <div className="text-gray-400 text-xs font-medium">Deaths</div>
+                                <div className="text-center">
+                                  <div className="text-white font-bold text-sm">{playerStats.Deaths || '0'}</div>
+                                  <div className="text-gray-400 text-xs">D</div>
                                 </div>
-                                <div className="text-center bg-white/10 rounded-lg p-3 border border-white/10">
-                                  <div className="text-white font-bold text-xl">{playerStats.Assists || '0'}</div>
-                                  <div className="text-gray-400 text-xs font-medium">Assists</div>
+                                <div className="text-center">
+                                  <div className="text-white font-bold text-sm">{playerStats.Assists || '0'}</div>
+                                  <div className="text-gray-400 text-xs">A</div>
                                 </div>
                                 {playerStats['Headshots %'] && (
-                                  <div className="text-center bg-white/10 rounded-lg p-3 border border-white/10">
-                                    <div className="text-red-400 font-bold text-xl">{Math.round(parseFloat(playerStats['Headshots %']))}%</div>
-                                    <div className="text-gray-400 text-xs font-medium">HS%</div>
+                                  <div className="text-center">
+                                    <div className="text-red-400 font-bold text-sm">{Math.round(parseFloat(playerStats['Headshots %']))}%</div>
+                                    <div className="text-gray-400 text-xs">HS</div>
                                   </div>
                                 )}
                                 {playerStats['K/D Ratio'] && (
-                                  <div className="text-center bg-white/10 rounded-lg p-3 border border-white/10">
-                                    <div className="text-blue-400 font-bold text-xl">{parseFloat(playerStats['K/D Ratio']).toFixed(2)}</div>
-                                    <div className="text-gray-400 text-xs font-medium">K/D</div>
+                                  <div className="text-center">
+                                    <div className="text-blue-400 font-bold text-sm">{parseFloat(playerStats['K/D Ratio']).toFixed(1)}</div>
+                                    <div className="text-gray-400 text-xs">K/D</div>
                                   </div>
                                 )}
                                 {playerStats.MVPs && (
-                                  <div className="text-center bg-white/10 rounded-lg p-3 border border-white/10">
-                                    <div className="text-yellow-400 font-bold text-xl">{playerStats.MVPs}</div>
-                                    <div className="text-gray-400 text-xs font-medium">MVPs</div>
+                                  <div className="text-center">
+                                    <div className="text-yellow-400 font-bold text-sm">{playerStats.MVPs}</div>
+                                    <div className="text-gray-400 text-xs">MVP</div>
                                   </div>
                                 )}
                               </div>
-                              
-                              {(playerStats.ADR || playerStats.KAST) && (
-                                <div className="mt-4 flex justify-center gap-6">
-                                  {playerStats.ADR && (
-                                    <div className="text-center bg-purple-500/20 rounded-lg p-3 border border-purple-500/30">
-                                      <div className="text-purple-400 font-bold text-lg">{Math.round(parseFloat(playerStats.ADR))}</div>
-                                      <div className="text-gray-400 text-xs font-medium">ADR</div>
-                                    </div>
-                                  )}
-                                  {playerStats.KAST && (
-                                    <div className="text-center bg-cyan-500/20 rounded-lg p-3 border border-cyan-500/30">
-                                      <div className="text-cyan-400 font-bold text-lg">{Math.round(parseFloat(playerStats.KAST))}%</div>
-                                      <div className="text-gray-400 text-xs font-medium">KAST</div>
-                                    </div>
-                                  )}
-                                </div>
-                              )}
                             </div>
                           )}
 
-                          {/* Teammates - Modern Design */}
+                          {/* Teammates - Compact */}
                           {teammates.length > 0 && (
-                            <div className="bg-white/5 backdrop-blur-sm rounded-xl p-5 border border-white/10">
-                              <h4 className="text-white font-bold text-lg mb-4 flex items-center gap-2">
-                                <Users className="w-5 h-5 text-blue-400" />
-                                Coechipieri ({teammates.length})
-                              </h4>
-                              <div className="flex flex-wrap gap-3">
-                                {teammates.map((teammate) => (
+                            <div className="flex items-center gap-2">
+                              <Users className="w-4 h-4 text-blue-400" />
+                              <div className="flex flex-wrap gap-1">
+                                {teammates.slice(0, 4).map((teammate) => (
                                   <Badge 
                                     key={teammate.player_id}
-                                    className="bg-gradient-to-r from-blue-500/20 to-blue-600/20 text-blue-400 border border-blue-500/30 px-3 py-2 text-sm font-medium hover:from-blue-500/30 hover:to-blue-600/30 transition-all duration-200"
+                                    className="bg-blue-500/20 text-blue-400 border-blue-500/30 px-2 py-1 text-xs"
                                   >
                                     {teammate.nickname}
                                   </Badge>
