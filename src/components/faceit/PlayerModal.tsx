@@ -181,8 +181,8 @@ export const PlayerModal = ({
     
     console.log('Getting ELO change for match:', match.match_id, matchDetail);
     
-    // Check multiple possible locations for ELO data
-    if (matchDetail.calculate_elo) {
+    // Check multiple possible locations for ELO data with proper type guards
+    if (matchDetail.calculate_elo && Array.isArray(matchDetail.calculate_elo)) {
       const playerEloData = matchDetail.calculate_elo.find((elo: any) => elo.player_id === player.player_id);
       if (playerEloData) {
         console.log('Found ELO data in calculate_elo:', playerEloData);
@@ -192,8 +192,8 @@ export const PlayerModal = ({
       }
     }
     
-    // Check in results
-    if (matchDetail.results && matchDetail.results.elo_change) {
+    // Check in results with proper type guards
+    if (matchDetail.results && matchDetail.results.elo_change && Array.isArray(matchDetail.results.elo_change)) {
       const playerEloData = matchDetail.results.elo_change.find((elo: any) => elo.player_id === player.player_id);
       if (playerEloData) {
         console.log('Found ELO data in results:', playerEloData);
@@ -207,9 +207,9 @@ export const PlayerModal = ({
     if (matchDetail.teams) {
       for (const teamId of Object.keys(matchDetail.teams)) {
         const team = matchDetail.teams[teamId];
-        if (team.players) {
+        if (team.players && Array.isArray(team.players)) {
           const playerData = team.players.find((p: any) => p.player_id === player.player_id);
-          if (playerData && (playerData.elo_change || playerData.elo)) {
+          if (playerData && (playerData.elo_change !== undefined || playerData.elo !== undefined)) {
             console.log('Found ELO data in team players:', playerData);
             return {
               elo_change: playerData.elo_change || playerData.elo || 0
