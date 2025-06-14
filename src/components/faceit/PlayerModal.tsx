@@ -1,4 +1,3 @@
-
 import {
   Dialog,
   DialogContent,
@@ -23,8 +22,7 @@ interface PlayerModalProps {
   isFriend: boolean;
 }
 
-// Updated API key - you may need to replace this with a valid one
-const API_KEY = 'YOUR_VALID_FACEIT_API_KEY_HERE';
+const API_KEY = 'f1755f40-8f84-4d62-b315-5f09dc25eef5';
 const API_BASE = 'https://open.faceit.com/data/v4';
 
 export const PlayerModal = ({ 
@@ -57,11 +55,6 @@ export const PlayerModal = ({
     
     try {
       console.log('Loading matches for player:', player.player_id);
-      
-      // Check if API key is set
-      if (API_KEY === 'YOUR_VALID_FACEIT_API_KEY_HERE') {
-        throw new Error('API key not configured');
-      }
       
       const response = await fetch(
         `${API_BASE}/players/${player.player_id}/history?game=cs2&limit=10`,
@@ -118,26 +111,11 @@ export const PlayerModal = ({
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       setApiError(errorMessage);
       
-      // Show user-friendly error message
-      if (errorMessage.includes('API key not configured')) {
-        toast({
-          title: "Configurare API necesară",
-          description: "API key-ul FACEIT nu este configurat. Contactați administratorul.",
-          variant: "destructive",
-        });
-      } else if (errorMessage.includes('invalid_token')) {
-        toast({
-          title: "Token invalid",
-          description: "API key-ul FACEIT a expirat. Contactați administratorul.",
-          variant: "destructive",
-        });
-      } else {
-        toast({
-          title: "Eroare la încărcarea meciurilor",
-          description: "Nu s-au putut încărca meciurile jucătorului.",
-          variant: "destructive",
-        });
-      }
+      toast({
+        title: "Eroare la încărcarea meciurilor",
+        description: `Nu s-au putut încărca meciurile: ${errorMessage}`,
+        variant: "destructive",
+      });
     } finally {
       setLoadingMatches(false);
     }
@@ -240,7 +218,10 @@ export const PlayerModal = ({
     // Check if calculate_elo exists and is an array
     if (matchDetail.calculate_elo && Array.isArray(matchDetail.calculate_elo)) {
       const playerEloData = matchDetail.calculate_elo.find((elo: any) => elo.player_id === player.player_id);
-      return playerEloData;
+      if (playerEloData) {
+        console.log('Found ELO data:', playerEloData);
+        return playerEloData;
+      }
     }
     
     // Alternative: check if there's ELO data in the match itself
@@ -248,6 +229,16 @@ export const PlayerModal = ({
       return match.elo_change;
     }
     
+    // Try to find ELO data in match results
+    if (matchDetail.results && matchDetail.results.elo_change) {
+      const playerEloData = matchDetail.results.elo_change.find((elo: any) => elo.player_id === player.player_id);
+      if (playerEloData) {
+        console.log('Found ELO data in results:', playerEloData);
+        return playerEloData;
+      }
+    }
+    
+    console.log('No ELO data found for player');
     return null;
   };
 
@@ -259,12 +250,16 @@ export const PlayerModal = ({
       matchDetail: matchDetail
     });
     
-    // First try to get the score from the match results
+    // Try to get the actual numeric scores from match results
     if (match.results && match.results.score) {
       const scores = Object.values(match.results.score);
       console.log('Match results score:', scores);
-      if (scores.length === 2) {
-        return `${scores[0]} - ${scores[1]}`;
+      
+      // Make sure we have two numeric scores
+      if (scores.length === 2 && scores.every(score => typeof score === 'number' && score >= 0)) {
+        // Sort to show higher score first for better display
+        const sortedScores = [...scores].sort((a, b) => b - a);
+        return `${sortedScores[0]} - ${sortedScores[1]}`;
       }
     }
     
@@ -272,40 +267,62 @@ export const PlayerModal = ({
     if (matchDetail && matchDetail.results && matchDetail.results.score) {
       const scores = Object.values(matchDetail.results.score);
       console.log('Match detail results score:', scores);
-      if (scores.length === 2) {
-        return `${scores[0]} - ${scores[1]}`;
+      
+      if (scores.length === 2 && scores.every(score => typeof score === 'number' && score >= 0)) {
+        const sortedScores = [...scores].sort((a, b) => b - a);
+        return `${sortedScores[0]} - ${sortedScores[1]}`;
       }
     }
     
-    // If we still don't have a proper score, try to derive it from the winner info
-    if (match.results && match.results.winner && match.teams) {
-      const winnerTeamId = match.results.winner;
-      const teamIds = Object.keys(match.teams);
-      
-      if (teamIds.includes(winnerTeamId)) {
-        // For now, we'll show a generic W/L indicator when we can't get the actual score
-        const playerTeamId = teamIds.find(teamId => 
-          match.teams![teamId].players?.some(p => p.player_id === player.player_id)
-        );
+    // Try to get from match stats if available
+    if (matchDetail && matchDetail.teams) {
+      const teamIds = Object.keys(matchDetail.teams);
+      if (teamIds.length === 2) {
+        const team1Stats = matchDetail.teams[teamIds[0]].team_stats;
+        const team2Stats = matchDetail.teams[teamIds[1]].team_stats;
         
-        if (playerTeamId === winnerTeamId) {
-          return "VICTORIE";
-        } else {
-          return "ÎNFRÂNGERE";
+        if (team1Stats && team2Stats && team1Stats['Final Score'] && team2Stats['Final Score']) {
+          const score1 = parseInt(team1Stats['Final Score']);
+          const score2 = parseInt(team2Stats['Final Score']);
+          if (!isNaN(score1) && !isNaN(score2)) {
+            return `${Math.max(score1, score2)} - ${Math.min(score1, score2)}`;
+          }
         }
       }
     }
     
-    return "Scor indisponibil";
+    // If we still can't get scores, try to show rounds won if available
+    if (matchDetail && matchDetail.rounds && Array.isArray(matchDetail.rounds)) {
+      const roundsData = matchDetail.rounds;
+      const team1Rounds = roundsData.filter((round: any) => round.round_stats && round.round_stats.Winner === matchDetail.teams ? Object.keys(matchDetail.teams)[0] : null).length;
+      const team2Rounds = roundsData.filter((round: any) => round.round_stats && round.round_stats.Winner === matchDetail.teams ? Object.keys(matchDetail.teams)[1] : null).length;
+      
+      if (team1Rounds > 0 || team2Rounds > 0) {
+        return `${Math.max(team1Rounds, team2Rounds)} - ${Math.min(team1Rounds, team2Rounds)}`;
+      }
+    }
+    
+    // Last resort: show win/loss status
+    const result = getMatchResult(match);
+    return result;
   };
 
   const getMapInfo = (match: Match) => {
     const matchDetail = matchesDetails[match.match_id];
     if (!matchDetail) return null;
     
-    return {
-      map: matchDetail.voting?.map?.pick?.[0] || matchDetail.voting?.location?.pick?.[0] || 'Unknown'
-    };
+    // Try different possible locations for map info
+    let mapName = 'Unknown';
+    
+    if (matchDetail.voting?.map?.pick?.[0]) {
+      mapName = matchDetail.voting.map.pick[0];
+    } else if (matchDetail.voting?.location?.pick?.[0]) {
+      mapName = matchDetail.voting.location.pick[0];
+    } else if (matchDetail.voting?.map?.entity_id) {
+      mapName = matchDetail.voting.map.entity_id;
+    }
+    
+    return { map: mapName };
   };
 
   const formatMatchDuration = (startTime: number, endTime: number) => {
@@ -393,10 +410,7 @@ export const PlayerModal = ({
                 <div className="text-center py-6">
                   <div className="text-red-400 font-medium">Eroare API: {apiError}</div>
                   <div className="text-gray-400 text-sm mt-2">
-                    {apiError.includes('API key') ? 
-                      'API key-ul FACEIT trebuie configurat de administrator.' :
-                      'Nu se pot încărca meciurile în acest moment.'
-                    }
+                    Nu se pot încărca meciurile în acest moment.
                   </div>
                   <Button 
                     onClick={loadPlayerMatches}
@@ -454,21 +468,21 @@ export const PlayerModal = ({
                               )}
                             </div>
                             
-                            {/* ELO Change - Compact */}
+                            {/* ELO Change - More Prominent */}
                             {eloChange && (
-                              <div className="flex items-center gap-1 text-xs font-bold">
+                              <div className="flex items-center gap-1 bg-white/10 border border-white/20 rounded px-2 py-1">
                                 {eloChange.elo_change > 0 ? (
-                                  <TrendingUp className="w-3 h-3 text-green-400" />
+                                  <TrendingUp className="w-4 h-4 text-green-400" />
                                 ) : eloChange.elo_change < 0 ? (
-                                  <TrendingDown className="w-3 h-3 text-red-400" />
+                                  <TrendingDown className="w-4 h-4 text-red-400" />
                                 ) : (
-                                  <Minus className="w-3 h-3 text-gray-400" />
+                                  <Minus className="w-4 h-4 text-gray-400" />
                                 )}
-                                <span className={`${
+                                <span className={`text-sm font-bold ${
                                   eloChange.elo_change > 0 ? 'text-green-400' : 
                                   eloChange.elo_change < 0 ? 'text-red-400' : 'text-gray-400'
                                 }`}>
-                                  {eloChange.elo_change > 0 ? '+' : ''}{eloChange.elo_change}
+                                  {eloChange.elo_change > 0 ? '+' : ''}{eloChange.elo_change} ELO
                                 </span>
                               </div>
                             )}
@@ -489,9 +503,9 @@ export const PlayerModal = ({
                             
                             {/* Match Score */}
                             {matchScore && (
-                              <div className="flex items-center gap-1 bg-white/10 rounded px-1 py-0.5">
+                              <div className="flex items-center gap-1 bg-white/10 rounded px-2 py-1">
                                 <Trophy className="w-3 h-3 text-orange-400" />
-                                <span className="text-white font-bold text-xs">{matchScore}</span>
+                                <span className="text-white font-bold text-sm">{matchScore}</span>
                               </div>
                             )}
                           </div>
