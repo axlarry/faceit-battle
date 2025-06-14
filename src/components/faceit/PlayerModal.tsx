@@ -1,4 +1,3 @@
-
 import {
   Dialog,
   DialogContent,
@@ -13,7 +12,7 @@ import { UserPlus, UserMinus, ExternalLink, Trophy, Calendar, Users, Target, Tre
 import { useState, useEffect } from "react";
 import { PasswordDialog } from "./PasswordDialog";
 import { toast } from "@/hooks/use-toast";
-import { useFaceitApi } from "@/hooks/useFaceitApi";
+import { supabase } from "@/integrations/supabase/client";
 
 interface PlayerModalProps {
   player: Player | null;
@@ -23,6 +22,8 @@ interface PlayerModalProps {
   onRemoveFriend: (playerId: string) => void;
   isFriend: boolean;
 }
+
+const API_BASE = 'https://open.faceit.com/data/v4';
 
 export const PlayerModal = ({ 
   player, 
@@ -37,39 +38,83 @@ export const PlayerModal = ({
   const [matches, setMatches] = useState<Match[]>([]);
   const [loadingMatches, setLoadingMatches] = useState(false);
   const [matchesDetails, setMatchesDetails] = useState<{[key: string]: any}>({});
-  const { getPlayerMatches, getMatchDetails, loading: apiLoading } = useFaceitApi();
+  const [apiError, setApiError] = useState<string | null>(null);
+  const [apiKey, setApiKey] = useState<string | null>(null);
+
+  // Load API key from Supabase secrets
+  useEffect(() => {
+    const loadApiKey = async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke('get-faceit-api-key');
+        if (error) throw error;
+        setApiKey(data.apiKey);
+      } catch (error) {
+        console.error('Error loading API key:', error);
+        // Fallback to hardcoded key for now
+        setApiKey('f1755f40-8f84-4d62-b315-5f09dc25eef5');
+      }
+    };
+    loadApiKey();
+  }, []);
 
   // Load matches when player changes and modal is open
   useEffect(() => {
-    if (player && isOpen) {
+    if (player && isOpen && apiKey) {
       loadPlayerMatches();
     }
-  }, [player, isOpen]);
+  }, [player, isOpen, apiKey]);
 
   const loadPlayerMatches = async () => {
-    if (!player) return;
+    if (!player || !apiKey) return;
     
     setLoadingMatches(true);
+    setApiError(null);
     
     try {
       console.log('Loading matches for player:', player.player_id);
       
-      const matchesData = await getPlayerMatches(player.player_id, 10);
-      console.log('Matches response:', matchesData);
-      setMatches(matchesData || []);
+      const response = await fetch(
+        `${API_BASE}/players/${player.player_id}/history?game=cs2&limit=10`,
+        {
+          headers: {
+            'Authorization': `Bearer ${apiKey}`
+          }
+        }
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('API Error:', errorData);
+        throw new Error(`API Error: ${errorData.error || response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log('Matches response:', data);
+      const matchesData = data.items || [];
+      setMatches(matchesData);
 
       // Load detailed stats for each match
-      if (matchesData && matchesData.length > 0) {
+      if (matchesData.length > 0) {
         const detailsPromises = matchesData.map(async (match: Match) => {
           try {
             console.log('Loading details for match:', match.match_id);
-            const matchDetail = await getMatchDetails(match.match_id);
-            console.log('Match detail response for', match.match_id, ':', matchDetail);
-            return matchDetail ? { [match.match_id]: matchDetail } : {};
+            const matchResponse = await fetch(
+              `${API_BASE}/matches/${match.match_id}`,
+              {
+                headers: {
+                  'Authorization': `Bearer ${apiKey}`
+                }
+              }
+            );
+            if (matchResponse.ok) {
+              const matchDetail = await matchResponse.json();
+              console.log('Match detail response:', matchDetail);
+              return { [match.match_id]: matchDetail };
+            }
           } catch (error) {
-            console.error('Error loading match details for', match.match_id, ':', error);
-            return {};
+            console.error('Error loading match details:', error);
           }
+          return {};
         });
 
         const detailsResults = await Promise.all(detailsPromises);
@@ -80,7 +125,14 @@ export const PlayerModal = ({
 
     } catch (error) {
       console.error('Error loading matches:', error);
-      setMatches([]);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      setApiError(errorMessage);
+      
+      toast({
+        title: "Eroare la încărcarea meciurilor",
+        description: `Nu s-au putut încărca meciurile: ${errorMessage}`,
+        variant: "destructive",
+      });
     } finally {
       setLoadingMatches(false);
     }
@@ -181,41 +233,26 @@ export const PlayerModal = ({
     
     console.log('Getting ELO change for match:', match.match_id, matchDetail);
     
-    // Check multiple possible locations for ELO data with proper type guards
+    // Check if calculate_elo exists and is an array
     if (matchDetail.calculate_elo && Array.isArray(matchDetail.calculate_elo)) {
       const playerEloData = matchDetail.calculate_elo.find((elo: any) => elo.player_id === player.player_id);
       if (playerEloData) {
-        console.log('Found ELO data in calculate_elo:', playerEloData);
-        return {
-          elo_change: playerEloData.elo || playerEloData.elo_change || 0
-        };
+        console.log('Found ELO data:', playerEloData);
+        return playerEloData;
       }
     }
     
-    // Check in results with proper type guards
-    if (matchDetail.results && matchDetail.results.elo_change && Array.isArray(matchDetail.results.elo_change)) {
+    // Alternative: check if there's ELO data in the match itself
+    if (match.elo_change && match.elo_change.player_id === player.player_id) {
+      return match.elo_change;
+    }
+    
+    // Try to find ELO data in match results
+    if (matchDetail && matchDetail.results && matchDetail.results.elo_change) {
       const playerEloData = matchDetail.results.elo_change.find((elo: any) => elo.player_id === player.player_id);
       if (playerEloData) {
         console.log('Found ELO data in results:', playerEloData);
-        return {
-          elo_change: playerEloData.elo || playerEloData.elo_change || 0
-        };
-      }
-    }
-    
-    // Check if ELO data is directly in teams
-    if (matchDetail.teams) {
-      for (const teamId of Object.keys(matchDetail.teams)) {
-        const team = matchDetail.teams[teamId];
-        if (team.players && Array.isArray(team.players)) {
-          const playerData = team.players.find((p: any) => p.player_id === player.player_id);
-          if (playerData && (playerData.elo_change !== undefined || playerData.elo !== undefined)) {
-            console.log('Found ELO data in team players:', playerData);
-            return {
-              elo_change: playerData.elo_change || playerData.elo || 0
-            };
-          }
-        }
+        return playerEloData;
       }
     }
     
@@ -237,14 +274,11 @@ export const PlayerModal = ({
       console.log('Match results score:', scores);
       
       if (scores.length === 2) {
-        const numericScores = scores.map(score => {
-          const num = Number(score);
-          return isNaN(num) ? 0 : num;
-        });
-        
+        const numericScores = scores.map(score => Number(score)).filter(score => !isNaN(score));
         if (numericScores.length === 2) {
+          // Show scores in format winner-loser
           const [score1, score2] = numericScores;
-          return `${Math.max(score1, score2)} - ${Math.min(score1, score2)}`;
+          return score1 >= score2 ? `${score1} - ${score2}` : `${score2} - ${score1}`;
         }
       }
     }
@@ -255,19 +289,15 @@ export const PlayerModal = ({
       console.log('Match detail results score:', scores);
       
       if (scores.length === 2) {
-        const numericScores = scores.map(score => {
-          const num = Number(score);
-          return isNaN(num) ? 0 : num;
-        });
-        
+        const numericScores = scores.map(score => Number(score)).filter(score => !isNaN(score));
         if (numericScores.length === 2) {
           const [score1, score2] = numericScores;
-          return `${Math.max(score1, score2)} - ${Math.min(score1, score2)}`;
+          return score1 >= score2 ? `${score1} - ${score2}` : `${score2} - ${score1}`;
         }
       }
     }
     
-    // Try to get from team stats - Final Score
+    // Try to get from team stats - Final Score or Round Score
     if (matchDetail && matchDetail.teams) {
       const teamIds = Object.keys(matchDetail.teams);
       if (teamIds.length === 2) {
@@ -279,27 +309,24 @@ export const PlayerModal = ({
           const score1 = Number(team1Stats['Final Score']);
           const score2 = Number(team2Stats['Final Score']);
           if (!isNaN(score1) && !isNaN(score2)) {
-            return `${Math.max(score1, score2)} - ${Math.min(score1, score2)}`;
+            return score1 >= score2 ? `${score1} - ${score2}` : `${score2} - ${score1}`;
           }
         }
         
-        // Try Team Win
-        if (team1Stats && team2Stats && team1Stats['Team Win'] !== undefined && team2Stats['Team Win'] !== undefined) {
-          const team1Win = team1Stats['Team Win'] === '1' || team1Stats['Team Win'] === 1;
-          const team2Win = team2Stats['Team Win'] === '1' || team2Stats['Team Win'] === 1;
-          
-          if (team1Win && !team2Win) {
-            return "16 - 14"; // Default competitive score
-          } else if (team2Win && !team1Win) {
-            return "16 - 14";
+        // Try Round Score
+        if (team1Stats && team2Stats && team1Stats['Round Score'] && team2Stats['Round Score']) {
+          const score1 = Number(team1Stats['Round Score']);
+          const score2 = Number(team2Stats['Round Score']);
+          if (!isNaN(score1) && !isNaN(score2)) {
+            return score1 >= score2 ? `${score1} - ${score2}` : `${score2} - ${score1}`;
           }
         }
       }
     }
     
-    // Default fallback based on match result
+    // Last resort: show win/loss status
     const result = getMatchResult(match);
-    return result === 'VICTORIE' ? '16 - 14' : '14 - 16';
+    return result;
   };
 
   const getMapInfo = (match: Match) => {
@@ -315,8 +342,6 @@ export const PlayerModal = ({
       mapName = matchDetail.voting.location.pick[0];
     } else if (matchDetail.voting?.map?.entity_id) {
       mapName = matchDetail.voting.map.entity_id;
-    } else if (matchDetail.maps && matchDetail.maps.length > 0) {
-      mapName = matchDetail.maps[0].name || matchDetail.maps[0];
     }
     
     return { map: mapName };
@@ -403,7 +428,20 @@ export const PlayerModal = ({
                 <h3 className="text-lg font-bold text-white">Meciurile Recente (Ultimele 10)</h3>
               </div>
               
-              {loadingMatches || apiLoading ? (
+              {apiError ? (
+                <div className="text-center py-6">
+                  <div className="text-red-400 font-medium">Eroare API: {apiError}</div>
+                  <div className="text-gray-400 text-sm mt-2">
+                    Nu se pot încărca meciurile în acest moment.
+                  </div>
+                  <Button 
+                    onClick={loadPlayerMatches}
+                    className="mt-3 bg-orange-500 hover:bg-orange-600 text-white text-sm px-4 py-2"
+                  >
+                    Încearcă din nou
+                  </Button>
+                </div>
+              ) : loadingMatches ? (
                 <div className="text-center py-6">
                   <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-orange-400 mx-auto"></div>
                   <div className="text-gray-400 mt-2 text-sm">Se încarcă meciurile...</div>
