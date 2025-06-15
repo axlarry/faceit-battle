@@ -10,7 +10,10 @@ import { Player, Match } from "@/types/Player";
 import { Trophy } from "lucide-react";
 import { MatchRow } from "./MatchRow";
 import { MatchDetailsModal } from "./MatchDetailsModal";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useFaceitApi } from "@/hooks/useFaceitApi";
+import { getEloFromMatchHistory } from "@/utils/elo/eloHistoryStrategy";
+import { setEloHistoryCache } from "@/utils/eloUtils";
 
 interface MatchesTableProps {
   player: Player;
@@ -22,6 +25,29 @@ interface MatchesTableProps {
 export const MatchesTable = ({ player, matches, matchesStats, loadingMatches }: MatchesTableProps) => {
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [showMatchDetails, setShowMatchDetails] = useState(false);
+  const [loadingEloHistory, setLoadingEloHistory] = useState(false);
+  const { getPlayerMatchHistory } = useFaceitApi();
+
+  // Fetch ELO history when matches are loaded
+  useEffect(() => {
+    if (matches.length > 0 && player.player_id && !loadingMatches) {
+      fetchEloHistory();
+    }
+  }, [matches, player.player_id, loadingMatches]);
+
+  const fetchEloHistory = async () => {
+    setLoadingEloHistory(true);
+    try {
+      console.log('🔍 Fetching ELO history for better ELO detection...');
+      const eloData = await getEloFromMatchHistory(player, getPlayerMatchHistory);
+      setEloHistoryCache(eloData);
+      console.log('✅ ELO history cache updated');
+    } catch (error) {
+      console.error('❌ Error fetching ELO history:', error);
+    } finally {
+      setLoadingEloHistory(false);
+    }
+  };
 
   const handleMatchClick = (match: Match) => {
     setSelectedMatch(match);
@@ -39,6 +65,12 @@ export const MatchesTable = ({ player, matches, matchesStats, loadingMatches }: 
         <Trophy className="w-5 h-5 text-orange-400" />
         <h3 className="text-lg font-bold text-white">Meciurile Recente (Ultimele 10)</h3>
         <span className="text-sm text-gray-400 ml-2">Click pe un meci pentru detalii</span>
+        {loadingEloHistory && (
+          <div className="flex items-center gap-2 ml-4">
+            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-400"></div>
+            <span className="text-xs text-gray-400">Se încarcă datele ELO...</span>
+          </div>
+        )}
       </div>
       
       {loadingMatches ? (
