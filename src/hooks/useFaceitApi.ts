@@ -85,55 +85,6 @@ export const useFaceitApi = () => {
     }
   };
 
-  const getPlayerMatchHistory = async (playerId: string, limit: number = 20) => {
-    try {
-      console.log(`🔍 Fetching match history with ELO data for player: ${playerId}`);
-      
-      // Try multiple endpoints that might contain ELO data
-      const endpoints = [
-        `/players/${playerId}/history?game=cs2&limit=${limit}`,
-        `/players/${playerId}/games/cs2/stats?size=${limit}`,
-        `/players/${playerId}/stats/cs2/history?size=${limit}`
-      ];
-      
-      for (const endpoint of endpoints) {
-        try {
-          const data = await makeApiCall(endpoint);
-          console.log(`✅ Successfully fetched data from ${endpoint}:`, data);
-          
-          // Check if we have ELO data in the response
-          if (data && (data.items || data.matches || Array.isArray(data))) {
-            const matches = data.items || data.matches || data;
-            
-            // Look for ELO data in the matches
-            const hasEloData = matches.some((match: any) => 
-              match.elo_change !== undefined || 
-              match.elo !== undefined ||
-              match.rating_change !== undefined ||
-              (match.stats && (match.stats.elo_change !== undefined || match.stats.rating_change !== undefined))
-            );
-            
-            if (hasEloData) {
-              console.log(`🎯 Found ELO data in endpoint: ${endpoint}`);
-              return { matches, source: endpoint };
-            }
-          }
-        } catch (endpointError) {
-          console.log(`❌ Failed to fetch from ${endpoint}:`, endpointError);
-          continue;
-        }
-      }
-      
-      console.log('⚠️ No ELO data found in any endpoint, returning basic match history');
-      const basicData = await makeApiCall(`/players/${playerId}/history?game=cs2&limit=${limit}`);
-      return { matches: basicData.items || [], source: 'basic' };
-      
-    } catch (error) {
-      console.error('Error fetching player match history:', error);
-      return { matches: [], source: 'error' };
-    }
-  };
-
   const getMatchDetails = async (matchId: string) => {
     try {
       console.log(`Fetching match details for: ${matchId}`);
@@ -280,7 +231,6 @@ export const useFaceitApi = () => {
     makeApiCall,
     getPlayerStats,
     getPlayerMatches,
-    getPlayerMatchHistory,
     getMatchDetails,
     getMatchStats,
     getLeaderboard,

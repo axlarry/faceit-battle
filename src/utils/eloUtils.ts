@@ -11,14 +11,6 @@ import { searchRecursiveEloData, searchEloInArrays } from "./elo/eloRecursiveSea
 import { logMatchAnalysis, logAnalysisEnd } from "./elo/eloDataAnalyzer";
 import { getEloFromMatchDetail } from "./elo/eloMatchDetailStrategy";
 
-// Store for ELO data from match history
-let eloHistoryCache: { [matchId: string]: { elo_change: number } } = {};
-
-export const setEloHistoryCache = (eloData: { [matchId: string]: { elo_change: number } }) => {
-  eloHistoryCache = eloData;
-  console.log('📁 Updated ELO history cache with data for matches:', Object.keys(eloData));
-};
-
 export const getEloChange = async (
   match: Match, 
   player: Player, 
@@ -41,14 +33,8 @@ export const getEloChange = async (
     }
   }
   
-  // PRIORITY 2: Check the history cache
-  if (eloHistoryCache[match.match_id]) {
-    console.log('✅ Found ELO change in history cache:', eloHistoryCache[match.match_id]);
-    return eloHistoryCache[match.match_id];
-  }
-  
-  // PRIORITY 3: Execute other search strategies
-  console.log('🔍 Trying fallback search strategies...');
+  // PRIORITY 2: Execute other search strategies on match stats data
+  console.log('🔍 Trying fallback search strategies on match stats...');
   const searchStrategies = [
     () => searchDirectEloChange(matchStatsData, player),
     () => searchResultsSection(matchStatsData, player),
