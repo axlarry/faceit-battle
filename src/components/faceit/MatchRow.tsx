@@ -10,14 +10,9 @@ import {
   getMatchScore, 
   getMapInfo 
 } from "@/utils/matchUtils";
-import { 
-  getEloChange, 
-  getPlayerStatsFromMatch, 
-  getKDRatio, 
-  getHeadshotPercentage, 
-  getADR, 
-  getKDA 
-} from "@/utils/playerStatsUtils";
+import { getEloChange } from "@/utils/eloUtils";
+import { getPlayerStatsFromMatch, getKDA } from "@/utils/playerDataUtils";
+import { getKDRatio, getHeadshotPercentage, getADR } from "@/utils/statsUtils";
 
 interface MatchRowProps {
   match: Match;
