@@ -87,7 +87,7 @@ export const MatchesTable = ({ player, matches, matchesStats, loadingMatches }: 
           console.log('Found Score object:', round.round_stats.Score);
           
           // Handle different score formats
-          const scoreValues = Object.values(round.round_stats.Score);
+          const scoreValues = Object.values(round.round_stats.Score) as unknown[];
           console.log('Score values:', scoreValues);
           
           // Check if it's a string format like "13 / 8"
@@ -129,7 +129,7 @@ export const MatchesTable = ({ player, matches, matchesStats, loadingMatches }: 
       console.log('Match stats score object:', scoreData);
       
       // Handle string format scores
-      const scoreValues = Object.values(scoreData);
+      const scoreValues = Object.values(scoreData) as unknown[];
       for (const scoreValue of scoreValues) {
         if (typeof scoreValue === 'string' && scoreValue.includes('/')) {
           console.log('✅ Found string score format in results:', scoreValue);
@@ -165,7 +165,7 @@ export const MatchesTable = ({ player, matches, matchesStats, loadingMatches }: 
       console.log('Match results score object:', scoreData);
       
       // Handle string format scores
-      const scoreValues = Object.values(scoreData);
+      const scoreValues = Object.values(scoreData) as unknown[];
       for (const scoreValue of scoreValues) {
         if (typeof scoreValue === 'string' && scoreValue.includes('/')) {
           console.log('✅ Found string score format in match results:', scoreValue);
