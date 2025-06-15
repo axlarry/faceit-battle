@@ -30,7 +30,7 @@ export const MatchRow = ({ match, player, matchesStats }: MatchRowProps) => {
   const playerStats = getPlayerStatsFromMatch(match, player, matchesStats);
   const eloChange = getEloChange(match, player, matchesStats);
   const mapName = getMapInfo(match, matchesStats);
-  const matchScore = getMatchScore(match, matchesStats);
+  const matchScore = getMatchScore(match, matchesStats, player);
   const kda = getKDA(playerStats);
 
   return (

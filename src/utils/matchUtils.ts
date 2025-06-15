@@ -55,12 +55,14 @@ export const getMatchResult = (match: Match, player: Player) => {
   return isWin;
 };
 
-export const getMatchScore = (match: Match, matchesStats: {[key: string]: any}) => {
+export const getMatchScore = (match: Match, matchesStats: {[key: string]: any}, player: Player) => {
   console.log('=== ANALYZING MATCH SCORE ===');
   console.log('Match ID:', match.match_id);
   
   const matchStatsData = matchesStats[match.match_id];
   console.log('Match Stats Data:', JSON.stringify(matchStatsData, null, 2));
+  
+  let scoreString = '';
   
   // Priority 1: Check direct round_stats at root level
   if (matchStatsData?.round_stats?.Score) {
@@ -70,18 +72,12 @@ export const getMatchScore = (match: Match, matchesStats: {[key: string]: any}) 
     
     if (typeof scoreValue === 'string' && scoreValue.includes('/')) {
       console.log('✅ Found string score format in round_stats:', scoreValue);
-      const cleanScore = scoreValue.trim().replace(/\s+/g, ' ');
-      const parts = cleanScore.split('/').map(s => s.trim());
-      if (parts.length === 2 && !isNaN(Number(parts[0])) && !isNaN(Number(parts[1]))) {
-        const formattedScore = `${parts[0]} - ${parts[1]}`;
-        console.log('✅ Final formatted score from round_stats:', formattedScore);
-        return formattedScore;
-      }
+      scoreString = scoreValue.trim().replace(/\s+/g, ' ');
     }
   }
   
   // Priority 2: Try from match stats rounds
-  if (matchStatsData?.rounds && Array.isArray(matchStatsData.rounds) && matchStatsData.rounds.length > 0) {
+  if (!scoreString && matchStatsData?.rounds && Array.isArray(matchStatsData.rounds) && matchStatsData.rounds.length > 0) {
     console.log('📊 Checking rounds array for score...');
     
     for (let i = matchStatsData.rounds.length - 1; i >= 0; i--) {
@@ -94,20 +90,15 @@ export const getMatchScore = (match: Match, matchesStats: {[key: string]: any}) 
         const scoreValue = round.round_stats.Score;
         if (typeof scoreValue === 'string' && scoreValue.includes('/')) {
           console.log('✅ Found string score format in rounds:', scoreValue);
-          const cleanScore = scoreValue.trim().replace(/\s+/g, ' ');
-          const parts = cleanScore.split('/').map(s => s.trim());
-          if (parts.length === 2 && !isNaN(Number(parts[0])) && !isNaN(Number(parts[1]))) {
-            const formattedScore = `${parts[0]} - ${parts[1]}`;
-            console.log('✅ Final formatted score from rounds:', formattedScore);
-            return formattedScore;
-          }
+          scoreString = scoreValue.trim().replace(/\s+/g, ' ');
+          break;
         }
       }
     }
   }
   
   // Priority 3: Try from match stats results
-  if (matchStatsData?.results?.score) {
+  if (!scoreString && matchStatsData?.results?.score) {
     console.log('📊 Checking match stats results for score...');
     const scoreData = matchStatsData.results.score;
     console.log('Match stats score object:', scoreData);
@@ -116,31 +107,61 @@ export const getMatchScore = (match: Match, matchesStats: {[key: string]: any}) 
     for (const scoreValue of scoreValues) {
       if (typeof scoreValue === 'string' && scoreValue.includes('/')) {
         console.log('✅ Found string score format in results:', scoreValue);
-        const cleanScore = scoreValue.trim().replace(/\s+/g, ' ');
-        const parts = cleanScore.split('/').map(s => s.trim());
-        if (parts.length === 2 && !isNaN(Number(parts[0])) && !isNaN(Number(parts[1]))) {
-          const formattedScore = `${parts[0]} - ${parts[1]}`;
-          console.log('✅ Final formatted score from results:', formattedScore);
-          return formattedScore;
-        }
+        scoreString = scoreValue.trim().replace(/\s+/g, ' ');
+        break;
       }
     }
     
-    if (scoreValues.length === 2) {
+    if (!scoreString && scoreValues.length === 2) {
       const numericScores = scoreValues
         .map(score => parseInt(String(score), 10))
         .filter(score => !isNaN(score))
         .sort((a, b) => b - a);
       
       if (numericScores.length === 2) {
-        const finalScore = `${numericScores[0]} - ${numericScores[1]}`;
-        console.log('✅ Final score from match stats results numeric:', finalScore);
-        return finalScore;
+        scoreString = `${numericScores[0]} / ${numericScores[1]}`;
+        console.log('✅ Final score from match stats results numeric:', scoreString);
       }
     }
   }
   
-  console.log('❌ No valid score found');
+  if (!scoreString) {
+    console.log('❌ No valid score found');
+    return 'N/A';
+  }
+  
+  // Parse the score string and format based on match result
+  const parts = scoreString.split('/').map(s => s.trim());
+  if (parts.length === 2 && !isNaN(Number(parts[0])) && !isNaN(Number(parts[1]))) {
+    const score1 = parseInt(parts[0]);
+    const score2 = parseInt(parts[1]);
+    
+    // Check if player won the match
+    const isWin = getMatchResult(match, player);
+    
+    if (isWin === true) {
+      // Player won - show higher score first (player's score first)
+      const playerScore = Math.max(score1, score2);
+      const opponentScore = Math.min(score1, score2);
+      const finalScore = `${playerScore} - ${opponentScore}`;
+      console.log('✅ Win - Final formatted score:', finalScore);
+      return finalScore;
+    } else if (isWin === false) {
+      // Player lost - show lower score first (player's score first)
+      const playerScore = Math.min(score1, score2);
+      const opponentScore = Math.max(score1, score2);
+      const finalScore = `${playerScore} - ${opponentScore}`;
+      console.log('✅ Loss - Final formatted score:', finalScore);
+      return finalScore;
+    } else {
+      // Unknown result - show as is
+      const finalScore = `${score1} - ${score2}`;
+      console.log('✅ Unknown result - Final formatted score:', finalScore);
+      return finalScore;
+    }
+  }
+  
+  console.log('❌ Could not parse score properly');
   return 'N/A';
 };
 
