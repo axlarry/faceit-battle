@@ -74,9 +74,31 @@ export const MatchesTable = ({ player, matches, matchesStats, loadingMatches }: 
     const matchStatsData = matchesStats[match.match_id];
     console.log('Match Stats Data:', JSON.stringify(matchStatsData, null, 2));
     
-    // Priority 1: Try from match stats rounds (most reliable)
+    // Priority 1: Check direct round_stats at root level (most common case)
+    if (matchStatsData?.round_stats) {
+      console.log('📊 Checking direct round_stats for score...');
+      console.log('Round stats:', matchStatsData.round_stats);
+      
+      if (matchStatsData.round_stats.Score) {
+        const scoreValue = matchStatsData.round_stats.Score;
+        console.log('Found direct score in round_stats:', scoreValue);
+        
+        if (typeof scoreValue === 'string' && scoreValue.includes('/')) {
+          console.log('✅ Found string score format in round_stats:', scoreValue);
+          const cleanScore = scoreValue.trim().replace(/\s+/g, ' ');
+          const parts = cleanScore.split('/').map(s => s.trim());
+          if (parts.length === 2 && !isNaN(Number(parts[0])) && !isNaN(Number(parts[1]))) {
+            const formattedScore = `${parts[0]} - ${parts[1]}`;
+            console.log('✅ Final formatted score from round_stats:', formattedScore);
+            return formattedScore;
+          }
+        }
+      }
+    }
+    
+    // Priority 2: Try from match stats rounds (array format)
     if (matchStatsData?.rounds && Array.isArray(matchStatsData.rounds) && matchStatsData.rounds.length > 0) {
-      console.log('📊 Checking rounds data for score...');
+      console.log('📊 Checking rounds array for score...');
       
       // Find final round with score
       for (let i = matchStatsData.rounds.length - 1; i >= 0; i--) {
@@ -84,45 +106,43 @@ export const MatchesTable = ({ player, matches, matchesStats, loadingMatches }: 
         console.log(`Round ${i}:`, round);
         
         if (round.round_stats?.Score) {
-          console.log('Found Score object:', round.round_stats.Score);
+          console.log('Found Score in round:', round.round_stats.Score);
           
-          // Handle different score formats
-          const scoreValues = Object.values(round.round_stats.Score) as unknown[];
-          console.log('Score values:', scoreValues);
-          
-          // Check if it's a string format like "13 / 8"
-          for (const scoreValue of scoreValues) {
-            if (typeof scoreValue === 'string' && scoreValue.includes('/')) {
-              console.log('✅ Found string score format:', scoreValue);
-              // Clean up the score string and format it
-              const cleanScore = scoreValue.trim().replace(/\s+/g, ' ');
-              const parts = cleanScore.split('/').map(s => s.trim());
-              if (parts.length === 2 && !isNaN(Number(parts[0])) && !isNaN(Number(parts[1]))) {
-                const formattedScore = `${parts[0]} - ${parts[1]}`;
-                console.log('✅ Final formatted score:', formattedScore);
-                return formattedScore;
-              }
+          const scoreValue = round.round_stats.Score;
+          if (typeof scoreValue === 'string' && scoreValue.includes('/')) {
+            console.log('✅ Found string score format in rounds:', scoreValue);
+            const cleanScore = scoreValue.trim().replace(/\s+/g, ' ');
+            const parts = cleanScore.split('/').map(s => s.trim());
+            if (parts.length === 2 && !isNaN(Number(parts[0])) && !isNaN(Number(parts[1]))) {
+              const formattedScore = `${parts[0]} - ${parts[1]}`;
+              console.log('✅ Final formatted score from rounds:', formattedScore);
+              return formattedScore;
             }
           }
           
-          // Fallback to numeric values
-          if (scoreValues.length === 2) {
-            const numericScores = scoreValues
-              .map(score => parseInt(String(score), 10))
-              .filter(score => !isNaN(score))
-              .sort((a, b) => b - a); // Sort descending
+          // Handle object format
+          if (typeof scoreValue === 'object' && scoreValue !== null) {
+            const scoreValues = Object.values(scoreValue) as unknown[];
+            console.log('Score values from object:', scoreValues);
             
-            if (numericScores.length === 2) {
-              const finalScore = `${numericScores[0]} - ${numericScores[1]}`;
-              console.log('✅ Final score from numeric values:', finalScore);
-              return finalScore;
+            for (const sv of scoreValues) {
+              if (typeof sv === 'string' && sv.includes('/')) {
+                console.log('✅ Found string score format in score object:', sv);
+                const cleanScore = sv.trim().replace(/\s+/g, ' ');
+                const parts = cleanScore.split('/').map(s => s.trim());
+                if (parts.length === 2 && !isNaN(Number(parts[0])) && !isNaN(Number(parts[1]))) {
+                  const formattedScore = `${parts[0]} - ${parts[1]}`;
+                  console.log('✅ Final formatted score from score object:', formattedScore);
+                  return formattedScore;
+                }
+              }
             }
           }
         }
       }
     }
     
-    // Priority 2: Try from match stats results
+    // Priority 3: Try from match stats results
     if (matchStatsData?.results?.score) {
       console.log('📊 Checking match stats results for score...');
       const scoreData = matchStatsData.results.score;
@@ -158,7 +178,7 @@ export const MatchesTable = ({ player, matches, matchesStats, loadingMatches }: 
       }
     }
     
-    // Priority 3: Try from match results (fallback)
+    // Priority 4: Try from match results (fallback)
     if (match.results?.score) {
       console.log('📊 Checking match results for score...');
       const scoreData = match.results.score;
