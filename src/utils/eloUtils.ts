@@ -15,118 +15,157 @@ export const getEloChange = (match: Match, player: Player, matchesStats: {[key: 
   console.log('🔍 FULL MATCH DATA STRUCTURE:');
   console.log(JSON.stringify(matchStatsData, null, 2));
   
-  // Helper function to search recursively for rank/ELO data
-  const findPlayerRankData = (obj: any, path: string = ''): any => {
+  // Priority 1: Check direct ELO change in match stats
+  if (matchStatsData.elo_change) {
+    console.log('🔍 Found elo_change at root level:', matchStatsData.elo_change);
+    
+    if (Array.isArray(matchStatsData.elo_change)) {
+      const playerEloData = matchStatsData.elo_change.find((elo: any) => 
+        elo.player_id === player.player_id
+      );
+      
+      if (playerEloData && typeof playerEloData.elo_change === 'number') {
+        console.log('✅ Found ELO change in direct array:', playerEloData.elo_change);
+        return { elo_change: playerEloData.elo_change };
+      }
+    }
+  }
+
+  // Priority 2: Check in results section
+  if (matchStatsData.results) {
+    console.log('🔍 Checking results section...');
+    
+    // Check for elo_changes in results
+    if (matchStatsData.results.elo_changes) {
+      console.log('Found elo_changes in results:', matchStatsData.results.elo_changes);
+      
+      if (Array.isArray(matchStatsData.results.elo_changes)) {
+        const playerEloData = matchStatsData.results.elo_changes.find((elo: any) => 
+          elo.player_id === player.player_id
+        );
+        
+        if (playerEloData && typeof playerEloData.elo_change === 'number') {
+          console.log('✅ Found ELO change in results.elo_changes:', playerEloData.elo_change);
+          return { elo_change: playerEloData.elo_change };
+        }
+      }
+    }
+    
+    // Check for player-specific data in results
+    if (matchStatsData.results[player.player_id]) {
+      const playerResultData = matchStatsData.results[player.player_id];
+      console.log('Found player-specific results data:', playerResultData);
+      
+      if (typeof playerResultData.elo_change === 'number') {
+        console.log('✅ Found ELO change in player results:', playerResultData.elo_change);
+        return { elo_change: playerResultData.elo_change };
+      }
+    }
+  }
+
+  // Priority 3: Check teams structure for ELO data
+  if (matchStatsData.teams) {
+    console.log('🔍 Checking teams structure...');
+    
+    Object.entries(matchStatsData.teams).forEach(([teamId, team]: [string, any]) => {
+      console.log(`Checking team ${teamId}:`, team);
+      
+      if (team.players && Array.isArray(team.players)) {
+        const playerData = team.players.find((p: any) => p.player_id === player.player_id);
+        
+        if (playerData) {
+          console.log('Found player in team:', playerData);
+          
+          // Check various ELO properties
+          const eloProperties = [
+            'elo_change', 'ELO Change', 'Elo Change', 
+            'rating_change', 'Rating Change', 'faceit_elo_change'
+          ];
+          
+          for (const prop of eloProperties) {
+            if (playerData[prop] !== undefined) {
+              const eloValue = typeof playerData[prop] === 'string' 
+                ? parseInt(playerData[prop]) 
+                : playerData[prop];
+              
+              if (typeof eloValue === 'number') {
+                console.log(`✅ Found ELO change in teams.${teamId}.players via ${prop}:`, eloValue);
+                return { elo_change: eloValue };
+              }
+            }
+          }
+          
+          // Check player_stats for ELO data
+          if (playerData.player_stats) {
+            console.log('Checking player_stats for ELO data:', playerData.player_stats);
+            
+            for (const prop of eloProperties) {
+              if (playerData.player_stats[prop] !== undefined) {
+                const eloValue = typeof playerData.player_stats[prop] === 'string' 
+                  ? parseInt(playerData.player_stats[prop]) 
+                  : playerData.player_stats[prop];
+                
+                if (typeof eloValue === 'number') {
+                  console.log(`✅ Found ELO change in player_stats via ${prop}:`, eloValue);
+                  return { elo_change: eloValue };
+                }
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // Priority 4: Check rounds structure (sometimes ELO is in round data)
+  if (matchStatsData.rounds && Array.isArray(matchStatsData.rounds)) {
+    console.log('🔍 Checking rounds structure...');
+    
+    // Check last round for final ELO data
+    const lastRound = matchStatsData.rounds[matchStatsData.rounds.length - 1];
+    if (lastRound && lastRound.teams) {
+      Object.entries(lastRound.teams).forEach(([teamId, team]: [string, any]) => {
+        if (team.players && Array.isArray(team.players)) {
+          const playerData = team.players.find((p: any) => p.player_id === player.player_id);
+          
+          if (playerData && playerData.elo_change !== undefined) {
+            const eloValue = typeof playerData.elo_change === 'string' 
+              ? parseInt(playerData.elo_change) 
+              : playerData.elo_change;
+            
+            if (typeof eloValue === 'number') {
+              console.log('✅ Found ELO change in last round:', eloValue);
+              return { elo_change: eloValue };
+            }
+          }
+        }
+      });
+    }
+  }
+
+  // Priority 5: Check for any nested ELO data using recursive search
+  const searchForEloData = (obj: any, path: string = ''): any => {
     if (!obj || typeof obj !== 'object') return null;
     
     for (const [key, value] of Object.entries(obj)) {
       const currentPath = path ? `${path}.${key}` : key;
       
-      // Check for rank-related keys at any level
-      const rankKeys = [
-        'rank', 'ranking', 'skill_level', 'faceit_elo', 'elo', 'rating',
-        'level_before', 'level_after', 'elo_before', 'elo_after',
-        'rank_before', 'rank_after', 'skill_level_before', 'skill_level_after'
-      ];
-      
-      if (rankKeys.includes(key.toLowerCase())) {
-        console.log(`🎯 Found rank-related key "${key}" at ${currentPath}:`, value);
-        
-        // If this is an array, search for our player
-        if (Array.isArray(value)) {
-          const playerRankData = value.find((item: any) => 
-            item && item.player_id === player.player_id
-          );
-          if (playerRankData) {
-            console.log(`✅ Found player rank data in array:`, playerRankData);
-            return playerRankData;
-          }
-        }
-        
-        // If this is an object with our player ID, check it
-        if (value && typeof value === 'object' && 'player_id' in value) {
-          if ((value as any).player_id === player.player_id) {
-            console.log(`✅ Found player rank data:`, value);
-            return value;
-          }
-        }
-      }
-      
-      // If this object has a player_id matching our player
+      // If this is an object with player_id matching our player
       if (value && typeof value === 'object' && 'player_id' in value) {
         if ((value as any).player_id === player.player_id) {
           console.log(`🎯 Found player data at ${currentPath}:`, value);
           
-          // Check for rank/ELO properties in this player object
-          const allRankProps = [
-            'elo_change', 'ELO Change', 'Elo Change', 'rating_change', 'Rating Change',
-            'elo_diff', 'elo_delta', 'faceit_elo_change', 'skill_level_change',
-            'rank', 'ranking', 'skill_level', 'faceit_elo', 'elo', 'rating',
-            'level_before', 'level_after', 'elo_before', 'elo_after',
-            'rank_before', 'rank_after', 'skill_level_before', 'skill_level_after'
-          ];
-          
-          for (const prop of allRankProps) {
+          // Check for ELO properties
+          const eloProps = ['elo_change', 'ELO Change', 'rating_change', 'Rating Change'];
+          for (const prop of eloProps) {
             if ((value as any)[prop] !== undefined) {
-              const rankValue = (value as any)[prop];
-              console.log(`🔍 Found rank property ${prop}:`, rankValue);
+              const eloValue = typeof (value as any)[prop] === 'string' 
+                ? parseInt((value as any)[prop]) 
+                : (value as any)[prop];
               
-              // Handle different rank value types
-              if (typeof rankValue === 'number') {
-                // If it's already a number, check if it looks like an ELO change
-                if (prop.toLowerCase().includes('change') || prop.toLowerCase().includes('diff') || prop.toLowerCase().includes('delta')) {
-                  console.log(`✅ Found ELO change via ${prop}:`, rankValue);
-                  return { elo_change: rankValue };
-                }
-              } else if (typeof rankValue === 'string') {
-                const parsedRank = parseInt(rankValue);
-                if (!isNaN(parsedRank)) {
-                  if (prop.toLowerCase().includes('change') || prop.toLowerCase().includes('diff') || prop.toLowerCase().includes('delta')) {
-                    console.log(`✅ Found ELO change via ${prop}:`, parsedRank);
-                    return { elo_change: parsedRank };
-                  }
-                }
-              } else if (typeof rankValue === 'object' && rankValue !== null) {
-                // Handle nested rank objects
-                console.log(`🔍 Rank object found in ${prop}:`, rankValue);
-                
-                // Check for before/after in rank object
-                if ('after' in rankValue && 'before' in rankValue) {
-                  const after = typeof rankValue.after === 'string' ? parseInt(rankValue.after) : rankValue.after;
-                  const before = typeof rankValue.before === 'string' ? parseInt(rankValue.before) : rankValue.before;
-                  
-                  if (typeof after === 'number' && typeof before === 'number') {
-                    const change = after - before;
-                    console.log(`✅ Calculated ELO change from ${prop}: ${before} → ${after} = ${change}`);
-                    return { elo_change: change };
-                  }
-                }
-                
-                // Check for change property in rank object
-                if ('change' in rankValue) {
-                  const change = typeof rankValue.change === 'string' ? parseInt(rankValue.change) : rankValue.change;
-                  if (typeof change === 'number') {
-                    console.log(`✅ Found ELO change in ${prop}.change:`, change);
-                    return { elo_change: change };
-                  }
-                }
-              }
-            }
-          }
-          
-          // Check in nested objects within player data
-          for (const [nestedKey, nestedValue] of Object.entries(value as any)) {
-            if (typeof nestedValue === 'object' && nestedValue !== null) {
-              console.log(`🔍 Checking nested object ${nestedKey}:`, nestedValue);
-              
-              for (const prop of allRankProps) {
-                if ((nestedValue as any)[prop] !== undefined) {
-                  const rankValue = (nestedValue as any)[prop];
-                  if (typeof rankValue === 'number' && (prop.toLowerCase().includes('change') || prop.toLowerCase().includes('diff'))) {
-                    console.log(`✅ Found ELO change in ${nestedKey}.${prop}:`, rankValue);
-                    return { elo_change: rankValue };
-                  }
-                }
+              if (typeof eloValue === 'number') {
+                console.log(`✅ Found ELO change via recursive search at ${currentPath}.${prop}:`, eloValue);
+                return { elo_change: eloValue };
               }
             }
           }
@@ -135,7 +174,7 @@ export const getEloChange = (match: Match, player: Player, matchesStats: {[key: 
       
       // Continue recursive search
       if (typeof value === 'object' && value !== null) {
-        const result = findPlayerRankData(value, currentPath);
+        const result = searchForEloData(value, currentPath);
         if (result) return result;
       }
     }
@@ -143,112 +182,124 @@ export const getEloChange = (match: Match, player: Player, matchesStats: {[key: 
     return null;
   };
   
-  // Priority 1: Look for rank-specific sections first
-  console.log('🔍 Searching for rank-specific data structures...');
-  
-  // Check for rank history or rank changes at root level
-  const rankSections = ['rank_history', 'rank_changes', 'ranking', 'ranks', 'player_rankings'];
-  for (const section of rankSections) {
-    if (matchStatsData[section]) {
-      console.log(`🔍 Found ${section} section:`, matchStatsData[section]);
-      
-      if (Array.isArray(matchStatsData[section])) {
-        const playerRankData = matchStatsData[section].find((item: any) => 
-          item && item.player_id === player.player_id
-        );
-        if (playerRankData) {
-          console.log(`✅ Found player in ${section}:`, playerRankData);
-          
-          // Look for ELO change indicators
-          for (const key of Object.keys(playerRankData)) {
-            if (key.toLowerCase().includes('change') || key.toLowerCase().includes('diff')) {
-              const value = playerRankData[key];
-              const numValue = typeof value === 'string' ? parseInt(value) : value;
-              if (typeof numValue === 'number') {
-                console.log(`✅ Found ELO change in ${section}:`, numValue);
-                return { elo_change: numValue };
-              }
+  console.log('🔍 Starting recursive search for ELO data...');
+  const recursiveResult = searchForEloData(matchStatsData);
+  if (recursiveResult) {
+    return recursiveResult;
+  }
+
+  // Priority 6: Check original match object for ELO data
+  if (match.teams) {
+    console.log('🔍 Checking original match.teams data...');
+    
+    Object.entries(match.teams).forEach(([teamId, team]) => {
+      const playerData = team.players?.find(p => p.player_id === player.player_id);
+      if (playerData && playerData.player_stats) {
+        console.log('Found player in original match teams:', playerData);
+        
+        // Check for ELO in original match player stats
+        const eloProps = ['elo_change', 'ELO Change', 'rating_change', 'Rating Change'];
+        for (const prop of eloProps) {
+          if (playerData.player_stats[prop] !== undefined) {
+            const eloValue = typeof playerData.player_stats[prop] === 'string' 
+              ? parseInt(playerData.player_stats[prop]) 
+              : playerData.player_stats[prop];
+            
+            if (typeof eloValue === 'number') {
+              console.log(`✅ Found ELO change in original match via ${prop}:`, eloValue);
+              return { elo_change: eloValue };
             }
           }
         }
       }
-    }
+    });
   }
-  
-  // Priority 2: Direct elo_change array at root level
-  if (matchStatsData.elo_change && Array.isArray(matchStatsData.elo_change)) {
-    console.log('🔍 Checking root level elo_change array...');
-    const playerEloData = matchStatsData.elo_change.find((elo: any) => 
-      elo.player_id === player.player_id
-    );
+
+  // Priority 7: Check for ELO data in any array at any level
+  const findEloInArrays = (obj: any, path: string = ''): any => {
+    if (!obj || typeof obj !== 'object') return null;
     
-    if (playerEloData) {
-      console.log('Found player in elo_change array:', playerEloData);
-      if (typeof playerEloData.elo_change === 'number') {
-        console.log('✅ ELO change from root elo_change array:', playerEloData.elo_change);
-        return { elo_change: playerEloData.elo_change };
-      }
-    }
-  }
-  
-  // Priority 3: Check in results for rank data
-  if (matchStatsData.results) {
-    console.log('🔍 Checking results section...');
-    const rankResult = findPlayerRankData(matchStatsData.results, 'results');
-    if (rankResult) return rankResult;
-  }
-  
-  // Priority 4: Comprehensive recursive search
-  console.log('🔍 Starting comprehensive recursive search...');
-  const recursiveResult = findPlayerRankData(matchStatsData);
-  if (recursiveResult) {
-    return recursiveResult;
-  }
-  
-  // Priority 5: Check match.teams data from the original match object
-  if (match.teams) {
-    console.log('🔍 Checking original match.teams data...');
-    for (const teamId of Object.keys(match.teams)) {
-      const team = match.teams[teamId];
-      const playerData = team.players?.find(p => p.player_id === player.player_id);
-      if (playerData) {
-        console.log('Found player in original match teams:', playerData);
-        
-        // Check for rank data in original match
-        const rankResult = findPlayerRankData(playerData, 'match.teams');
-        if (rankResult) return rankResult;
-      }
-    }
-  }
-  
-  // Priority 6: Log structure analysis for debugging
-  console.log('❌ No ELO/Rank change found anywhere');
-  console.log('Available top-level keys:', Object.keys(matchStatsData));
-  
-  // Analyze structure to help identify where rank data might be
-  const analyzeStructure = (obj: any, depth: number = 0, maxDepth: number = 3) => {
-    if (depth > maxDepth || !obj || typeof obj !== 'object') return;
-    
-    Object.entries(obj).forEach(([key, value]) => {
-      const indent = '  '.repeat(depth);
-      if (key.toLowerCase().includes('rank') || key.toLowerCase().includes('elo') || key.toLowerCase().includes('level')) {
-        console.log(`${indent}🎯 POTENTIAL RANK KEY: ${key}`, typeof value === 'object' ? '[object]' : value);
-      }
+    for (const [key, value] of Object.entries(obj)) {
+      const currentPath = path ? `${path}.${key}` : key;
       
-      if (Array.isArray(value) && value.length > 0) {
-        console.log(`${indent}📋 Array "${key}" with ${value.length} items`);
-        if (value[0] && typeof value[0] === 'object') {
-          console.log(`${indent}   Sample item keys:`, Object.keys(value[0]));
+      if (Array.isArray(value)) {
+        console.log(`🔍 Checking array ${currentPath} with ${value.length} items`);
+        
+        // Look for objects with player_id and elo data
+        for (const item of value) {
+          if (item && typeof item === 'object' && 'player_id' in item) {
+            if (item.player_id === player.player_id) {
+              console.log(`🎯 Found player in array ${currentPath}:`, item);
+              
+              // Check all possible ELO properties
+              const allEloProps = [
+                'elo_change', 'ELO Change', 'Elo Change', 'rating_change', 
+                'Rating Change', 'faceit_elo_change', 'elo_diff', 'elo_delta'
+              ];
+              
+              for (const prop of allEloProps) {
+                if (item[prop] !== undefined) {
+                  const eloValue = typeof item[prop] === 'string' 
+                    ? parseInt(item[prop]) 
+                    : item[prop];
+                  
+                  if (typeof eloValue === 'number') {
+                    console.log(`✅ Found ELO change in array ${currentPath} via ${prop}:`, eloValue);
+                    return { elo_change: eloValue };
+                  }
+                }
+              }
+            }
+          }
         }
       } else if (typeof value === 'object' && value !== null) {
-        console.log(`${indent}📂 Object "${key}"`);
-        analyzeStructure(value, depth + 1, maxDepth);
+        const result = findEloInArrays(value, currentPath);
+        if (result) return result;
+      }
+    }
+    
+    return null;
+  };
+  
+  console.log('🔍 Searching for ELO data in arrays...');
+  const arrayResult = findEloInArrays(matchStatsData);
+  if (arrayResult) {
+    return arrayResult;
+  }
+
+  console.log('❌ No ELO change found after exhaustive search');
+  console.log('Available top-level keys:', Object.keys(matchStatsData));
+  
+  // Final attempt: log all available data structures for manual inspection
+  console.log('📊 COMPLETE DATA STRUCTURE ANALYSIS:');
+  const analyzeForElo = (obj: any, depth: number = 0, maxDepth: number = 3) => {
+    if (depth > maxDepth || !obj || typeof obj !== 'object') return;
+    
+    const indent = '  '.repeat(depth);
+    Object.entries(obj).forEach(([key, value]) => {
+      if (key.toLowerCase().includes('elo') || key.toLowerCase().includes('rating') || key.toLowerCase().includes('change')) {
+        console.log(`${indent}🎯 POTENTIAL ELO KEY: ${key}`, typeof value === 'object' ? '[object/array]' : value);
+      }
+      
+      if (Array.isArray(value) && value.length > 0 && value[0] && typeof value[0] === 'object') {
+        const sampleKeys = Object.keys(value[0]);
+        const eloKeys = sampleKeys.filter(k => 
+          k.toLowerCase().includes('elo') || 
+          k.toLowerCase().includes('rating') || 
+          k.toLowerCase().includes('change')
+        );
+        if (eloKeys.length > 0) {
+          console.log(`${indent}📋 Array "${key}" sample ELO keys:`, eloKeys);
+        }
+      }
+      
+      if (typeof value === 'object' && value !== null && !Array.isArray(value) && depth < maxDepth) {
+        analyzeForElo(value, depth + 1, maxDepth);
       }
     });
   };
   
-  console.log('📊 STRUCTURE ANALYSIS:');
-  analyzeStructure(matchStatsData);
+  analyzeForElo(matchStatsData);
   
   console.log('=== ELO ANALYSIS END ===');
   return null;
