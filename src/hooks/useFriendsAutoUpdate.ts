@@ -2,9 +2,7 @@
 import { useEffect, useRef } from 'react';
 import { Player } from '@/types/Player';
 import { toast } from '@/hooks/use-toast';
-
-const API_KEY = '5d81df9c-db61-494c-8e0a-d94c89bb7913';
-const API_BASE = 'https://open.faceit.com/data/v4';
+import { useFaceitApi } from '@/hooks/useFaceitApi';
 
 interface UseFriendsAutoUpdateProps {
   friends: Player[];
@@ -21,37 +19,21 @@ export const useFriendsAutoUpdate = ({
 }: UseFriendsAutoUpdateProps) => {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
   const isUpdatingRef = useRef(false);
+  const { makeApiCall } = useFaceitApi();
 
   const updatePlayerData = async (player: Player): Promise<Player | null> => {
     try {
       console.log(`Updating player data for ${player.nickname} (ID: ${player.player_id})`);
       
-      // Get player basic data
-      const playerResponse = await fetch(
-        `${API_BASE}/players/${player.player_id}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${API_KEY}`
-          }
-        }
-      );
-
-      if (!playerResponse.ok) {
-        const errorData = await playerResponse.json().catch(() => ({}));
-        console.error(`Failed to update data for ${player.nickname}:`, errorData);
-        return null;
-      }
-
-      const playerData = await playerResponse.json();
+      // Get player basic data using the Supabase API
+      const playerData = await makeApiCall(`/players/${player.player_id}`);
       
       // Get additional stats
-      const statsResponse = await fetch(`${API_BASE}/players/${player.player_id}/stats/cs2`, {
-        headers: { 'Authorization': `Bearer ${API_KEY}` }
-      });
-      
       let statsData: any = {};
-      if (statsResponse.ok) {
-        statsData = await statsResponse.json();
+      try {
+        statsData = await makeApiCall(`/players/${player.player_id}/stats/cs2`);
+      } catch (error) {
+        console.warn(`Could not fetch stats for ${player.nickname}:`, error);
       }
 
       const updatedPlayer: Player = {
