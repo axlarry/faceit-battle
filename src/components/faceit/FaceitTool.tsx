@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -36,19 +37,50 @@ export const FaceitTool = ({ onShowPlayerDetails, onAddFriend }: FaceitToolProps
 
   const { makeApiCall } = useFaceitApi();
 
+  const isValidSteamID64 = (input: string): boolean => {
+    return /^\d{17}$/.test(input);
+  };
+
   const extractSteamVanity = (input: string): string => {
-    if (input.includes('steamcommunity.com')) {
+    input = input.trim();
+
+    // Dacă este URL de tip steamcommunity.com/profiles/STEAMID64
+    if (input.includes('steamcommunity.com/profiles/')) {
+      const match = input.match(/steamcommunity\.com\/profiles\/(\d+)/);
+      if (match && match[1]) {
+        return match[1]; // Returnăm direct SteamID64
+      }
+    }
+
+    // Dacă este URL de tip steamcommunity.com/id/username
+    if (input.includes('steamcommunity.com/id/')) {
       const match = input.match(/steamcommunity\.com\/id\/([^\/]+)/);
       return match ? match[1] : input;
     }
-    return input.trim();
+
+    return input;
   };
 
   const getSteamID64 = async (input: string) => {
     try {
-      const vanityName = extractSteamVanity(input);
+      input = input.trim();
+
+      // Verificăm dacă inputul este deja un SteamID64 valid (17 cifre)
+      if (/^\d{17}$/.test(input)) {
+        return input;
+      }
+
+      // Extragem vanity name sau SteamID64 din URL (dacă e cazul)
+      const extracted = extractSteamVanity(input);
+
+      // Dacă după extracție avem un SteamID64 valid, îl returnăm direct
+      if (/^\d{17}$/.test(extracted)) {
+        return extracted;
+      }
+
+      // Altfel facem request către proxy pentru a obține SteamID64
       const response = await fetch(
-        `${PROXY_SERVER}/api/steamid?vanityurl=${vanityName}`
+        `${PROXY_SERVER}/api/steamid?vanityurl=${extracted}`
       );
 
       if (!response.ok) {
@@ -90,13 +122,16 @@ export const FaceitTool = ({ onShowPlayerDetails, onAddFriend }: FaceitToolProps
       let playerInfo;
 
       if (searchType === 'steam') {
-        try {
+        // Folosim SteamID64 direct dacă este valid
+        if (isValidSteamID64(searchTerm)) {
+          playerInfo = await makeApiCall(`/players?game=cs2&game_player_id=${searchTerm}`);
+        } else {
+          // Altfel încercăm să obținem SteamID64 din vanity URL sau profile URL
           const steamID64 = await getSteamID64(searchTerm);
           playerInfo = await makeApiCall(`/players?game=cs2&game_player_id=${steamID64}`);
-        } catch (error) {
-          throw new Error(error instanceof Error ? error.message : 'Profilul Steam nu a fost găsit');
         }
       } else {
+        // Căutare după nickname FACEIT
         playerInfo = await makeApiCall(`/players?nickname=${encodeURIComponent(searchTerm.trim())}`);
       }
 
@@ -192,7 +227,7 @@ export const FaceitTool = ({ onShowPlayerDetails, onAddFriend }: FaceitToolProps
             <Input
               placeholder={
                 searchType === 'steam'
-                  ? "Introdu Steam URL sau ID (ex: donk666 sau https://steamcommunity.com/id/donk666/)"
+                  ? "Introdu Steam URL, ID sau SteamID64 (ex: donk666, https://steamcommunity.com/id/donk666/ sau 76561197960287930)"
                   : "Introdu FACEIT Nickname"
               }
               value={searchTerm}
@@ -209,6 +244,7 @@ export const FaceitTool = ({ onShowPlayerDetails, onAddFriend }: FaceitToolProps
               className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white border-0 px-8"
             >
               {loading ? 'Caută...' : 'Caută'}
+              <Search className="ml-2 h-4 w-4" />
             </Button>
           </div>
         </div>
@@ -239,6 +275,9 @@ export const FaceitTool = ({ onShowPlayerDetails, onAddFriend }: FaceitToolProps
                     src={playerData.avatar}
                     alt={playerData.nickname}
                     className="w-12 h-12 rounded-full border-2 border-orange-400"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = '/placeholder.svg';
+                    }}
                   />
 
                   <div>
