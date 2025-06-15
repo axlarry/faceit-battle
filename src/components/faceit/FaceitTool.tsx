@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -108,6 +107,31 @@ export const FaceitTool = ({ onShowPlayerDetails, onAddFriend }: FaceitToolProps
     }
   };
 
+  const getUserFriendlyErrorMessage = (error: any): string => {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    
+    // Verificăm dacă eroarea conține "API Error:"
+    if (errorMessage.includes('API Error:')) {
+      if (errorMessage.includes('not found') || errorMessage.includes('404')) {
+        return 'Jucătorul nu a fost găsit pe FACEIT. Verifică dacă numele sau ID-ul sunt corecte.';
+      }
+      if (errorMessage.includes('403') || errorMessage.includes('unauthorized')) {
+        return 'Acces neautorizat la API. Te rog contactează administratorul.';
+      }
+      if (errorMessage.includes('500')) {
+        return 'Problemă temporară cu serverul FACEIT. Te rog încearcă din nou peste câteva minute.';
+      }
+      if (errorMessage.includes('rate limit') || errorMessage.includes('429')) {
+        return 'Prea multe cereri. Te rog așteaptă câteva secunde și încearcă din nou.';
+      }
+      // Pentru alte tipuri de API Error, returnăm un mesaj generic
+      return 'Nu s-au găsit rezultate pentru căutarea ta. Verifică dacă datele introduse sunt corecte.';
+    }
+    
+    // Pentru alte tipuri de erori, returnăm mesajul original
+    return errorMessage;
+  };
+
   const searchPlayer = async () => {
     if (!searchTerm.trim()) {
       setApiError('Te rog introdu un termen de căutare');
@@ -151,12 +175,12 @@ export const FaceitTool = ({ onShowPlayerDetails, onAddFriend }: FaceitToolProps
 
       setPlayerData(player);
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Eroare necunoscută';
-      setApiError(errorMessage);
+      const friendlyErrorMessage = getUserFriendlyErrorMessage(error);
+      setApiError(friendlyErrorMessage);
 
       toast({
-        title: "ATENTIE!!!",
-        description: errorMessage,
+        title: "Căutare nereușită",
+        description: friendlyErrorMessage,
         variant: "destructive",
       });
     } finally {
@@ -196,8 +220,16 @@ export const FaceitTool = ({ onShowPlayerDetails, onAddFriend }: FaceitToolProps
 
           {/* Error Display */}
           {apiError && (
-            <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-400">
-              {apiError}
+            <div className="mb-4 p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
+              <div className="flex items-start gap-3">
+                <div className="w-5 h-5 rounded-full bg-red-500/20 flex items-center justify-center mt-0.5">
+                  <div className="w-2 h-2 rounded-full bg-red-400"></div>
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-red-400 font-medium mb-1">Căutare nereușită</h4>
+                  <p className="text-red-300 text-sm leading-relaxed">{apiError}</p>
+                </div>
+              </div>
             </div>
           )}
 
