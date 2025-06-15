@@ -18,9 +18,10 @@ interface MatchRowProps {
   match: Match;
   player: Player;
   matchesStats: {[key: string]: any};
+  onMatchClick: (match: Match) => void;
 }
 
-export const MatchRow = ({ match, player, matchesStats }: MatchRowProps) => {
+export const MatchRow = ({ match, player, matchesStats, onMatchClick }: MatchRowProps) => {
   const isWin = getMatchResult(match, player);
   const playerStats = getPlayerStatsFromMatch(match, player, matchesStats);
   const eloChange = getEloChange(match, player, matchesStats);
@@ -31,9 +32,10 @@ export const MatchRow = ({ match, player, matchesStats }: MatchRowProps) => {
   return (
     <TableRow 
       key={match.match_id}
-      className={`border-white/10 hover:bg-white/5 transition-colors ${
+      className={`border-white/10 hover:bg-white/10 transition-colors cursor-pointer ${
         isWin === true ? 'bg-green-500/5' : isWin === false ? 'bg-red-500/5' : ''
       }`}
+      onClick={() => onMatchClick(match)}
     >
       {/* Result */}
       <TableCell>

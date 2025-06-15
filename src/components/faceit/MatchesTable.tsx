@@ -9,6 +9,8 @@ import {
 import { Player, Match } from "@/types/Player";
 import { Trophy } from "lucide-react";
 import { MatchRow } from "./MatchRow";
+import { MatchDetailsModal } from "./MatchDetailsModal";
+import { useState } from "react";
 
 interface MatchesTableProps {
   player: Player;
@@ -18,11 +20,25 @@ interface MatchesTableProps {
 }
 
 export const MatchesTable = ({ player, matches, matchesStats, loadingMatches }: MatchesTableProps) => {
+  const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
+  const [showMatchDetails, setShowMatchDetails] = useState(false);
+
+  const handleMatchClick = (match: Match) => {
+    setSelectedMatch(match);
+    setShowMatchDetails(true);
+  };
+
+  const closeMatchDetails = () => {
+    setShowMatchDetails(false);
+    setSelectedMatch(null);
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2">
         <Trophy className="w-5 h-5 text-orange-400" />
         <h3 className="text-lg font-bold text-white">Meciurile Recente (Ultimele 10)</h3>
+        <span className="text-sm text-gray-400 ml-2">Click pe un meci pentru detalii</span>
       </div>
       
       {loadingMatches ? (
@@ -58,12 +74,21 @@ export const MatchesTable = ({ player, matches, matchesStats, loadingMatches }: 
                   match={match}
                   player={player}
                   matchesStats={matchesStats}
+                  onMatchClick={handleMatchClick}
                 />
               ))}
             </TableBody>
           </Table>
         </div>
       )}
+
+      <MatchDetailsModal
+        match={selectedMatch}
+        player={player}
+        matchesStats={matchesStats}
+        isOpen={showMatchDetails}
+        onClose={closeMatchDetails}
+      />
     </div>
   );
 };
