@@ -101,7 +101,41 @@ export const useFaceitApi = () => {
     try {
       console.log(`Fetching match stats for: ${matchId}`);
       const data = await makeApiCall(`/matches/${matchId}/stats`);
-      console.log('Match stats response:', data);
+      console.log('Match stats response - FULL DATA:', JSON.stringify(data, null, 2));
+      
+      // Log specifically for ELO debugging
+      if (data) {
+        console.log('=== ELO DEBUGGING - MATCH STATS ===');
+        console.log('Match ID:', matchId);
+        console.log('Available top-level keys:', Object.keys(data));
+        
+        // Check for elo_change array
+        if (data.elo_change) {
+          console.log('Found elo_change array:', data.elo_change);
+        }
+        
+        // Check teams structure
+        if (data.teams) {
+          console.log('Teams structure:', Object.keys(data.teams));
+          Object.values(data.teams).forEach((team: any, index) => {
+            console.log(`Team ${index} structure:`, Object.keys(team));
+            if (team.players && Array.isArray(team.players)) {
+              console.log(`Team ${index} players sample:`, team.players[0]);
+            }
+          });
+        }
+        
+        // Check rounds structure
+        if (data.rounds && Array.isArray(data.rounds)) {
+          console.log('Rounds count:', data.rounds.length);
+          if (data.rounds.length > 0) {
+            console.log('Sample round structure:', Object.keys(data.rounds[0]));
+          }
+        }
+        
+        console.log('=== END ELO DEBUGGING ===');
+      }
+      
       return data;
     } catch (error) {
       console.error('Error fetching match stats:', error);
