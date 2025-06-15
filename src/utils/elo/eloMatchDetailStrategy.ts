@@ -21,13 +21,20 @@ export const getEloFromMatchDetail = async (
     for (const [teamId, teamData] of Object.entries(matchDetails.teams)) {
       console.log(`🔍 Checking team ${teamId}:`, teamData);
       
-      if (!teamData || !Array.isArray(teamData.players)) {
-        console.log(`❌ No players array found in team ${teamId}`);
+      // Type guard: check if teamData is an object and has players property
+      if (!teamData || typeof teamData !== 'object' || !('players' in teamData)) {
+        console.log(`❌ No players property found in team ${teamId}`);
+        continue;
+      }
+      
+      const teamPlayers = (teamData as any).players;
+      if (!Array.isArray(teamPlayers)) {
+        console.log(`❌ Players is not an array in team ${teamId}`);
         continue;
       }
       
       // Find the specific player in this team
-      const playerData = teamData.players.find((p: any) => p.player_id === player.player_id);
+      const playerData = teamPlayers.find((p: any) => p.player_id === player.player_id);
       
       if (playerData) {
         console.log(`✅ Found player ${player.player_id} in team ${teamId}:`, playerData);
