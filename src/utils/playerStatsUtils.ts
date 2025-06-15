@@ -1,3 +1,4 @@
+
 import { Player, Match } from "@/types/Player";
 
 export const getEloChange = (match: Match, player: Player, matchesStats: {[key: string]: any}) => {
@@ -111,11 +112,11 @@ export const getEloChange = (match: Match, player: Player, matchesStats: {[key: 
           }
           
           // If it's an object, check if it contains our player data
-          if (typeof value === 'object' && value !== null) {
-            if (value.player_id === player.player_id) {
+          if (typeof value === 'object' && value !== null && 'player_id' in value) {
+            if ((value as any).player_id === player.player_id) {
               console.log('Found player ELO object at', currentPath, ':', value);
-              if (typeof value.elo_change === 'number') {
-                return { elo_change: value.elo_change };
+              if (typeof (value as any).elo_change === 'number') {
+                return { elo_change: (value as any).elo_change };
               }
             }
           }
