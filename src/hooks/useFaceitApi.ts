@@ -16,11 +16,20 @@ export const useFaceitApi = () => {
   const loadApiKey = async () => {
     try {
       const { data, error } = await supabase.functions.invoke('get-faceit-api-key');
-      if (error) throw error;
-      setApiKey(data.apiKey);
+      if (error) {
+        console.error('Error loading API key from edge function:', error);
+        // Fallback to hardcoded key
+        setApiKey('f1755f40-8f84-4d62-b315-5f09dc25eef5');
+      } else if (data && data.apiKey) {
+        setApiKey(data.apiKey);
+      } else {
+        console.warn('No API key returned, using fallback');
+        // Fallback to hardcoded key
+        setApiKey('f1755f40-8f84-4d62-b315-5f09dc25eef5');
+      }
     } catch (error) {
       console.error('Error loading API key:', error);
-      // Fallback to hardcoded key for now
+      // Fallback to hardcoded key
       setApiKey('f1755f40-8f84-4d62-b315-5f09dc25eef5');
     } finally {
       setLoading(false);

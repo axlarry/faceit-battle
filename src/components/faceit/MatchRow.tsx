@@ -1,4 +1,3 @@
-
 import { Badge } from "@/components/ui/badge";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Player, Match } from "@/types/Player";
@@ -26,7 +25,7 @@ interface MatchRowProps {
 export const MatchRow = ({ match, player, matchesStats, onMatchClick }: MatchRowProps) => {
   const [eloChange, setEloChange] = useState<{ elo_change: number } | null>(null);
   const [loadingElo, setLoadingElo] = useState(true);
-  const { getMatchDetails } = useFaceitApi();
+  const { getMatchDetails, apiKey, loading: apiLoading } = useFaceitApi();
   
   const isWin = getMatchResult(match, player);
   const playerStats = getPlayerStatsFromMatch(match, player, matchesStats);
@@ -36,19 +35,31 @@ export const MatchRow = ({ match, player, matchesStats, onMatchClick }: MatchRow
 
   useEffect(() => {
     const fetchEloChange = async () => {
+      // Wait for API key to be loaded
+      if (apiLoading) {
+        return;
+      }
+      
+      // If no API key available, stop loading and show "-"
+      if (!apiKey) {
+        setLoadingElo(false);
+        return;
+      }
+
       setLoadingElo(true);
       try {
         const result = await getEloChange(match, player, matchesStats, getMatchDetails);
         setEloChange(result);
       } catch (error) {
         console.error('Error fetching ELO change:', error);
+        setEloChange(null);
       } finally {
         setLoadingElo(false);
       }
     };
 
     fetchEloChange();
-  }, [match.match_id, player.player_id]);
+  }, [match.match_id, player.player_id, apiKey, apiLoading]);
 
   return (
     <TableRow 

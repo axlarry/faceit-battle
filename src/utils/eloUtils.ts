@@ -18,15 +18,16 @@ export const getEloChange = async (
 ) => {
   const matchStatsData = matchesStats[match.match_id];
   
-  if (!matchStatsData && !getMatchDetails) {
-    return null;
-  }
-  
-  // PRIORITY 1: Try match details endpoint (most reliable)
+  // PRIORITY 1: Try match details endpoint (most reliable) only if function is available
   if (getMatchDetails) {
-    const matchDetailResult = await getEloFromMatchDetail(match.match_id, player, getMatchDetails);
-    if (matchDetailResult) {
-      return matchDetailResult;
+    try {
+      const matchDetailResult = await getEloFromMatchDetail(match.match_id, player, getMatchDetails);
+      if (matchDetailResult) {
+        return matchDetailResult;
+      }
+    } catch (error) {
+      console.error('Error fetching match details for ELO:', error);
+      // Continue to other strategies instead of failing
     }
   }
   
@@ -43,9 +44,14 @@ export const getEloChange = async (
     ];
     
     for (const strategy of searchStrategies) {
-      const result = strategy();
-      if (result) {
-        return result;
+      try {
+        const result = strategy();
+        if (result) {
+          return result;
+        }
+      } catch (error) {
+        console.error('Error in ELO search strategy:', error);
+        // Continue to next strategy
       }
     }
   }

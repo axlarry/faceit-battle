@@ -17,9 +17,23 @@ serve(async (req) => {
     const apiKey = Deno.env.get('FACEIT_API_KEY')
     
     if (!apiKey) {
-      throw new Error('FACEIT_API_KEY not configured')
+      console.error('FACEIT_API_KEY not found in environment variables')
+      return new Response(
+        JSON.stringify({ 
+          error: 'FACEIT_API_KEY not configured',
+          apiKey: null 
+        }),
+        { 
+          status: 200, // Return 200 instead of 500 so the client can handle it
+          headers: { 
+            ...corsHeaders,
+            'Content-Type': 'application/json' 
+          } 
+        }
+      )
     }
 
+    console.log('FACEIT_API_KEY found, returning to client')
     return new Response(
       JSON.stringify({ apiKey }),
       { 
@@ -30,10 +44,14 @@ serve(async (req) => {
       }
     )
   } catch (error) {
+    console.error('Error in get-faceit-api-key function:', error)
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        apiKey: null 
+      }),
       { 
-        status: 500,
+        status: 200, // Return 200 so client can handle gracefully
         headers: { 
           ...corsHeaders,
           'Content-Type': 'application/json' 
