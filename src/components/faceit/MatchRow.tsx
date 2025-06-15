@@ -13,6 +13,8 @@ import {
 import { getEloChange } from "@/utils/eloUtils";
 import { getPlayerStatsFromMatch, getKDA } from "@/utils/playerDataUtils";
 import { getKDRatio, getHeadshotPercentage, getADR } from "@/utils/statsUtils";
+import { useFaceitApi } from "@/hooks/useFaceitApi";
+import { useState, useEffect } from "react";
 
 interface MatchRowProps {
   match: Match;
@@ -22,12 +24,31 @@ interface MatchRowProps {
 }
 
 export const MatchRow = ({ match, player, matchesStats, onMatchClick }: MatchRowProps) => {
+  const [eloChange, setEloChange] = useState<{ elo_change: number } | null>(null);
+  const [loadingElo, setLoadingElo] = useState(true);
+  const { getMatchDetails } = useFaceitApi();
+  
   const isWin = getMatchResult(match, player);
   const playerStats = getPlayerStatsFromMatch(match, player, matchesStats);
-  const eloChange = getEloChange(match, player, matchesStats);
   const mapName = getMapInfo(match, matchesStats);
   const matchScore = getMatchScore(match, matchesStats, player);
   const kda = getKDA(playerStats);
+
+  useEffect(() => {
+    const fetchEloChange = async () => {
+      setLoadingElo(true);
+      try {
+        const result = await getEloChange(match, player, matchesStats, getMatchDetails);
+        setEloChange(result);
+      } catch (error) {
+        console.error('Error fetching ELO change:', error);
+      } finally {
+        setLoadingElo(false);
+      }
+    };
+
+    fetchEloChange();
+  }, [match.match_id, player.player_id]);
 
   return (
     <TableRow 
@@ -110,7 +131,12 @@ export const MatchRow = ({ match, player, matchesStats, onMatchClick }: MatchRow
 
       {/* ELO Change */}
       <TableCell>
-        {eloChange && typeof eloChange.elo_change === 'number' ? (
+        {loadingElo ? (
+          <div className="flex items-center gap-1">
+            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-orange-400"></div>
+            <span className="text-gray-400 text-xs">...</span>
+          </div>
+        ) : eloChange && typeof eloChange.elo_change === 'number' ? (
           <div className="flex items-center gap-1">
             {eloChange.elo_change > 0 ? (
               <TrendingUp className="w-4 h-4 text-green-400" />

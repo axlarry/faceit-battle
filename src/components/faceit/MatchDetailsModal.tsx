@@ -1,4 +1,3 @@
-
 import {
   Dialog,
   DialogContent,
@@ -32,6 +31,8 @@ import {
 import { getEloChange } from "@/utils/eloUtils";
 import { getPlayerStatsFromMatch, getKDA } from "@/utils/playerDataUtils";
 import { getKDRatio, getHeadshotPercentage, getADR } from "@/utils/statsUtils";
+import { useState, useEffect } from "react";
+import { useFaceitApi } from "@/hooks/useFaceitApi";
 
 interface MatchDetailsModalProps {
   match: Match | null;
@@ -48,11 +49,32 @@ export const MatchDetailsModal = ({
   isOpen, 
   onClose 
 }: MatchDetailsModalProps) => {
+  const [eloChange, setEloChange] = useState<{ elo_change: number } | null>(null);
+  const [loadingElo, setLoadingElo] = useState(true);
+  const { getMatchDetails } = useFaceitApi();
+
+  useEffect(() => {
+    if (match && isOpen) {
+      const fetchEloChange = async () => {
+        setLoadingElo(true);
+        try {
+          const result = await getEloChange(match, player, matchesStats, getMatchDetails);
+          setEloChange(result);
+        } catch (error) {
+          console.error('Error fetching ELO change:', error);
+        } finally {
+          setLoadingElo(false);
+        }
+      };
+
+      fetchEloChange();
+    }
+  }, [match?.match_id, player.player_id, isOpen]);
+
   if (!match) return null;
 
   const isWin = getMatchResult(match, player);
   const playerStats = getPlayerStatsFromMatch(match, player, matchesStats);
-  const eloChange = getEloChange(match, player, matchesStats);
   const mapName = getMapInfo(match, matchesStats);
   const matchScore = getMatchScore(match, matchesStats, player);
   const kda = getKDA(playerStats);
@@ -211,7 +233,9 @@ export const MatchDetailsModal = ({
                 </div>
                 
                 <div className="bg-black/20 rounded-xl p-4 flex items-center gap-3">
-                  {eloChange && typeof eloChange.elo_change === 'number' ? (
+                  {loadingElo ? (
+                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-orange-400"></div>
+                  ) : eloChange && typeof eloChange.elo_change === 'number' ? (
                     eloChange.elo_change > 0 ? (
                       <TrendingUp className="w-5 h-5 text-green-400" />
                     ) : eloChange.elo_change < 0 ? (
@@ -225,12 +249,14 @@ export const MatchDetailsModal = ({
                   <div>
                     <div className="text-gray-300 text-xs font-medium">Schimbare ELO</div>
                     <div className={`text-sm font-bold ${
+                      loadingElo ? 'text-gray-400' :
                       eloChange && typeof eloChange.elo_change === 'number' ? (
                         eloChange.elo_change > 0 ? 'text-green-400' : 
                         eloChange.elo_change < 0 ? 'text-red-400' : 'text-gray-400'
                       ) : 'text-gray-400'
                     }`}>
-                      {eloChange && typeof eloChange.elo_change === 'number' ? (
+                      {loadingElo ? '...' :
+                       eloChange && typeof eloChange.elo_change === 'number' ? (
                         `${eloChange.elo_change > 0 ? '+' : ''}${eloChange.elo_change}`
                       ) : 'N/A'}
                     </div>
