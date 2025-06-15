@@ -18,18 +18,16 @@ export const useFaceitApi = () => {
       const { data, error } = await supabase.functions.invoke('get-faceit-api-key');
       if (error) {
         console.error('Error loading API key from edge function:', error);
-        // Fallback to hardcoded key
         setApiKey('f1755f40-8f84-4d62-b315-5f09dc25eef5');
       } else if (data && data.apiKey) {
         setApiKey(data.apiKey);
+        console.log('[API] Successfully loaded API key from Supabase');
       } else {
         console.warn('No API key returned, using fallback');
-        // Fallback to hardcoded key
         setApiKey('f1755f40-8f84-4d62-b315-5f09dc25eef5');
       }
     } catch (error) {
       console.error('Error loading API key:', error);
-      // Fallback to hardcoded key
       setApiKey('f1755f40-8f84-4d62-b315-5f09dc25eef5');
     } finally {
       setLoading(false);
@@ -41,6 +39,7 @@ export const useFaceitApi = () => {
       throw new Error('API key not available');
     }
     
+    console.log(`[API] Making call to: ${API_BASE}${endpoint}`);
     const response = await fetch(`${API_BASE}${endpoint}`, {
       headers: {
         'Authorization': `Bearer ${apiKey}`,
@@ -53,7 +52,9 @@ export const useFaceitApi = () => {
       throw new Error(`API Error: ${errorData.error || response.statusText}`);
     }
 
-    return await response.json();
+    const data = await response.json();
+    console.log(`[API] Response for ${endpoint}:`, data);
+    return data;
   };
 
   const getPlayerStats = async (playerId: string) => {
@@ -87,6 +88,7 @@ export const useFaceitApi = () => {
 
   const getMatchDetails = async (matchId: string) => {
     try {
+      console.log(`[API] Fetching match details for: ${matchId}`);
       return await makeApiCall(`/matches/${matchId}`);
     } catch (error) {
       console.error('Error fetching match details:', error);

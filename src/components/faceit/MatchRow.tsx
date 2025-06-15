@@ -42,16 +42,19 @@ export const MatchRow = ({ match, player, matchesStats, onMatchClick }: MatchRow
       
       // If no API key available, stop loading and show "-"
       if (!apiKey) {
+        console.log(`[ELO] No API key available, skipping ELO detection`);
         setLoadingElo(false);
         return;
       }
 
       setLoadingElo(true);
       try {
+        console.log(`[ELO] Starting ELO fetch for match ${match.match_id}`);
         const result = await getEloChange(match, player, matchesStats, getMatchDetails);
+        console.log(`[ELO] ELO fetch result:`, result);
         setEloChange(result);
       } catch (error) {
-        console.error('Error fetching ELO change:', error);
+        console.error('[ELO] Error fetching ELO change:', error);
         setEloChange(null);
       } finally {
         setLoadingElo(false);
