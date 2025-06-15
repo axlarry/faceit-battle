@@ -84,18 +84,37 @@ export const MatchesTable = ({ player, matches, matchesStats, loadingMatches }: 
         console.log(`Round ${i}:`, round);
         
         if (round.round_stats?.Score) {
-          const scores = Object.values(round.round_stats.Score);
-          console.log('Round scores found:', scores);
+          console.log('Found Score object:', round.round_stats.Score);
           
-          if (scores.length === 2) {
-            const numericScores = scores
+          // Handle different score formats
+          const scoreValues = Object.values(round.round_stats.Score);
+          console.log('Score values:', scoreValues);
+          
+          // Check if it's a string format like "13 / 8"
+          for (const scoreValue of scoreValues) {
+            if (typeof scoreValue === 'string' && scoreValue.includes('/')) {
+              console.log('✅ Found string score format:', scoreValue);
+              // Clean up the score string and format it
+              const cleanScore = scoreValue.trim().replace(/\s+/g, ' ');
+              const parts = cleanScore.split('/').map(s => s.trim());
+              if (parts.length === 2 && !isNaN(Number(parts[0])) && !isNaN(Number(parts[1]))) {
+                const formattedScore = `${parts[0]} - ${parts[1]}`;
+                console.log('✅ Final formatted score:', formattedScore);
+                return formattedScore;
+              }
+            }
+          }
+          
+          // Fallback to numeric values
+          if (scoreValues.length === 2) {
+            const numericScores = scoreValues
               .map(score => parseInt(String(score), 10))
               .filter(score => !isNaN(score))
               .sort((a, b) => b - a); // Sort descending
             
             if (numericScores.length === 2) {
               const finalScore = `${numericScores[0]} - ${numericScores[1]}`;
-              console.log('✅ Final score from rounds:', finalScore);
+              console.log('✅ Final score from numeric values:', finalScore);
               return finalScore;
             }
           }
@@ -106,18 +125,34 @@ export const MatchesTable = ({ player, matches, matchesStats, loadingMatches }: 
     // Priority 2: Try from match stats results
     if (matchStatsData?.results?.score) {
       console.log('📊 Checking match stats results for score...');
-      const scores = Object.values(matchStatsData.results.score);
-      console.log('Match stats scores:', scores);
+      const scoreData = matchStatsData.results.score;
+      console.log('Match stats score object:', scoreData);
       
-      if (scores.length === 2) {
-        const numericScores = scores
+      // Handle string format scores
+      const scoreValues = Object.values(scoreData);
+      for (const scoreValue of scoreValues) {
+        if (typeof scoreValue === 'string' && scoreValue.includes('/')) {
+          console.log('✅ Found string score format in results:', scoreValue);
+          const cleanScore = scoreValue.trim().replace(/\s+/g, ' ');
+          const parts = cleanScore.split('/').map(s => s.trim());
+          if (parts.length === 2 && !isNaN(Number(parts[0])) && !isNaN(Number(parts[1]))) {
+            const formattedScore = `${parts[0]} - ${parts[1]}`;
+            console.log('✅ Final formatted score from results:', formattedScore);
+            return formattedScore;
+          }
+        }
+      }
+      
+      // Fallback to numeric parsing
+      if (scoreValues.length === 2) {
+        const numericScores = scoreValues
           .map(score => parseInt(String(score), 10))
           .filter(score => !isNaN(score))
           .sort((a, b) => b - a);
         
         if (numericScores.length === 2) {
           const finalScore = `${numericScores[0]} - ${numericScores[1]}`;
-          console.log('✅ Final score from match stats results:', finalScore);
+          console.log('✅ Final score from match stats results numeric:', finalScore);
           return finalScore;
         }
       }
@@ -126,18 +161,34 @@ export const MatchesTable = ({ player, matches, matchesStats, loadingMatches }: 
     // Priority 3: Try from match results (fallback)
     if (match.results?.score) {
       console.log('📊 Checking match results for score...');
-      const scores = Object.values(match.results.score);
-      console.log('Match results scores:', scores);
+      const scoreData = match.results.score;
+      console.log('Match results score object:', scoreData);
       
-      if (scores.length === 2) {
-        const numericScores = scores
+      // Handle string format scores
+      const scoreValues = Object.values(scoreData);
+      for (const scoreValue of scoreValues) {
+        if (typeof scoreValue === 'string' && scoreValue.includes('/')) {
+          console.log('✅ Found string score format in match results:', scoreValue);
+          const cleanScore = scoreValue.trim().replace(/\s+/g, ' ');
+          const parts = cleanScore.split('/').map(s => s.trim());
+          if (parts.length === 2 && !isNaN(Number(parts[0])) && !isNaN(Number(parts[1]))) {
+            const formattedScore = `${parts[0]} - ${parts[1]}`;
+            console.log('✅ Final formatted score from match results:', formattedScore);
+            return formattedScore;
+          }
+        }
+      }
+      
+      // Fallback to numeric parsing
+      if (scoreValues.length === 2) {
+        const numericScores = scoreValues
           .map(score => parseInt(String(score), 10))
           .filter(score => !isNaN(score))
           .sort((a, b) => b - a);
         
         if (numericScores.length === 2) {
           const finalScore = `${numericScores[0]} - ${numericScores[1]}`;
-          console.log('✅ Final score from match results:', finalScore);
+          console.log('✅ Final score from match results numeric:', finalScore);
           return finalScore;
         }
       }
@@ -158,7 +209,7 @@ export const MatchesTable = ({ player, matches, matchesStats, loadingMatches }: 
       return null;
     }
     
-    console.log('Full match stats data:', JSON.stringify(matchStatsData, null, 2));
+    console.log('Full match stats data for ELO:', JSON.stringify(matchStatsData, null, 2));
     
     // Priority 1: Check calculate_elo array (most reliable)
     if (matchStatsData.calculate_elo && Array.isArray(matchStatsData.calculate_elo)) {
@@ -193,6 +244,12 @@ export const MatchesTable = ({ player, matches, matchesStats, loadingMatches }: 
                   console.log('✅ ELO change from rounds:', playerData.elo_change);
                   return { elo_change: playerData.elo_change };
                 }
+                // Check for elo object with before/after
+                if (playerData.elo && playerData.elo.after && playerData.elo.before) {
+                  const eloChange = playerData.elo.after - playerData.elo.before;
+                  console.log('✅ Calculated ELO change from before/after:', eloChange);
+                  return { elo_change: eloChange };
+                }
               }
             }
           }
@@ -212,6 +269,12 @@ export const MatchesTable = ({ player, matches, matchesStats, loadingMatches }: 
             if (typeof playerData.elo_change === 'number') {
               console.log('✅ ELO change from teams:', playerData.elo_change);
               return { elo_change: playerData.elo_change };
+            }
+            // Check for elo object with before/after
+            if (playerData.elo && playerData.elo.after && playerData.elo.before) {
+              const eloChange = playerData.elo.after - playerData.elo.before;
+              console.log('✅ Calculated ELO change from teams before/after:', eloChange);
+              return { elo_change: eloChange };
             }
           }
         }
