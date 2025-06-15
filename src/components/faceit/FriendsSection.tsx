@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -9,6 +8,7 @@ import { UserPlus, Users, Trash2, RefreshCw } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useFriendsAutoUpdate } from "@/hooks/useFriendsAutoUpdate";
 import { PasswordDialog } from "./PasswordDialog";
+import { useFaceitApi } from "@/hooks/useFaceitApi";
 
 interface FriendsSectionProps {
   friends: Player[];
@@ -18,9 +18,6 @@ interface FriendsSectionProps {
   onUpdateFriend?: (player: Player) => void;
   onReloadFriends?: () => void;
 }
-
-const API_KEY = '5d81df9c-db61-494c-8e0a-d94c89bb7913';
-const API_BASE = 'https://open.faceit.com/data/v4';
 
 export const FriendsSection = ({ 
   friends, 
@@ -39,6 +36,8 @@ export const FriendsSection = ({
     playerId?: string;
   } | null>(null);
 
+  const { makeApiCall } = useFaceitApi();
+
   // Auto-update friends data every 5 minutes
   const { isUpdating, updateAllFriends } = useFriendsAutoUpdate({
     friends,
@@ -52,28 +51,8 @@ export const FriendsSection = ({
     
     setLoading(true);
     try {
-      const response = await fetch(
-        `${API_BASE}/players?nickname=${encodeURIComponent(searchTerm.trim())}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${API_KEY}`
-          }
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Jucătorul nu a fost găsit');
-      }
-
-      const playerData = await response.json();
-      
-      const statsResponse = await fetch(`${API_BASE}/players/${playerData.player_id}/stats/cs2`, {
-        headers: { 'Authorization': `Bearer ${API_KEY}` }
-      });
-      let statsData = {};
-      if (statsResponse.ok) {
-        statsData = await statsResponse.json();
-      }
+      const playerData = await makeApiCall(`/players?nickname=${encodeURIComponent(searchTerm.trim())}`);
+      const statsData = await makeApiCall(`/players/${playerData.player_id}/stats/cs2`);
 
       const player: Player = {
         player_id: playerData.player_id,
@@ -81,10 +60,10 @@ export const FriendsSection = ({
         avatar: playerData.avatar || '/placeholder.svg',
         level: playerData.games?.cs2?.skill_level || 0,
         elo: playerData.games?.cs2?.faceit_elo || 0,
-        wins: parseInt((statsData as any).lifetime?.Wins) || 0,
-        winRate: Math.round((parseInt((statsData as any).lifetime?.Wins) / parseInt((statsData as any).lifetime?.Matches)) * 100) || 0,
-        hsRate: parseFloat((statsData as any).lifetime?.['Average Headshots %']) || 0,
-        kdRatio: parseFloat((statsData as any).lifetime?.['Average K/D Ratio']) || 0,
+        wins: parseInt(statsData.lifetime?.Wins) || 0,
+        winRate: Math.round((parseInt(statsData.lifetime?.Wins) / parseInt(statsData.lifetime?.Matches)) * 100) || 0,
+        hsRate: parseFloat(statsData.lifetime?.['Average Headshots %']) || 0,
+        kdRatio: parseFloat(statsData.lifetime?.['Average K/D Ratio']) || 0,
       };
 
       setPendingAction({ type: 'add', player });

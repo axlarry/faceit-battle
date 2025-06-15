@@ -5,16 +5,13 @@ import { Badge } from "@/components/ui/badge";
 import { Player } from "@/types/Player";
 import { toast } from "@/hooks/use-toast";
 import { PasswordDialog } from "./PasswordDialog";
+import { useFaceitApi } from "@/hooks/useFaceitApi";
 
 interface LeaderboardTableProps {
   region: string;
   onShowPlayerDetails: (player: Player) => void;
   onAddFriend: (player: Player) => void;
 }
-
-// Setează aici propriul tău API key FACEIT
-const API_KEY = 'c2755709-8b70-4f89-934f-7e4a8d0b7a29'; // Înlocuiește cu propriul tău API key
-const API_BASE = 'https://open.faceit.com/data/v4';
 
 export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: LeaderboardTableProps) => {
   const [players, setPlayers] = useState<Player[]>([]);
@@ -23,6 +20,8 @@ export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: L
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [pendingPlayer, setPendingPlayer] = useState<Player | null>(null);
   const limit = 20;
+  
+  const { makeApiCall, loading: apiLoading } = useFaceitApi();
 
   useEffect(() => {
     setPlayers([]);
@@ -31,24 +30,11 @@ export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: L
   }, [region]);
 
   const loadPlayers = async (currentOffset: number, reset = false) => {
-    if (loading) return;
+    if (loading || apiLoading) return;
     
     setLoading(true);
     try {
-      const response = await fetch(
-        `${API_BASE}/rankings/games/cs2/regions/${region}?offset=${currentOffset}&limit=${limit}`,
-        {
-          headers: {
-            'Authorization': `Bearer ${API_KEY}`
-          }
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`Eroare API: ${response.status}`);
-      }
-
-      const data = await response.json();
+      const data = await makeApiCall(`/rankings/games/cs2/regions/${region}?offset=${currentOffset}&limit=${limit}`);
       
       if (data.items.length === 0) {
         toast({
@@ -62,15 +48,8 @@ export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: L
       const playersWithDetails = await Promise.all(
         data.items.map(async (item: any) => {
           try {
-            const playerResponse = await fetch(`${API_BASE}/players/${item.player_id}`, {
-              headers: { 'Authorization': `Bearer ${API_KEY}` }
-            });
-            const playerData = await playerResponse.json();
-            
-            const statsResponse = await fetch(`${API_BASE}/players/${item.player_id}/stats/cs2`, {
-              headers: { 'Authorization': `Bearer ${API_KEY}` }
-            });
-            const statsData = await statsResponse.json();
+            const playerData = await makeApiCall(`/players/${item.player_id}`);
+            const statsData = await makeApiCall(`/players/${item.player_id}/stats/cs2`);
 
             return {
               player_id: item.player_id,

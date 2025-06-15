@@ -7,14 +7,13 @@ import { Player } from "@/types/Player";
 import { Search, User, Trophy, Sword, Crosshair, BarChart2 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { PasswordDialog } from "./PasswordDialog";
+import { useFaceitApi } from "@/hooks/useFaceitApi";
 
 interface FaceitToolProps {
   onShowPlayerDetails: (player: Player) => void;
   onAddFriend: (player: Player) => Promise<void>;
 }
 
-const FACEIT_API_KEY = '6bb8f3be-53d3-400b-9766-bca9106ea411';
-const FACEIT_API_BASE = 'https://open.faceit.com/data/v4';
 const PROXY_SERVER = 'https://lacurte.ro:3000';
 
 interface StatsData {
@@ -34,6 +33,8 @@ export const FaceitTool = ({ onShowPlayerDetails, onAddFriend }: FaceitToolProps
   const [apiError, setApiError] = useState<string | null>(null);
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [pendingPlayer, setPendingPlayer] = useState<Player | null>(null);
+
+  const { makeApiCall } = useFaceitApi();
 
   const extractSteamVanity = (input: string): string => {
     if (input.includes('steamcommunity.com')) {
@@ -86,39 +87,20 @@ export const FaceitTool = ({ onShowPlayerDetails, onAddFriend }: FaceitToolProps
     setApiError(null);
 
     try {
-      let playerResponse;
+      let playerInfo;
 
       if (searchType === 'steam') {
         try {
           const steamID64 = await getSteamID64(searchTerm);
-          playerResponse = await fetch(
-            `${FACEIT_API_BASE}/players?game=cs2&game_player_id=${steamID64}`,
-            { headers: { 'Authorization': `Bearer ${FACEIT_API_KEY}` } }
-          );
+          playerInfo = await makeApiCall(`/players?game=cs2&game_player_id=${steamID64}`);
         } catch (error) {
           throw new Error(error instanceof Error ? error.message : 'Profilul Steam nu a fost găsit');
         }
       } else {
-        playerResponse = await fetch(
-          `${FACEIT_API_BASE}/players?nickname=${encodeURIComponent(searchTerm.trim())}`,
-          { headers: { 'Authorization': `Bearer ${FACEIT_API_KEY}` } }
-        );
+        playerInfo = await makeApiCall(`/players?nickname=${encodeURIComponent(searchTerm.trim())}`);
       }
 
-      if (!playerResponse.ok) {
-        const errorData = await playerResponse.json();
-        throw new Error(errorData.message || 'Fraierul nu are cont Faceit');
-      }
-
-      const playerInfo = await playerResponse.json();
-      const statsResponse = await fetch(`${FACEIT_API_BASE}/players/${playerInfo.player_id}/stats/cs2`, {
-        headers: { 'Authorization': `Bearer ${FACEIT_API_KEY}` }
-      });
-
-      let statsData: StatsData = {};
-      if (statsResponse.ok) {
-        statsData = await statsResponse.json();
-      }
+      const statsData = await makeApiCall(`/players/${playerInfo.player_id}/stats/cs2`);
 
       const player: Player = {
         player_id: playerInfo.player_id,
