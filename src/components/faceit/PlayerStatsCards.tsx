@@ -1,4 +1,3 @@
-
 import { Badge } from "@/components/ui/badge";
 import { Player } from "@/types/Player";
 import { Trophy, Target, Crosshair, Zap, Globe, Flag, TrendingUp } from "lucide-react";
@@ -29,14 +28,29 @@ interface EloData {
 export const PlayerStatsCards = ({ player }: PlayerStatsCardsProps) => {
   const [eloData, setEloData] = useState<EloData | null>(null);
   const [loadingElo, setLoadingElo] = useState(true);
+  const [apiError, setApiError] = useState(false);
   const { getPlayerEloData } = useLcryptApi();
 
   useEffect(() => {
     const fetchEloData = async () => {
       setLoadingElo(true);
-      const data = await getPlayerEloData(player.nickname);
-      setEloData(data);
-      setLoadingElo(false);
+      setApiError(false);
+      
+      try {
+        const data = await getPlayerEloData(player.nickname);
+        setEloData(data);
+        
+        // If data is null, it means the API failed but we handled it gracefully
+        if (data === null) {
+          setApiError(true);
+        }
+      } catch (error) {
+        console.error('Error in fetchEloData:', error);
+        setApiError(true);
+        setEloData(null);
+      } finally {
+        setLoadingElo(false);
+      }
     };
 
     if (player.nickname) {
@@ -70,6 +84,13 @@ export const PlayerStatsCards = ({ player }: PlayerStatsCardsProps) => {
         </div>
         {loadingElo ? (
           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-orange-400 mx-auto"></div>
+        ) : apiError ? (
+          <>
+            <div className="text-lg font-bold text-orange-400">
+              {player.elo || 0}
+            </div>
+            <div className="text-xs text-gray-500">FACEIT</div>
+          </>
         ) : (
           <>
             <div className="text-lg font-bold text-orange-400">
@@ -92,9 +113,11 @@ export const PlayerStatsCards = ({ player }: PlayerStatsCardsProps) => {
         </div>
         {loadingElo ? (
           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-400 mx-auto"></div>
+        ) : apiError || !eloData ? (
+          <div className="text-lg font-bold text-gray-400">N/A</div>
         ) : (
           <div className="text-lg font-bold text-blue-400">
-            {formatRanking(eloData?.region_ranking, 'region')}
+            {formatRanking(eloData.region_ranking, 'region')}
           </div>
         )}
       </div>
@@ -107,9 +130,11 @@ export const PlayerStatsCards = ({ player }: PlayerStatsCardsProps) => {
         </div>
         {loadingElo ? (
           <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-green-400 mx-auto"></div>
+        ) : apiError || !eloData ? (
+          <div className="text-lg font-bold text-gray-400">N/A</div>
         ) : (
           <div className="text-lg font-bold text-green-400">
-            {formatRanking(eloData?.country_ranking, 'country')}
+            {formatRanking(eloData.country_ranking, 'country')}
           </div>
         )}
       </div>
@@ -159,7 +184,7 @@ export const PlayerStatsCards = ({ player }: PlayerStatsCardsProps) => {
       </div>
 
       {/* Ladder Points (if available) */}
-      {eloData?.ladder_points && (
+      {eloData?.ladder_points && !apiError && (
         <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 text-center">
           <div className="flex items-center justify-center gap-1 mb-1">
             <Zap className="w-4 h-4 text-cyan-400" />
