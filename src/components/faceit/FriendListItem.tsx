@@ -1,7 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { Badge } from "@/components/ui/badge";
-import { ExternalLink } from "lucide-react";
 import { Player } from "@/types/Player";
 import { EloChangeIndicator } from './EloChangeIndicator';
 import { useFaceitApi } from "@/hooks/useFaceitApi";
@@ -167,8 +166,7 @@ export const FriendListItem = React.memo(({
               rel="noopener noreferrer"
               className="bg-transparent border-2 border-[#ff6500] text-[#ff6500] hover:bg-[#ff6500] hover:text-white rounded-lg px-2 sm:px-3 h-6 sm:h-7 font-bold text-xs flex items-center gap-1 transition-all duration-200 hover:scale-105"
             >
-              <ExternalLink size={10} className="sm:hidden" />
-              <ExternalLink size={11} className="hidden sm:block" />
+              <img src="/icons/faceit.svg" alt="Faceit" className="w-3 h-3 sm:w-4 sm:h-4" />
               <span className="hidden sm:inline">Faceit</span>
             </a>
             <a
@@ -177,8 +175,7 @@ export const FriendListItem = React.memo(({
               rel="noopener noreferrer"
               className="bg-transparent border-2 border-blue-400 text-blue-400 hover:bg-blue-500 hover:border-blue-500 hover:text-white rounded-lg px-2 sm:px-3 h-6 sm:h-7 font-bold text-xs flex items-center gap-1 transition-all duration-200 hover:scale-105"
             >
-              <ExternalLink size={10} className="sm:hidden" />
-              <ExternalLink size={11} className="hidden sm:block" />
+              <img src="/icons/steam.svg" alt="Steam" className="w-3 h-3 sm:w-4 sm:h-4" />
               <span className="hidden sm:inline">Steam</span>
             </a>
           </div>
