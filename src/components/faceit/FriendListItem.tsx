@@ -17,10 +17,10 @@ interface FriendListItemProps {
 }
 
 const getLevelColor = (level: number) => {
-  if (level >= 9) return 'bg-red-500';
-  if (level >= 7) return 'bg-purple-500';
-  if (level >= 5) return 'bg-blue-500';
-  if (level >= 3) return 'bg-green-500';
+  if (level >= 10) return 'bg-red-500';
+  if (level >= 8) return 'bg-orange-500';
+  if (level >= 4) return 'bg-yellow-500';
+  if (level >= 1) return 'bg-green-500';
   return 'bg-gray-500';
 };
 
