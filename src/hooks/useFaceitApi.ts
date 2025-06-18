@@ -1,7 +1,7 @@
-
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from '@/hooks/use-toast';
+import { apiService } from '@/services/apiService';
 
 const API_BASE = 'https://open.faceit.com/data/v4';
 
@@ -32,24 +32,30 @@ export const useFaceitApi = () => {
       throw new Error('API key not available');
     }
 
-    console.log(`Making API call to: ${API_BASE}${endpoint}`);
+    const requestKey = `faceit-${endpoint}`;
     
-    const response = await fetch(`${API_BASE}${endpoint}`, {
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      }
+    return apiService.dedupedRequest(requestKey, async () => {
+      return apiService.retryRequest(async () => {
+        console.log(`Making API call to: ${API_BASE}${endpoint}`);
+        
+        const response = await fetch(`${API_BASE}${endpoint}`, {
+          headers: {
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          console.error('API Error:', errorData);
+          throw new Error(`API Error: ${errorData.error || response.statusText}`);
+        }
+
+        const data = await response.json();
+        console.log('API Response:', data);
+        return data;
+      }, { maxRetries: 2, baseDelay: 500 });
     });
-
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error('API Error:', errorData);
-      throw new Error(`API Error: ${errorData.error || response.statusText}`);
-    }
-
-    const data = await response.json();
-    console.log('API Response:', data);
-    return data;
   };
 
   const getPlayerStats = async (playerId: string) => {
