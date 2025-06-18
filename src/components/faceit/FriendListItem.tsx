@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Badge } from "@/components/ui/badge";
 import { Player } from "@/types/Player";
@@ -96,17 +95,17 @@ export const FriendListItem = React.memo(({
   };
 
   const handleLevelIconError = () => {
-    console.log(`Failed to load level icon: ${getLevelIcon(friend.level || 1)}`);
+    console.error(`Failed to load level icon: ${getLevelIcon(friend.level || 1)}`);
     setLevelIconError(true);
   };
 
   const handleFaceitIconError = () => {
-    console.log('Failed to load Faceit icon: /icons/faceit.svg');
+    console.error('Failed to load Faceit icon from: /icons/faceit.svg');
     setFaceitIconError(true);
   };
 
   const handleSteamIconError = () => {
-    console.log('Failed to load Steam icon: /icons/steam.svg');
+    console.error('Failed to load Steam icon from: /icons/steam.svg');
     setSteamIconError(true);
   };
 
@@ -139,7 +138,7 @@ export const FriendListItem = React.memo(({
                     alt={`Skill Level ${friend.level}`}
                     className="w-5 h-5 sm:w-6 sm:h-6"
                     onError={handleLevelIconError}
-                    onLoad={() => console.log(`Level icon loaded successfully: ${getLevelIcon(friend.level || 1)}`)}
+                    onLoad={() => console.log(`✅ Level icon loaded successfully: ${getLevelIcon(friend.level || 1)}`)}
                   />
                 ) : (
                   <Badge 
@@ -190,10 +189,10 @@ export const FriendListItem = React.memo(({
                   alt="Faceit" 
                   className="w-3 h-3 sm:w-4 sm:h-4"
                   onError={handleFaceitIconError}
-                  onLoad={() => console.log('Faceit icon loaded successfully')}
+                  onLoad={() => console.log('✅ Faceit icon loaded successfully from /icons/faceit.svg')}
                 />
               ) : (
-                <span className="text-xs">F</span>
+                <span className="text-xs font-bold">F</span>
               )}
               <span className="hidden sm:inline">Faceit</span>
             </a>
@@ -209,10 +208,10 @@ export const FriendListItem = React.memo(({
                   alt="Steam" 
                   className="w-3 h-3 sm:w-4 sm:h-4"
                   onError={handleSteamIconError}
-                  onLoad={() => console.log('Steam icon loaded successfully')}
+                  onLoad={() => console.log('✅ Steam icon loaded successfully from /icons/steam.svg')}
                 />
               ) : (
-                <span className="text-xs">S</span>
+                <span className="text-xs font-bold">S</span>
               )}
               <span className="hidden sm:inline">Steam</span>
             </a>

@@ -14,7 +14,7 @@ export const PlayerActions = ({ player, isFriend, onFriendAction }: PlayerAction
   const [faceitIconError, setFaceitIconError] = useState(false);
 
   const handleFaceitIconError = () => {
-    console.log('Failed to load Faceit icon in PlayerActions: /icons/faceit.svg');
+    console.error('Failed to load Faceit icon from: /icons/faceit.svg');
     setFaceitIconError(true);
   };
 
@@ -52,10 +52,10 @@ export const PlayerActions = ({ player, isFriend, onFriendAction }: PlayerAction
             alt="Faceit" 
             className="w-4 h-4 mr-2"
             onError={handleFaceitIconError}
-            onLoad={() => console.log('Faceit icon loaded successfully in PlayerActions')}
+            onLoad={() => console.log('✅ Faceit icon loaded successfully from /icons/faceit.svg')}
           />
         ) : (
-          <span className="text-sm mr-2">F</span>
+          <span className="text-sm mr-2 font-bold">F</span>
         )}
         Vezi pe FACEIT
       </Button>
