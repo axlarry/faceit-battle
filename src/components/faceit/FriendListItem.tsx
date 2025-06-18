@@ -61,7 +61,9 @@ export const FriendListItem = React.memo(({
 }: FriendListItemProps) => {
   const [steamId, setSteamId] = useState<string | null>(null);
   const [steamId64, setSteamId64] = useState<string | null>(null);
-  const [iconError, setIconError] = useState(false);
+  const [levelIconError, setLevelIconError] = useState(false);
+  const [faceitIconError, setFaceitIconError] = useState(false);
+  const [steamIconError, setSteamIconError] = useState(false);
   const { makeApiCall } = useFaceitApi();
 
   useEffect(() => {
@@ -93,8 +95,19 @@ export const FriendListItem = React.memo(({
     e.stopPropagation();
   };
 
-  const handleIconError = () => {
-    setIconError(true);
+  const handleLevelIconError = () => {
+    console.log(`Failed to load level icon: ${getLevelIcon(friend.level || 1)}`);
+    setLevelIconError(true);
+  };
+
+  const handleFaceitIconError = () => {
+    console.log('Failed to load Faceit icon: /icons/faceit.svg');
+    setFaceitIconError(true);
+  };
+
+  const handleSteamIconError = () => {
+    console.log('Failed to load Steam icon: /icons/steam.svg');
+    setSteamIconError(true);
   };
 
   return (
@@ -120,12 +133,13 @@ export const FriendListItem = React.memo(({
             <h3 className="text-sm sm:text-base font-bold text-white truncate">{friend.nickname}</h3>
             <div className="flex flex-wrap items-center gap-1 sm:gap-2 mt-1">
               <div className="flex items-center gap-1">
-                {!iconError ? (
+                {!levelIconError ? (
                   <img
                     src={getLevelIcon(friend.level || 1)}
                     alt={`Skill Level ${friend.level}`}
                     className="w-5 h-5 sm:w-6 sm:h-6"
-                    onError={handleIconError}
+                    onError={handleLevelIconError}
+                    onLoad={() => console.log(`Level icon loaded successfully: ${getLevelIcon(friend.level || 1)}`)}
                   />
                 ) : (
                   <Badge 
@@ -170,15 +184,17 @@ export const FriendListItem = React.memo(({
               rel="noopener noreferrer"
               className="bg-transparent border-2 border-[#ff6500] text-[#ff6500] hover:bg-[#ff6500] hover:text-white rounded-lg px-2 sm:px-3 h-6 sm:h-7 font-bold text-xs flex items-center gap-1 transition-all duration-200 hover:scale-105"
             >
-              <img 
-                src="/icons/faceit.svg" 
-                alt="Faceit" 
-                className="w-3 h-3 sm:w-4 sm:h-4"
-                onError={(e) => {
-                  // Fallback to text if SVG fails
-                  e.currentTarget.style.display = 'none';
-                }}
-              />
+              {!faceitIconError ? (
+                <img 
+                  src="/icons/faceit.svg" 
+                  alt="Faceit" 
+                  className="w-3 h-3 sm:w-4 sm:h-4"
+                  onError={handleFaceitIconError}
+                  onLoad={() => console.log('Faceit icon loaded successfully')}
+                />
+              ) : (
+                <span className="text-xs">F</span>
+              )}
               <span className="hidden sm:inline">Faceit</span>
             </a>
             <a
@@ -187,15 +203,17 @@ export const FriendListItem = React.memo(({
               rel="noopener noreferrer"
               className="bg-transparent border-2 border-blue-400 text-blue-400 hover:bg-blue-500 hover:border-blue-500 hover:text-white rounded-lg px-2 sm:px-3 h-6 sm:h-7 font-bold text-xs flex items-center gap-1 transition-all duration-200 hover:scale-105"
             >
-              <img 
-                src="/icons/steam.svg" 
-                alt="Steam" 
-                className="w-3 h-3 sm:w-4 sm:h-4"
-                onError={(e) => {
-                  // Fallback to text if SVG fails
-                  e.currentTarget.style.display = 'none';
-                }}
-              />
+              {!steamIconError ? (
+                <img 
+                  src="/icons/steam.svg" 
+                  alt="Steam" 
+                  className="w-3 h-3 sm:w-4 sm:h-4"
+                  onError={handleSteamIconError}
+                  onLoad={() => console.log('Steam icon loaded successfully')}
+                />
+              ) : (
+                <span className="text-xs">S</span>
+              )}
               <span className="hidden sm:inline">Steam</span>
             </a>
           </div>

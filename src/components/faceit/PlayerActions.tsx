@@ -2,6 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Player } from "@/types/Player";
 import { UserPlus, UserMinus } from "lucide-react";
+import { useState } from "react";
 
 interface PlayerActionsProps {
   player: Player;
@@ -10,6 +11,13 @@ interface PlayerActionsProps {
 }
 
 export const PlayerActions = ({ player, isFriend, onFriendAction }: PlayerActionsProps) => {
+  const [faceitIconError, setFaceitIconError] = useState(false);
+
+  const handleFaceitIconError = () => {
+    console.log('Failed to load Faceit icon in PlayerActions: /icons/faceit.svg');
+    setFaceitIconError(true);
+  };
+
   return (
     <div className="flex gap-3 justify-center">
       <Button
@@ -38,15 +46,17 @@ export const PlayerActions = ({ player, isFriend, onFriendAction }: PlayerAction
         className="border-orange-400 text-orange-400 hover:bg-orange-400 hover:text-white px-4 py-2 text-sm"
         onClick={() => window.open(`https://www.faceit.com/en/players/${player.nickname}`, '_blank')}
       >
-        <img 
-          src="/icons/faceit.svg" 
-          alt="Faceit" 
-          className="w-4 h-4 mr-2"
-          onError={(e) => {
-            // Fallback if SVG fails to load
-            e.currentTarget.style.display = 'none';
-          }}
-        />
+        {!faceitIconError ? (
+          <img 
+            src="/icons/faceit.svg" 
+            alt="Faceit" 
+            className="w-4 h-4 mr-2"
+            onError={handleFaceitIconError}
+            onLoad={() => console.log('Faceit icon loaded successfully in PlayerActions')}
+          />
+        ) : (
+          <span className="text-sm mr-2">F</span>
+        )}
         Vezi pe FACEIT
       </Button>
     </div>
