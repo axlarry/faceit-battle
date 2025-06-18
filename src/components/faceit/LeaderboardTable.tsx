@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -63,7 +62,7 @@ export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: L
 
       console.log(`Received ${data.items.length} players for region ${region}`);
 
-      // Get detailed player info
+      // Get detailed player info (WITHOUT Lcrypt API calls for optimization)
       const playersWithDetails = await Promise.all(
         data.items.map(async (item: any) => {
           try {

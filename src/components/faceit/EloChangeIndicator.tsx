@@ -1,5 +1,6 @@
 
 import React from 'react';
+import { ArrowUp, ArrowDown } from 'lucide-react';
 
 interface EloChangeIndicatorProps {
   lcryptData: any;
@@ -24,7 +25,7 @@ export const EloChangeIndicator = React.memo(({ lcryptData }: EloChangeIndicator
   
   const isPositive = eloChange > 0;
   const color = isPositive ? 'text-green-400' : 'text-red-400';
-  const sign = isPositive ? '+' : '';
+  const LightningIcon = isPositive ? ArrowUp : ArrowDown;
   
   return (
     <div 
@@ -33,7 +34,8 @@ export const EloChangeIndicator = React.memo(({ lcryptData }: EloChangeIndicator
         animation: 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite'
       }}
     >
-      <span>{sign}{eloChange} elo today</span>
+      <LightningIcon size={14} className={color} />
+      <span>{Math.abs(eloChange)} elo today</span>
     </div>
   );
 });

@@ -2,6 +2,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Player } from "@/types/Player";
 import { useLcryptApi } from "@/hooks/useLcryptApi";
+import { ArrowUp, ArrowDown } from 'lucide-react';
 
 interface PlayerHeaderProps {
   player: Player;
@@ -16,6 +17,22 @@ export const PlayerHeader = ({ player }: PlayerHeaderProps) => {
     if (level >= 5) return 'from-blue-500 to-blue-600';
     if (level >= 3) return 'from-green-500 to-green-600';
     return 'from-gray-500 to-gray-600';
+  };
+
+  const renderEloChange = () => {
+    if (!lcryptData?.today?.elo || lcryptData.today.elo === 0) return null;
+    
+    const eloChange = lcryptData.today.elo;
+    const isPositive = eloChange > 0;
+    const color = isPositive ? 'text-green-400' : 'text-red-400';
+    const LightningIcon = isPositive ? ArrowUp : ArrowDown;
+    
+    return (
+      <div className={`${color} text-sm font-bold flex items-center gap-1 mt-1`}>
+        <LightningIcon size={14} className={color} />
+        <span>+{Math.abs(eloChange)} elo today</span>
+      </div>
+    );
   };
 
   return (
@@ -55,10 +72,8 @@ export const PlayerHeader = ({ player }: PlayerHeaderProps) => {
                 {lcryptData.today.win}W / {lcryptData.today.lose}L
               </div>
               <div className="text-gray-400 text-xs">Astăzi</div>
-              <div className="text-sm text-blue-400 mt-1">
-                ELO: {lcryptData.today.elo > 0 ? '+' : ''}{lcryptData.today.elo}
-              </div>
-              <div className="text-xs text-gray-500">
+              {renderEloChange()}
+              <div className="text-xs text-gray-500 mt-1">
                 {lcryptData.today.count} meciuri
               </div>
             </>
