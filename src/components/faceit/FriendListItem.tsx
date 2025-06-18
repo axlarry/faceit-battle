@@ -34,6 +34,25 @@ const getLevelIcon = (level: number) => {
   return iconMap[level] || iconMap[1];
 };
 
+// Convert Steam ID to Steam ID64
+const convertSteamIdToSteamId64 = (steamId: string): string => {
+  // Steam ID format: STEAM_0:Y:Z where Y is 0 or 1, Z is the account number
+  const steamIdMatch = steamId.match(/^STEAM_[0-5]:([01]):(\d+)$/);
+  
+  if (!steamIdMatch) {
+    // If it's already a Steam ID64 or different format, return as is
+    return steamId;
+  }
+  
+  const y = parseInt(steamIdMatch[1]);
+  const z = parseInt(steamIdMatch[2]);
+  
+  // Steam ID64 calculation: 76561197960265728 + (Z * 2) + Y
+  const steamId64 = 76561197960265728n + BigInt(z * 2) + BigInt(y);
+  
+  return steamId64.toString();
+};
+
 export const FriendListItem = React.memo(({ 
   friend, 
   index, 
@@ -41,6 +60,7 @@ export const FriendListItem = React.memo(({
   onPlayerClick 
 }: FriendListItemProps) => {
   const [steamId, setSteamId] = useState<string | null>(null);
+  const [steamId64, setSteamId64] = useState<string | null>(null);
   const { makeApiCall } = useFaceitApi();
 
   useEffect(() => {
@@ -48,7 +68,10 @@ export const FriendListItem = React.memo(({
       try {
         const playerData = await makeApiCall(`/players/${friend.player_id}`);
         if (playerData?.platforms?.steam) {
-          setSteamId(playerData.platforms.steam);
+          const steamIdRaw = playerData.platforms.steam;
+          setSteamId(steamIdRaw);
+          const steamId64Converted = convertSteamIdToSteamId64(steamIdRaw);
+          setSteamId64(steamId64Converted);
         }
       } catch (error) {
         console.error('Error fetching Steam ID:', error);
@@ -148,7 +171,7 @@ export const FriendListItem = React.memo(({
               <span className="hidden sm:inline">Faceit</span>
             </a>
             <a
-              href={steamId ? `https://steamcommunity.com/profiles/${steamId}` : `https://steamcommunity.com/search/users/#text=${friend.nickname}`}
+              href={steamId64 ? `https://steamcommunity.com/profiles/${steamId64}` : `https://steamcommunity.com/search/users/#text=${friend.nickname}`}
               target="_blank"
               rel="noopener noreferrer"
               className="bg-transparent border-2 border-blue-400 text-blue-400 hover:bg-blue-500 hover:border-blue-500 hover:text-white rounded-lg px-2 sm:px-3 h-6 sm:h-7 font-bold text-xs flex items-center gap-1 transition-all duration-200 hover:scale-105"
