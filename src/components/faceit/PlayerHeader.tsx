@@ -1,4 +1,3 @@
-
 import { Badge } from "@/components/ui/badge";
 import { Player } from "@/types/Player";
 import { useLcryptApi } from "@/hooks/useLcryptApi";
@@ -24,13 +23,13 @@ export const PlayerHeader = ({ player }: PlayerHeaderProps) => {
     
     const eloChange = lcryptData.today.elo;
     const isPositive = eloChange > 0;
-    const color = isPositive ? 'text-green-400' : 'text-red-400';
+    const color = isPositive ? 'text-green-500' : 'text-red-500'; // More vibrant colors
     const LightningIcon = isPositive ? ArrowUp : ArrowDown;
     
     return (
       <div className={`${color} text-sm font-bold flex items-center gap-1 mt-1`}>
         <LightningIcon size={14} className={color} />
-        <span>+{Math.abs(eloChange)} elo today</span>
+        <span>+{Math.abs(eloChange)} today</span>
       </div>
     );
   };

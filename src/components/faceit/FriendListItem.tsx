@@ -1,9 +1,9 @@
-
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Badge } from "@/components/ui/badge";
 import { ExternalLink } from "lucide-react";
 import { Player } from "@/types/Player";
 import { EloChangeIndicator } from './EloChangeIndicator';
+import { useFaceitApi } from "@/hooks/useFaceitApi";
 
 interface FriendWithLcrypt extends Player {
   lcryptData?: any;
@@ -16,12 +16,22 @@ interface FriendListItemProps {
   onPlayerClick: (player: Player) => void;
 }
 
-const getLevelColor = (level: number) => {
-  if (level >= 10) return 'bg-red-500';
-  if (level >= 8) return 'bg-orange-500';
-  if (level >= 4) return 'bg-yellow-500';
-  if (level >= 1) return 'bg-green-500';
-  return 'bg-gray-500';
+const getLevelIcon = (level: number) => {
+  // Faceit skill level icons - you can upload custom icons and replace these paths
+  const iconMap: { [key: number]: string } = {
+    1: '/faceit-icons/skill-level-1.svg',
+    2: '/faceit-icons/skill-level-2.svg',
+    3: '/faceit-icons/skill-level-3.svg',
+    4: '/faceit-icons/skill-level-4.svg',
+    5: '/faceit-icons/skill-level-5.svg',
+    6: '/faceit-icons/skill-level-6.svg',
+    7: '/faceit-icons/skill-level-7.svg',
+    8: '/faceit-icons/skill-level-8.svg',
+    9: '/faceit-icons/skill-level-9.svg',
+    10: '/faceit-icons/skill-level-10.svg',
+  };
+  
+  return iconMap[level] || iconMap[1];
 };
 
 export const FriendListItem = React.memo(({ 
@@ -30,6 +40,24 @@ export const FriendListItem = React.memo(({
   isFlashing, 
   onPlayerClick 
 }: FriendListItemProps) => {
+  const [steamId, setSteamId] = useState<string | null>(null);
+  const { makeApiCall } = useFaceitApi();
+
+  useEffect(() => {
+    const fetchSteamId = async () => {
+      try {
+        const playerData = await makeApiCall(`/players/${friend.player_id}`);
+        if (playerData?.platforms?.steam) {
+          setSteamId(playerData.platforms.steam);
+        }
+      } catch (error) {
+        console.error('Error fetching Steam ID:', error);
+      }
+    };
+
+    fetchSteamId();
+  }, [friend.player_id, makeApiCall]);
+
   const handleClick = () => {
     onPlayerClick(friend);
   };
@@ -60,9 +88,26 @@ export const FriendListItem = React.memo(({
           <div className="min-w-0 flex-1">
             <h3 className="text-sm sm:text-base font-bold text-white truncate">{friend.nickname}</h3>
             <div className="flex flex-wrap items-center gap-1 sm:gap-2 mt-1">
-              <Badge className={`${getLevelColor(friend.level || 0)} text-white border-0 px-1 sm:px-2 py-0.5 sm:py-1 text-xs`}>
-                Nivel {friend.level}
-              </Badge>
+              <div className="flex items-center gap-1">
+                <img
+                  src={getLevelIcon(friend.level || 1)}
+                  alt={`Skill Level ${friend.level}`}
+                  className="w-5 h-5 sm:w-6 sm:h-6"
+                  onError={(e) => {
+                    // Fallback to colored badge if icon fails to load
+                    const target = e.target as HTMLImageElement;
+                    target.style.display = 'none';
+                    const fallbackBadge = target.nextElementSibling as HTMLElement;
+                    if (fallbackBadge) fallbackBadge.style.display = 'inline-flex';
+                  }}
+                />
+                <Badge 
+                  className="bg-gradient-to-r from-gray-500 to-gray-600 text-white border-0 px-1 sm:px-2 py-0.5 sm:py-1 text-xs hidden"
+                  style={{ display: 'none' }}
+                >
+                  Nivel {friend.level}
+                </Badge>
+              </div>
               <span className="text-[#ff6500] font-bold text-xs sm:text-sm">{friend.elo} ELO</span>
               <div className="w-full sm:w-auto">
                 <EloChangeIndicator lcryptData={friend.lcryptData} />
@@ -103,7 +148,7 @@ export const FriendListItem = React.memo(({
               <span className="hidden sm:inline">Faceit</span>
             </a>
             <a
-              href={`https://steamcommunity.com/search/users/#text=${friend.nickname}`}
+              href={steamId ? `https://steamcommunity.com/profiles/${steamId}` : `https://steamcommunity.com/search/users/#text=${friend.nickname}`}
               target="_blank"
               rel="noopener noreferrer"
               className="bg-transparent border-2 border-blue-400 text-blue-400 hover:bg-blue-500 hover:border-blue-500 hover:text-white rounded-lg px-2 sm:px-3 h-6 sm:h-7 font-bold text-xs flex items-center gap-1 transition-all duration-200 hover:scale-105"

@@ -24,7 +24,7 @@ export const EloChangeIndicator = React.memo(({ lcryptData }: EloChangeIndicator
   }
   
   const isPositive = eloChange > 0;
-  const color = isPositive ? 'text-green-400' : 'text-red-400';
+  const color = isPositive ? 'text-green-500' : 'text-red-500'; // More vibrant colors
   const LightningIcon = isPositive ? ArrowUp : ArrowDown;
   
   return (
@@ -35,7 +35,7 @@ export const EloChangeIndicator = React.memo(({ lcryptData }: EloChangeIndicator
       }}
     >
       <LightningIcon size={14} className={color} />
-      <span>{Math.abs(eloChange)} elo today</span>
+      <span>+{Math.abs(eloChange)} today</span>
     </div>
   );
 });
