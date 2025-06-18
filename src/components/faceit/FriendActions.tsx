@@ -12,7 +12,7 @@ export const FriendActions = ({ nickname, steamId64, onLinkClick }: FriendAction
   const [steamIconError, setSteamIconError] = useState(false);
 
   const handleFaceitIconError = () => {
-    console.error('Failed to load Faceit icon from: /icons/faceit icon.svg');
+    console.error('Failed to load Faceit icon from: /icons/faceit_icon.svg');
     setFaceitIconError(true);
   };
 
@@ -31,11 +31,11 @@ export const FriendActions = ({ nickname, steamId64, onLinkClick }: FriendAction
       >
         {!faceitIconError ? (
           <img 
-            src="/icons/faceit icon.svg" 
+            src="/icons/faceit_icon.svg" 
             alt="Faceit" 
             className="w-5 h-5 sm:w-6 sm:h-6"
             onError={handleFaceitIconError}
-            onLoad={() => console.log('✅ Faceit icon loaded successfully from /icons/faceit icon.svg')}
+            onLoad={() => console.log('✅ Faceit icon loaded successfully from /icons/faceit_icon.svg')}
           />
         ) : (
           <span className="text-xs font-bold">F</span>
