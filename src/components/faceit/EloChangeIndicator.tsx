@@ -13,30 +13,27 @@ export const EloChangeIndicator = React.memo(({ lcryptData }: EloChangeIndicator
     return null;
   }
   
-  const eloWin = lcryptData.today.elo_win || 0;
-  const eloLose = lcryptData.today.elo_lose || 0;
-  const totalChange = eloWin + eloLose;
+  const eloChange = lcryptData.today.elo || 0;
   
-  console.log('ELO changes - Win:', eloWin, 'Lose:', eloLose, 'Total:', totalChange);
+  console.log('ELO change from today.elo:', eloChange);
   
-  if (totalChange === 0) {
-    console.log('Total change is 0, not showing');
+  if (eloChange === 0) {
+    console.log('ELO change is 0, not showing');
     return null;
   }
   
-  const isPositive = totalChange > 0;
+  const isPositive = eloChange > 0;
   const color = isPositive ? 'text-green-400' : 'text-red-400';
-  const arrow = isPositive ? '↑' : '↓';
+  const sign = isPositive ? '+' : '';
   
   return (
     <div 
-      className={`${color} font-bold text-sm animate-pulse flex items-center gap-1`} 
+      className={`${color} font-bold text-sm flex items-center gap-1`} 
       style={{
         animation: 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite'
       }}
     >
-      <span>{arrow}</span>
-      <span>{Math.abs(totalChange)}</span>
+      <span>{sign}{eloChange} elo today</span>
     </div>
   );
 });
