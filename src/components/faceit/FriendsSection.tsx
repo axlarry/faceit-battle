@@ -10,6 +10,7 @@ import { toast } from "@/hooks/use-toast";
 import { useFriendsAutoUpdate } from "@/hooks/useFriendsAutoUpdate";
 import { PasswordDialog } from "./PasswordDialog";
 import { useFaceitApi } from "@/hooks/useFaceitApi";
+import { useLcryptApi } from "@/hooks/useLcryptApi";
 
 interface FriendsSectionProps {
   friends: Player[];
@@ -18,6 +19,10 @@ interface FriendsSectionProps {
   onShowPlayerDetails: (player: Player) => void;
   onUpdateFriend?: (player: Player) => void;
   onReloadFriends?: () => void;
+}
+
+interface FriendWithLcrypt extends Player {
+  lcryptData?: any;
 }
 
 export const FriendsSection = ({ 
@@ -37,6 +42,7 @@ export const FriendsSection = ({
     playerId?: string;
   } | null>(null);
   const [flashingPlayer, setFlashingPlayer] = useState<string | null>(null);
+  const [friendsWithLcrypt, setFriendsWithLcrypt] = useState<FriendWithLcrypt[]>([]);
 
   const { makeApiCall } = useFaceitApi();
 
@@ -47,6 +53,27 @@ export const FriendsSection = ({
     reloadFriends: onReloadFriends || (() => {}),
     enabled: true
   });
+
+  // Load Lcrypt data for each friend
+  React.useEffect(() => {
+    const loadLcryptData = async () => {
+      const updatedFriends = await Promise.all(
+        friends.map(async (friend) => {
+          try {
+            const { data } = await useLcryptApi(friend.nickname);
+            return { ...friend, lcryptData: data };
+          } catch (error) {
+            return { ...friend, lcryptData: null };
+          }
+        })
+      );
+      setFriendsWithLcrypt(updatedFriends);
+    };
+
+    if (friends.length > 0) {
+      loadLcryptData();
+    }
+  }, [friends]);
 
   const searchPlayer = async () => {
     if (!searchTerm.trim()) return;
@@ -120,16 +147,37 @@ export const FriendsSection = ({
     return 'bg-gray-500';
   };
 
-  const sortedFriends = [...friends].sort((a, b) => (b.elo || 0) - (a.elo || 0));
+  const renderEloChange = (lcryptData: any) => {
+    if (!lcryptData?.today?.present) return null;
+    
+    const eloWin = lcryptData.today.elo_win || 0;
+    const eloLose = lcryptData.today.elo_lose || 0;
+    const totalChange = eloWin + eloLose;
+    
+    if (totalChange === 0) return null;
+    
+    const isPositive = totalChange > 0;
+    const color = isPositive ? 'text-green-400' : 'text-red-400';
+    const arrow = isPositive ? '↑' : '↓';
+    
+    return (
+      <div className={`${color} font-bold text-sm animate-pulse flex items-center gap-1`}>
+        <span>{arrow}</span>
+        <span>{Math.abs(totalChange)}</span>
+      </div>
+    );
+  };
+
+  const sortedFriends = [...friendsWithLcrypt].sort((a, b) => (b.elo || 0) - (a.elo || 0));
 
   return (
-    <div className="space-y-6 px-4 md:px-0">
+    <div className="space-y-4 px-4 md:px-0">
       {/* Friends List - Compact Version */}
       <Card className="bg-[#1a1d21] border-[#2a2f36] shadow-xl">
-        <div className="p-4 md:p-6">
-          <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 md:mb-6 gap-4">
+        <div className="p-4 md:p-5">
+          <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 md:mb-5 gap-4">
             <h2 className="text-xl md:text-2xl font-bold text-white flex items-center gap-3">
-              <div className="w-8 h-8 md:w-10 md:h-10 bg-[#ff6500] rounded-lg flex items-center justify-center shadow-lg">
+              <div className="w-8 h-8 md:w-9 md:h-9 bg-[#ff6500] rounded-lg flex items-center justify-center shadow-lg">
                 <Users size={16} className="md:w-5 md:h-5 text-white" />
               </div>
               <span className="text-lg md:text-2xl">Prietenii Mei ({friends.length})</span>
@@ -143,7 +191,7 @@ export const FriendsSection = ({
                 onClick={updateAllFriends}
                 disabled={isUpdating}
                 size="sm"
-                className="bg-transparent border-2 border-[#ff6500] text-[#ff6500] hover:bg-[#ff6500] hover:text-white rounded-lg h-9 px-4 font-bold"
+                className="bg-transparent border-2 border-[#ff6500] text-[#ff6500] hover:bg-[#ff6500] hover:text-white rounded-lg h-8 px-3 font-bold text-sm"
               >
                 <RefreshCw size={14} className={`mr-2 ${isUpdating ? 'animate-spin' : ''}`} />
                 {isUpdating ? 'Actualizare...' : 'Actualizează acum'}
@@ -159,13 +207,13 @@ export const FriendsSection = ({
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && searchPlayer()}
-                className="bg-[#1a1d21] border-[#3a4048] text-white placeholder:text-[#9f9f9f] focus:border-[#ff6500] rounded-lg h-9 text-sm"
+                className="bg-[#1a1d21] border-[#3a4048] text-white placeholder:text-[#9f9f9f] focus:border-[#ff6500] rounded-lg h-8 text-sm"
               />
               <Button
                 onClick={searchPlayer}
                 disabled={loading || !searchTerm.trim()}
                 size="sm"
-                className="bg-[#ff6500] hover:bg-[#e55a00] text-white border-0 px-4 h-9 rounded-lg shadow-lg font-bold text-sm"
+                className="bg-[#ff6500] hover:bg-[#e55a00] text-white border-0 px-4 h-8 rounded-lg shadow-lg font-bold text-sm"
               >
                 <UserPlus size={14} className="mr-2" />
                 {loading ? 'Caută...' : 'Adaugă'}
@@ -174,61 +222,62 @@ export const FriendsSection = ({
           </div>
           
           {friends.length === 0 ? (
-            <div className="text-center py-8 md:py-12">
-              <div className="w-16 h-16 md:w-20 md:h-20 bg-[#ff6500] rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-                <Users size={32} className="md:w-10 md:h-10 text-white" />
+            <div className="text-center py-8 md:py-10">
+              <div className="w-16 h-16 md:w-18 md:h-18 bg-[#ff6500] rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
+                <Users size={28} className="md:w-9 md:h-9 text-white" />
               </div>
               <h3 className="text-lg md:text-xl font-bold text-white mb-2">Niciun prieten adăugat</h3>
-              <p className="text-[#9f9f9f] text-sm md:text-base mb-6">Caută și adaugă prieteni pentru a-i vedea în clasamentul tău personal!</p>
+              <p className="text-[#9f9f9f] text-sm md:text-base mb-4">Caută și adaugă prieteni pentru a-i vedea în clasamentul tău personal!</p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {sortedFriends.map((friend, index) => (
                 <div
                   key={friend.player_id}
                   onClick={() => handlePlayerClick(friend)}
-                  className={`bg-[#2a2f36] rounded-lg p-3 md:p-4 border border-[#3a4048] hover:border-[#ff6500]/50 transition-all duration-300 shadow-lg cursor-pointer transform hover:scale-[1.02] ${
+                  className={`bg-[#2a2f36] rounded-lg p-3 border border-[#3a4048] hover:border-[#ff6500]/50 transition-all duration-300 shadow-lg cursor-pointer transform hover:scale-[1.01] ${
                     flashingPlayer === friend.player_id ? 'animate-pulse bg-[#ff6500]/20 border-[#ff6500]' : ''
                   }`}
                 >
                   <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 lg:gap-4">
-                    <div className="flex items-center gap-3 md:gap-4 w-full lg:w-auto">
-                      <div className="text-lg md:text-xl font-bold text-[#ff6500] min-w-[2.5rem] md:min-w-[3rem]">
+                    <div className="flex items-center gap-3 w-full lg:w-auto">
+                      <div className="text-lg font-bold text-[#ff6500] min-w-[2.5rem]">
                         #{index + 1}
                       </div>
                       
                       <img
                         src={friend.avatar}
                         alt={friend.nickname}
-                        className="w-10 h-10 md:w-12 md:h-12 rounded-lg border-2 border-[#ff6500] shadow-lg"
+                        className="w-10 h-10 rounded-lg border-2 border-[#ff6500] shadow-lg"
                       />
                       
                       <div className="min-w-0 flex-1">
-                        <h3 className="text-base md:text-lg font-bold text-white truncate">{friend.nickname}</h3>
+                        <h3 className="text-base font-bold text-white truncate">{friend.nickname}</h3>
                         <div className="flex flex-wrap items-center gap-2 mt-1">
                           <Badge className={`${getLevelColor(friend.level || 0)} text-white border-0 px-2 py-1 text-xs`}>
                             Nivel {friend.level}
                           </Badge>
-                          <span className="text-[#ff6500] font-bold text-sm md:text-base">{friend.elo} ELO</span>
+                          <span className="text-[#ff6500] font-bold text-sm">{friend.elo} ELO</span>
+                          {renderEloChange(friend.lcryptData)}
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-3 md:gap-6 text-xs md:text-sm w-full lg:w-auto justify-between lg:justify-end">
+                    <div className="flex flex-wrap items-center gap-3 text-xs w-full lg:w-auto justify-between lg:justify-end">
                       <div className="text-center">
-                        <div className="text-white font-bold text-sm md:text-base">{friend.wins}</div>
+                        <div className="text-white font-bold text-sm">{friend.wins}</div>
                         <div className="text-[#9f9f9f] text-xs">Victorii</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-white font-bold text-sm md:text-base">{friend.winRate}%</div>
+                        <div className="text-white font-bold text-sm">{friend.winRate}%</div>
                         <div className="text-[#9f9f9f] text-xs">Win Rate</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-white font-bold text-sm md:text-base">{friend.hsRate}%</div>
+                        <div className="text-white font-bold text-sm">{friend.hsRate}%</div>
                         <div className="text-[#9f9f9f] text-xs">HS%</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-white font-bold text-sm md:text-base">{friend.kdRatio}</div>
+                        <div className="text-white font-bold text-sm">{friend.kdRatio}</div>
                         <div className="text-[#9f9f9f] text-xs">K/D</div>
                       </div>
                       
@@ -237,18 +286,18 @@ export const FriendsSection = ({
                           href={`https://www.faceit.com/en/players/${friend.nickname}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="bg-transparent border-2 border-[#ff6500] text-[#ff6500] hover:bg-[#ff6500] hover:text-white rounded-lg px-3 h-8 font-bold text-xs flex items-center gap-1 transition-all duration-200 hover:scale-105"
+                          className="bg-transparent border-2 border-[#ff6500] text-[#ff6500] hover:bg-[#ff6500] hover:text-white rounded-lg px-3 h-7 font-bold text-xs flex items-center gap-1 transition-all duration-200 hover:scale-105"
                         >
-                          <ExternalLink size={12} />
+                          <ExternalLink size={11} />
                           Faceit
                         </a>
                         <a
                           href={`https://steamcommunity.com/search/users/#text=${friend.nickname}`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="bg-transparent border-2 border-blue-400 text-blue-400 hover:bg-blue-500 hover:border-blue-500 hover:text-white rounded-lg px-3 h-8 font-bold text-xs flex items-center gap-1 transition-all duration-200 hover:scale-105"
+                          className="bg-transparent border-2 border-blue-400 text-blue-400 hover:bg-blue-500 hover:border-blue-500 hover:text-white rounded-lg px-3 h-7 font-bold text-xs flex items-center gap-1 transition-all duration-200 hover:scale-105"
                         >
-                          <ExternalLink size={12} />
+                          <ExternalLink size={11} />
                           Steam
                         </a>
                       </div>

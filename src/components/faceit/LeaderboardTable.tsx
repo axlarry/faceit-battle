@@ -31,18 +31,13 @@ export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: L
     // Clear data immediately when region changes
     setPlayers([]);
     setOffset(0);
-    setLoading(false);
     
     // Store current region
     previousRegionRef.current = region;
     
-    // Load new data after a short delay to ensure state is cleared
-    const timeoutId = setTimeout(() => {
-      console.log(`Starting to load data for region: ${region}`);
-      loadPlayers(0, true);
-    }, 150);
-
-    return () => clearTimeout(timeoutId);
+    // Start loading immediately to show the loading state
+    console.log(`Starting to load data for region: ${region}`);
+    loadPlayers(0, true);
   }, [region]);
 
   const loadPlayers = async (currentOffset: number, reset = false) => {
@@ -156,7 +151,7 @@ export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: L
             Clasament {region}
           </h2>
           
-          {loading && players.length === 0 ? (
+          {(loading || players.length === 0) ? (
             <div className="text-center py-8">
               <div className="text-white">Se încarcă clasamentul...</div>
             </div>
