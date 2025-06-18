@@ -12,12 +12,12 @@ interface UseLcryptDataManagerProps {
   enabled?: boolean;
 }
 
-// Cache pentru datele Lcrypt (5 minute)
-const CACHE_DURATION = 5 * 60 * 1000;
+// Cache pentru datele Lcrypt (10 minute pentru a reduce API calls)
+const CACHE_DURATION = 10 * 60 * 1000;
 const dataCache = new Map<string, { data: any; timestamp: number }>();
 
-// Rate limiting - maxim 2 request-uri per secundă
-const RATE_LIMIT_DELAY = 500;
+// Rate limiting mai conservator - maxim 1 request pe secundă
+const RATE_LIMIT_DELAY = 1000;
 let lastRequestTime = 0;
 
 const rateLimitedDelay = async () => {
@@ -35,6 +35,7 @@ const rateLimitedDelay = async () => {
 export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataManagerProps) => {
   const [friendsWithLcrypt, setFriendsWithLcrypt] = useState<LcryptPlayerData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingProgress, setLoadingProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
 
@@ -50,7 +51,7 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
     await rateLimitedDelay();
 
     try {
-      console.log(`Fetching fresh ELO data for: ${nickname}`);
+      console.log(`Fetching ELO data for: ${nickname}`);
       
       const { data: result, error: supabaseError } = await supabase.functions.invoke('get-lcrypt-elo', {
         body: { nickname }
@@ -80,6 +81,7 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
   const loadAllLcryptData = useCallback(async () => {
     if (!enabled || friends.length === 0) {
       setFriendsWithLcrypt([]);
+      setLoadingProgress(0);
       return;
     }
 
@@ -91,37 +93,40 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
     abortControllerRef.current = new AbortController();
     setIsLoading(true);
     setError(null);
+    setLoadingProgress(0);
 
     try {
       console.log('Loading lcrypt data for friends:', friends.map(f => f.nickname));
       
-      // Procesează prietenii în batches pentru a evita rate limiting-ul
-      const BATCH_SIZE = 3;
-      const batches = [];
+      // Inițializează lista cu prietenii fără date lcrypt
+      const initialFriends = friends.map(friend => ({ ...friend, lcryptData: null }));
+      setFriendsWithLcrypt(initialFriends);
+
+      // Procesează prietenii unul câte unul pentru feedback vizual mai bun
+      const updatedFriends = [...initialFriends];
       
-      for (let i = 0; i < friends.length; i += BATCH_SIZE) {
-        batches.push(friends.slice(i, i + BATCH_SIZE));
-      }
-
-      const updatedFriends: LcryptPlayerData[] = [];
-
-      for (const batch of batches) {
-        const batchPromises = batch.map(async (friend) => {
+      for (let i = 0; i < friends.length; i++) {
+        const friend = friends[i];
+        
+        try {
           const lcryptData = await fetchLcryptData(friend.nickname);
-          return { ...friend, lcryptData };
-        });
-
-        const batchResults = await Promise.all(batchPromises);
-        updatedFriends.push(...batchResults);
-
-        // Pauză între batch-uri pentru rate limiting
-        if (batches.indexOf(batch) < batches.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          updatedFriends[i] = { ...friend, lcryptData };
+          
+          // Actualizează progresul și starea
+          setLoadingProgress(((i + 1) / friends.length) * 100);
+          setFriendsWithLcrypt([...updatedFriends]);
+          
+          // Pauză între request-uri pentru a nu supraîncărca API-ul
+          if (i < friends.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 800));
+          }
+        } catch (error) {
+          console.error(`Error loading lcrypt data for ${friend.nickname}:`, error);
+          // Continuă cu următorul prieten chiar dacă unul eșuează
         }
       }
       
       console.log('All friends with lcrypt data loaded:', updatedFriends.length);
-      setFriendsWithLcrypt(updatedFriends);
     } catch (error) {
       if (error instanceof Error && error.name !== 'AbortError') {
         console.error('Error loading lcrypt data:', error);
@@ -129,6 +134,7 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
       }
     } finally {
       setIsLoading(false);
+      setLoadingProgress(100);
     }
   }, [friends, enabled, fetchLcryptData]);
 
@@ -164,6 +170,7 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
   return {
     friendsWithLcrypt,
     isLoading,
+    loadingProgress,
     error,
     refreshLcryptData,
     clearCache,

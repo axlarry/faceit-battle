@@ -9,6 +9,7 @@ import { useLcryptDataManager } from "@/hooks/useLcryptDataManager";
 import { FriendsSectionHeader } from "./FriendsSectionHeader";
 import { FriendSearchForm } from "./FriendSearchForm";
 import { FriendListItem } from "./FriendListItem";
+import { Progress } from "@/components/ui/progress";
 
 interface FriendsSectionProps {
   friends: Player[];
@@ -38,7 +39,7 @@ export const FriendsSection = ({
   const [flashingPlayer, setFlashingPlayer] = useState<string | null>(null);
 
   // Hook optimizat pentru datele Lcrypt
-  const { friendsWithLcrypt, isLoading: lcryptLoading } = useLcryptDataManager({
+  const { friendsWithLcrypt, isLoading: lcryptLoading, loadingProgress } = useLcryptDataManager({
     friends,
     enabled: true
   });
@@ -101,6 +102,17 @@ export const FriendsSection = ({
           />
 
           <FriendSearchForm onPlayerFound={handlePlayerFound} />
+          
+          {/* Progress bar pentru încărcarea datelor ELO */}
+          {lcryptLoading && friends.length > 0 && (
+            <div className="mb-4 space-y-2">
+              <div className="flex justify-between text-sm text-[#9f9f9f]">
+                <span>Se încarcă datele ELO...</span>
+                <span>{Math.round(loadingProgress)}%</span>
+              </div>
+              <Progress value={loadingProgress} className="h-2" />
+            </div>
+          )}
           
           {friends.length === 0 ? (
             <div className="text-center py-8 md:py-10">
