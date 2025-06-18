@@ -38,7 +38,15 @@ export const PlayerActions = ({ player, isFriend, onFriendAction }: PlayerAction
         className="border-orange-400 text-orange-400 hover:bg-orange-400 hover:text-white px-4 py-2 text-sm"
         onClick={() => window.open(`https://www.faceit.com/en/players/${player.nickname}`, '_blank')}
       >
-        <img src="/icons/faceit.svg" alt="Faceit" className="w-4 h-4 mr-2" />
+        <img 
+          src="/icons/faceit.svg" 
+          alt="Faceit" 
+          className="w-4 h-4 mr-2"
+          onError={(e) => {
+            // Fallback if SVG fails to load
+            e.currentTarget.style.display = 'none';
+          }}
+        />
         Vezi pe FACEIT
       </Button>
     </div>

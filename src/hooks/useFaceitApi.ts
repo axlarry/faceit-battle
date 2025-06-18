@@ -38,23 +38,40 @@ export const useFaceitApi = () => {
       return apiService.retryRequest(async () => {
         console.log(`Making API call to: ${API_BASE}${endpoint}`);
         
-        const response = await fetch(`${API_BASE}${endpoint}`, {
-          headers: {
-            'Authorization': `Bearer ${apiKey}`,
-            'Content-Type': 'application/json'
+        try {
+          const response = await fetch(`${API_BASE}${endpoint}`, {
+            headers: {
+              'Authorization': `Bearer ${apiKey}`,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          if (!response.ok) {
+            // Check if it's a rate limit error
+            if (response.status === 429) {
+              console.log('Rate limited, waiting before retry...');
+              throw new Error('Rate limited');
+            }
+            
+            // Check if it's a server error
+            if (response.status >= 500) {
+              console.log('Server error, will retry...');
+              throw new Error('Server error');
+            }
+
+            const errorData = await response.json().catch(() => ({}));
+            console.error('API Error:', errorData);
+            throw new Error(`API Error: ${errorData.error || response.statusText}`);
           }
-        });
 
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          console.error('API Error:', errorData);
-          throw new Error(`API Error: ${errorData.error || response.statusText}`);
+          const data = await response.json();
+          console.log('API Response successful');
+          return data;
+        } catch (error) {
+          console.error('Network or fetch error:', error);
+          throw error;
         }
-
-        const data = await response.json();
-        console.log('API Response:', data);
-        return data;
-      }, { maxRetries: 2, baseDelay: 500 });
+      }, { maxRetries: 2, baseDelay: 2000 }); // Increased delay between retries
     });
   };
 

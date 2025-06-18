@@ -7,8 +7,8 @@ interface RetryOptions {
 
 const DEFAULT_RETRY_OPTIONS: RetryOptions = {
   maxRetries: 3,
-  baseDelay: 1000,
-  maxDelay: 5000
+  baseDelay: 2000, // Increased from 1000ms
+  maxDelay: 10000 // Increased from 5000ms
 };
 
 export class ApiService {
@@ -37,16 +37,17 @@ export class ApiService {
         lastError = error as Error;
         
         if (attempt === maxRetries) {
+          console.error(`Final attempt failed for request after ${maxRetries} retries`);
           throw lastError;
         }
         
-        // Exponential backoff cu jitter
+        // Exponential backoff cu jitter și delay mai mare pentru rate limiting
         const delay = Math.min(
-          baseDelay * Math.pow(2, attempt) + Math.random() * 1000,
+          baseDelay * Math.pow(2, attempt) + Math.random() * 2000,
           maxDelay
         );
         
-        console.log(`Retry attempt ${attempt + 1} after ${delay}ms for request`);
+        console.log(`Retry attempt ${attempt + 1}/${maxRetries} after ${delay}ms for request`);
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }

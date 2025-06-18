@@ -17,7 +17,7 @@ interface FriendListItemProps {
 }
 
 const getLevelIcon = (level: number) => {
-  // Faceit skill level icons - you can upload custom icons and replace these paths
+  // Faceit skill level icons with fallback
   const iconMap: { [key: number]: string } = {
     1: '/faceit-icons/skill-level-1.png',
     2: '/faceit-icons/skill-level-2.png',
@@ -61,6 +61,7 @@ export const FriendListItem = React.memo(({
 }: FriendListItemProps) => {
   const [steamId, setSteamId] = useState<string | null>(null);
   const [steamId64, setSteamId64] = useState<string | null>(null);
+  const [iconError, setIconError] = useState(false);
   const { makeApiCall } = useFaceitApi();
 
   useEffect(() => {
@@ -78,8 +79,11 @@ export const FriendListItem = React.memo(({
       }
     };
 
-    fetchSteamId();
-  }, [friend.player_id, makeApiCall]);
+    // Only fetch if we don't have steam ID yet and API is available
+    if (!steamId) {
+      fetchSteamId();
+    }
+  }, [friend.player_id, makeApiCall, steamId]);
 
   const handleClick = () => {
     onPlayerClick(friend);
@@ -87,6 +91,10 @@ export const FriendListItem = React.memo(({
 
   const handleLinkClick = (e: React.MouseEvent) => {
     e.stopPropagation();
+  };
+
+  const handleIconError = () => {
+    setIconError(true);
   };
 
   return (
@@ -112,24 +120,20 @@ export const FriendListItem = React.memo(({
             <h3 className="text-sm sm:text-base font-bold text-white truncate">{friend.nickname}</h3>
             <div className="flex flex-wrap items-center gap-1 sm:gap-2 mt-1">
               <div className="flex items-center gap-1">
-                <img
-                  src={getLevelIcon(friend.level || 1)}
-                  alt={`Skill Level ${friend.level}`}
-                  className="w-5 h-5 sm:w-6 sm:h-6"
-                  onError={(e) => {
-                    // Fallback to colored badge if icon fails to load
-                    const target = e.target as HTMLImageElement;
-                    target.style.display = 'none';
-                    const fallbackBadge = target.nextElementSibling as HTMLElement;
-                    if (fallbackBadge) fallbackBadge.style.display = 'inline-flex';
-                  }}
-                />
-                <Badge 
-                  className="bg-gradient-to-r from-gray-500 to-gray-600 text-white border-0 px-1 sm:px-2 py-0.5 sm:py-1 text-xs hidden"
-                  style={{ display: 'none' }}
-                >
-                  Nivel {friend.level}
-                </Badge>
+                {!iconError ? (
+                  <img
+                    src={getLevelIcon(friend.level || 1)}
+                    alt={`Skill Level ${friend.level}`}
+                    className="w-5 h-5 sm:w-6 sm:h-6"
+                    onError={handleIconError}
+                  />
+                ) : (
+                  <Badge 
+                    className="bg-gradient-to-r from-gray-500 to-gray-600 text-white border-0 px-1 sm:px-2 py-0.5 sm:py-1 text-xs"
+                  >
+                    Nivel {friend.level}
+                  </Badge>
+                )}
               </div>
               <span className="text-[#ff6500] font-bold text-xs sm:text-sm">{friend.elo} ELO</span>
               <div className="w-full sm:w-auto">
@@ -166,7 +170,15 @@ export const FriendListItem = React.memo(({
               rel="noopener noreferrer"
               className="bg-transparent border-2 border-[#ff6500] text-[#ff6500] hover:bg-[#ff6500] hover:text-white rounded-lg px-2 sm:px-3 h-6 sm:h-7 font-bold text-xs flex items-center gap-1 transition-all duration-200 hover:scale-105"
             >
-              <img src="/icons/faceit.svg" alt="Faceit" className="w-3 h-3 sm:w-4 sm:h-4" />
+              <img 
+                src="/icons/faceit.svg" 
+                alt="Faceit" 
+                className="w-3 h-3 sm:w-4 sm:h-4"
+                onError={(e) => {
+                  // Fallback to text if SVG fails
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
               <span className="hidden sm:inline">Faceit</span>
             </a>
             <a
@@ -175,7 +187,15 @@ export const FriendListItem = React.memo(({
               rel="noopener noreferrer"
               className="bg-transparent border-2 border-blue-400 text-blue-400 hover:bg-blue-500 hover:border-blue-500 hover:text-white rounded-lg px-2 sm:px-3 h-6 sm:h-7 font-bold text-xs flex items-center gap-1 transition-all duration-200 hover:scale-105"
             >
-              <img src="/icons/steam.svg" alt="Steam" className="w-3 h-3 sm:w-4 sm:h-4" />
+              <img 
+                src="/icons/steam.svg" 
+                alt="Steam" 
+                className="w-3 h-3 sm:w-4 sm:h-4"
+                onError={(e) => {
+                  // Fallback to text if SVG fails
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
               <span className="hidden sm:inline">Steam</span>
             </a>
           </div>
