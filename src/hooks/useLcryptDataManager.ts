@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Player } from '@/types/Player';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,12 +11,12 @@ interface UseLcryptDataManagerProps {
   enabled?: boolean;
 }
 
-// Cache pentru datele Lcrypt (10 minute pentru a reduce API calls)
-const CACHE_DURATION = 10 * 60 * 1000;
+// Cache pentru datele Lcrypt (15 minute pentru a reduce API calls)
+const CACHE_DURATION = 15 * 60 * 1000;
 const dataCache = new Map<string, { data: any; timestamp: number }>();
 
-// Rate limiting mai conservator - maxim 1 request pe secundă
-const RATE_LIMIT_DELAY = 1000;
+// Rate limiting optimizat - 600ms între request-uri
+const RATE_LIMIT_DELAY = 600;
 let lastRequestTime = 0;
 
 const rateLimitedDelay = async () => {
@@ -47,7 +46,7 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
       return cached.data;
     }
 
-    // Rate limiting
+    // Rate limiting optimizat
     await rateLimitedDelay();
 
     try {
@@ -102,27 +101,36 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
       const initialFriends = friends.map(friend => ({ ...friend, lcryptData: null }));
       setFriendsWithLcrypt(initialFriends);
 
-      // Procesează prietenii unul câte unul pentru feedback vizual mai bun
+      // Procesare concurentă pentru viteza optimă - maxim 3 request-uri simultan
+      const BATCH_SIZE = 3;
       const updatedFriends = [...initialFriends];
       
-      for (let i = 0; i < friends.length; i++) {
-        const friend = friends[i];
+      for (let i = 0; i < friends.length; i += BATCH_SIZE) {
+        const batch = friends.slice(i, i + BATCH_SIZE);
         
-        try {
-          const lcryptData = await fetchLcryptData(friend.nickname);
-          updatedFriends[i] = { ...friend, lcryptData };
-          
-          // Actualizează progresul și starea
-          setLoadingProgress(((i + 1) / friends.length) * 100);
-          setFriendsWithLcrypt([...updatedFriends]);
-          
-          // Pauză între request-uri pentru a nu supraîncărca API-ul
-          if (i < friends.length - 1) {
-            await new Promise(resolve => setTimeout(resolve, 800));
+        // Procesează batch-ul concurrent
+        const batchPromises = batch.map(async (friend, batchIndex) => {
+          try {
+            const lcryptData = await fetchLcryptData(friend.nickname);
+            const actualIndex = i + batchIndex;
+            updatedFriends[actualIndex] = { ...friend, lcryptData };
+            return { index: actualIndex, data: lcryptData };
+          } catch (error) {
+            console.error(`Error loading lcrypt data for ${friend.nickname}:`, error);
+            return { index: i + batchIndex, data: null };
           }
-        } catch (error) {
-          console.error(`Error loading lcrypt data for ${friend.nickname}:`, error);
-          // Continuă cu următorul prieten chiar dacă unul eșuează
+        });
+
+        await Promise.all(batchPromises);
+        
+        // Actualizează progresul și starea
+        const completedCount = Math.min(i + BATCH_SIZE, friends.length);
+        setLoadingProgress((completedCount / friends.length) * 100);
+        setFriendsWithLcrypt([...updatedFriends]);
+        
+        // Pauză scurtă între batch-uri pentru a nu supraîncărca API-ul
+        if (i + BATCH_SIZE < friends.length) {
+          await new Promise(resolve => setTimeout(resolve, 200));
         }
       }
       
