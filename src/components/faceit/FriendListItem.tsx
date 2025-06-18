@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Badge } from "@/components/ui/badge";
 import { ExternalLink } from "lucide-react";
@@ -19,16 +20,16 @@ interface FriendListItemProps {
 const getLevelIcon = (level: number) => {
   // Faceit skill level icons - you can upload custom icons and replace these paths
   const iconMap: { [key: number]: string } = {
-    1: '/faceit-icons/skill-level-1.svg',
-    2: '/faceit-icons/skill-level-2.svg',
-    3: '/faceit-icons/skill-level-3.svg',
-    4: '/faceit-icons/skill-level-4.svg',
-    5: '/faceit-icons/skill-level-5.svg',
-    6: '/faceit-icons/skill-level-6.svg',
-    7: '/faceit-icons/skill-level-7.svg',
-    8: '/faceit-icons/skill-level-8.svg',
-    9: '/faceit-icons/skill-level-9.svg',
-    10: '/faceit-icons/skill-level-10.svg',
+    1: '/faceit-icons/skill-level-1.png',
+    2: '/faceit-icons/skill-level-2.png',
+    3: '/faceit-icons/skill-level-3.png',
+    4: '/faceit-icons/skill-level-4.png',
+    5: '/faceit-icons/skill-level-5.png',
+    6: '/faceit-icons/skill-level-6.png',
+    7: '/faceit-icons/skill-level-7.png',
+    8: '/faceit-icons/skill-level-8.png',
+    9: '/faceit-icons/skill-level-9.png',
+    10: '/faceit-icons/skill-level-10.png',
   };
   
   return iconMap[level] || iconMap[1];
