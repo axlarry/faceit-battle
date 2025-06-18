@@ -100,12 +100,12 @@ export const FriendListItem = React.memo(({
   };
 
   const handleFaceitIconError = () => {
-    console.error('Failed to load Faceit icon from: /icons/faceit.svg');
+    console.error('Failed to load Faceit icon from: /icons/faceit icon.svg');
     setFaceitIconError(true);
   };
 
   const handleSteamIconError = () => {
-    console.error('Failed to load Steam icon from: /icons/steam.svg');
+    console.error('Failed to load Steam icon from: /icons/steam_icon.svg');
     setSteamIconError(true);
   };
 
@@ -185,11 +185,11 @@ export const FriendListItem = React.memo(({
             >
               {!faceitIconError ? (
                 <img 
-                  src="/icons/faceit.svg" 
+                  src="/icons/faceit icon.svg" 
                   alt="Faceit" 
                   className="w-3 h-3 sm:w-4 sm:h-4"
                   onError={handleFaceitIconError}
-                  onLoad={() => console.log('✅ Faceit icon loaded successfully from /icons/faceit.svg')}
+                  onLoad={() => console.log('✅ Faceit icon loaded successfully from /icons/faceit icon.svg')}
                 />
               ) : (
                 <span className="text-xs font-bold">F</span>
@@ -204,11 +204,11 @@ export const FriendListItem = React.memo(({
             >
               {!steamIconError ? (
                 <img 
-                  src="/icons/steam.svg" 
+                  src="/icons/steam_icon.svg" 
                   alt="Steam" 
                   className="w-3 h-3 sm:w-4 sm:h-4"
                   onError={handleSteamIconError}
-                  onLoad={() => console.log('✅ Steam icon loaded successfully from /icons/steam.svg')}
+                  onLoad={() => console.log('✅ Steam icon loaded successfully from /icons/steam_icon.svg')}
                 />
               ) : (
                 <span className="text-xs font-bold">S</span>

@@ -21,15 +21,25 @@ export const PlayerHeader = ({ player }: PlayerHeaderProps) => {
   const renderEloChange = () => {
     if (!lcryptData?.today?.elo || lcryptData.today.elo === 0) return null;
     
-    const eloChange = lcryptData.today.elo;
+    // Handle both string and number values for ELO change
+    let eloChange = lcryptData.today.elo;
+    
+    // If it's a string like "+30" or "-43", parse it
+    if (typeof eloChange === 'string') {
+      eloChange = parseInt(eloChange);
+    }
+    
     const isPositive = eloChange > 0;
-    const color = isPositive ? 'text-green-500' : 'text-red-500'; // More vibrant colors
+    const color = isPositive ? 'text-green-500' : 'text-red-500';
     const LightningIcon = isPositive ? ArrowUp : ArrowDown;
+    
+    // Format the ELO display correctly
+    const displayValue = isPositive ? `+${eloChange}` : `${eloChange}`;
     
     return (
       <div className={`${color} text-sm font-bold flex items-center gap-1 mt-1`}>
         <LightningIcon size={14} className={color} />
-        <span>+{Math.abs(eloChange)} today</span>
+        <span>{displayValue} today</span>
       </div>
     );
   };

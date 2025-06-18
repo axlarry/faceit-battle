@@ -14,7 +14,13 @@ export const EloChangeIndicator = React.memo(({ lcryptData }: EloChangeIndicator
     return null;
   }
   
-  const eloChange = lcryptData.today.elo || 0;
+  // Handle both string and number values for ELO change
+  let eloChange = lcryptData.today.elo;
+  
+  // If it's a string like "+30" or "-43", parse it
+  if (typeof eloChange === 'string') {
+    eloChange = parseInt(eloChange);
+  }
   
   console.log('ELO change from today.elo:', eloChange);
   
@@ -24,8 +30,11 @@ export const EloChangeIndicator = React.memo(({ lcryptData }: EloChangeIndicator
   }
   
   const isPositive = eloChange > 0;
-  const color = isPositive ? 'text-green-500' : 'text-red-500'; // More vibrant colors
+  const color = isPositive ? 'text-green-500' : 'text-red-500';
   const LightningIcon = isPositive ? ArrowUp : ArrowDown;
+  
+  // Format the ELO display correctly
+  const displayValue = isPositive ? `+${eloChange}` : `${eloChange}`;
   
   return (
     <div 
@@ -35,7 +44,7 @@ export const EloChangeIndicator = React.memo(({ lcryptData }: EloChangeIndicator
       }}
     >
       <LightningIcon size={14} className={color} />
-      <span>+{Math.abs(eloChange)} today</span>
+      <span>{displayValue} today</span>
     </div>
   );
 });
