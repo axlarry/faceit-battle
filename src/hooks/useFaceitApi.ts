@@ -5,38 +5,25 @@ import { apiService } from '@/services/apiService';
 
 const API_BASE = 'https://open.faceit.com/data/v4';
 
+// API Keys pentru diferite funcționalități
+const FRIENDS_AND_TOOL_API_KEY = '67504c0b-4b7e-46c7-8227-1dd00f271614';
+const LEADERBOARD_API_KEY = '4640b969-b9c4-4f35-a263-e0949fbe898e';
+
 export const useFaceitApi = () => {
-  const [apiKey, setApiKey] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    loadApiKey();
-  }, []);
-
-  const loadApiKey = async () => {
-    try {
-      const { data, error } = await supabase.functions.invoke('get-faceit-api-key');
-      if (error) throw error;
-      setApiKey(data.apiKey);
-    } catch (error) {
-      console.error('Error loading API key:', error);
-      // Fallback to hardcoded key for now
-      setApiKey('f1755f40-8f84-4d62-b315-5f09dc25eef5');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const makeApiCall = async (endpoint: string) => {
+  const makeApiCall = async (endpoint: string, useLeaderboardApi: boolean = false) => {
+    const apiKey = useLeaderboardApi ? LEADERBOARD_API_KEY : FRIENDS_AND_TOOL_API_KEY;
+    
     if (!apiKey) {
       throw new Error('API key not available');
     }
 
-    const requestKey = `faceit-${endpoint}`;
+    const requestKey = `faceit-${endpoint}-${useLeaderboardApi ? 'leaderboard' : 'friends'}`;
     
     return apiService.dedupedRequest(requestKey, async () => {
       return apiService.retryRequest(async () => {
-        console.log(`Making API call to: ${API_BASE}${endpoint}`);
+        console.log(`Making API call to: ${API_BASE}${endpoint} with ${useLeaderboardApi ? 'leaderboard' : 'friends'} API`);
         
         try {
           const response = await fetch(`${API_BASE}${endpoint}`, {
@@ -47,13 +34,11 @@ export const useFaceitApi = () => {
           });
 
           if (!response.ok) {
-            // Check if it's a rate limit error
             if (response.status === 429) {
               console.log('Rate limited, waiting before retry...');
               throw new Error('Rate limited');
             }
             
-            // Check if it's a server error
             if (response.status >= 500) {
               console.log('Server error, will retry...');
               throw new Error('Server error');
@@ -71,13 +56,13 @@ export const useFaceitApi = () => {
           console.error('Network or fetch error:', error);
           throw error;
         }
-      }, { maxRetries: 2, baseDelay: 2000 }); // Increased delay between retries
+      }, { maxRetries: 2, baseDelay: 2000 });
     });
   };
 
   const getPlayerStats = async (playerId: string) => {
     try {
-      const data = await makeApiCall(`/players/${playerId}/stats/cs2`);
+      const data = await makeApiCall(`/players/${playerId}/stats/cs2`, false);
       console.log('Player stats response:', data);
       return data;
     } catch (error) {
@@ -94,7 +79,7 @@ export const useFaceitApi = () => {
   const getPlayerMatches = async (playerId: string, limit: number = 10) => {
     try {
       console.log(`Fetching matches for player: ${playerId}`);
-      const data = await makeApiCall(`/players/${playerId}/history?game=cs2&limit=${limit}`);
+      const data = await makeApiCall(`/players/${playerId}/history?game=cs2&limit=${limit}`, false);
       console.log('Player matches response:', data);
       return data.items || [];
     } catch (error) {
@@ -111,7 +96,7 @@ export const useFaceitApi = () => {
   const getMatchDetails = async (matchId: string) => {
     try {
       console.log(`Fetching match details for: ${matchId}`);
-      const data = await makeApiCall(`/matches/${matchId}`);
+      const data = await makeApiCall(`/matches/${matchId}`, false);
       console.log('Match details response:', data);
       return data;
     } catch (error) {
@@ -123,7 +108,7 @@ export const useFaceitApi = () => {
   const getMatchStats = async (matchId: string) => {
     try {
       console.log(`Fetching match stats for: ${matchId}`);
-      const data = await makeApiCall(`/matches/${matchId}/stats`);
+      const data = await makeApiCall(`/matches/${matchId}/stats`, false);
       
       console.log('=== MATCH STATS DEBUG ===');
       console.log('Match ID:', matchId);
@@ -220,7 +205,8 @@ export const useFaceitApi = () => {
 
   const getLeaderboard = async (region: string, limit: number = 100) => {
     try {
-      const data = await makeApiCall(`/leaderboards/cs2/general?region=${region}&limit=${limit}`);
+      // Folosim API-ul pentru clasamentul global
+      const data = await makeApiCall(`/rankings/games/cs2/regions/${region}?limit=${limit}`, true);
       return data.items || [];
     } catch (error) {
       console.error('Error fetching leaderboard:', error);
@@ -235,7 +221,7 @@ export const useFaceitApi = () => {
 
   const searchPlayer = async (nickname: string) => {
     try {
-      const data = await makeApiCall(`/search/players?nickname=${encodeURIComponent(nickname)}&game=cs2`);
+      const data = await makeApiCall(`/search/players?nickname=${encodeURIComponent(nickname)}&game=cs2`, false);
       return data.items || [];
     } catch (error) {
       console.error('Error searching player:', error);
@@ -249,7 +235,6 @@ export const useFaceitApi = () => {
   };
 
   return {
-    apiKey,
     loading,
     makeApiCall,
     getPlayerStats,

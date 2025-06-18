@@ -26,59 +26,46 @@ export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: L
   const previousRegionRef = useRef<string>('');
   const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
-  const { makeApiCall, loading: apiLoading } = useFaceitApi();
+  const { getLeaderboard, makeApiCall } = useFaceitApi();
 
   useEffect(() => {
     console.log(`Region changed from ${previousRegionRef.current} to: ${region}`);
     
-    // Clear any pending timeout
     if (loadingTimeoutRef.current) {
       clearTimeout(loadingTimeoutRef.current);
     }
     
-    // Clear data immediately when region changes
     setPlayers([]);
     setOffset(0);
     setLoading(false);
     
-    // Store current region
     previousRegionRef.current = region;
     
-    // Wait for API to be ready before loading data
-    if (!apiLoading) {
-      loadingTimeoutRef.current = setTimeout(() => {
-        console.log(`Starting to load data for region: ${region}`);
-        loadPlayers(0, true);
-      }, 100);
-    }
+    loadingTimeoutRef.current = setTimeout(() => {
+      console.log(`Starting to load data for region: ${region}`);
+      loadPlayers(0, true);
+    }, 100);
 
     return () => {
       if (loadingTimeoutRef.current) {
         clearTimeout(loadingTimeoutRef.current);
       }
     };
-  }, [region, apiLoading]);
-
-  // Load data when API becomes ready
-  useEffect(() => {
-    if (!apiLoading && region && players.length === 0 && !loading) {
-      console.log('API is ready, loading players for region:', region);
-      loadPlayers(0, true);
-    }
-  }, [apiLoading]);
+  }, [region]);
 
   const loadPlayers = async (currentOffset: number, reset = false) => {
-    console.log(`Loading players for region: ${region}, offset: ${currentOffset}, reset: ${reset}, loading: ${loading}, apiLoading: ${apiLoading}`);
+    console.log(`Loading players for region: ${region}, offset: ${currentOffset}, reset: ${reset}`);
     
-    if (loading || apiLoading) {
-      console.log('Already loading or API not ready, skipping request');
+    if (loading) {
+      console.log('Already loading, skipping request');
       return;
     }
     
     setLoading(true);
     
     try {
-      const data = await makeApiCall(`/rankings/games/cs2/regions/${region}?offset=${currentOffset}&limit=${limit}`);
+      // Folosim noua metodă getLeaderboard care folosește API-ul pentru clasament
+      const data = await makeApiCall(`/rankings/games/cs2/regions/${region}?offset=${currentOffset}&limit=${limit}`, true);
       
       if (!data || !data.items || data.items.length === 0) {
         console.log('No data or empty items array received');
@@ -98,12 +85,12 @@ export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: L
 
       console.log(`Received ${data.items.length} players for region ${region}`);
 
-      // Get detailed player info
       const playersWithDetails = await Promise.all(
         data.items.map(async (item: any) => {
           try {
-            const playerData = await makeApiCall(`/players/${item.player_id}`);
-            const statsData = await makeApiCall(`/players/${item.player_id}/stats/cs2`);
+            // Pentru detaliile jucătorului folosim API-ul pentru prieteni/tool
+            const playerData = await makeApiCall(`/players/${item.player_id}`, false);
+            const statsData = await makeApiCall(`/players/${item.player_id}/stats/cs2`, false);
 
             return {
               player_id: item.player_id,
@@ -175,8 +162,8 @@ export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: L
         <div className="p-3 sm:p-4 md:p-6">
           <LeaderboardHeader region={region} />
           
-          {(loading && players.length === 0) || (apiLoading && players.length === 0) || players.length === 0 ? (
-            <EmptyLeaderboardState loading={loading || apiLoading} />
+          {loading && players.length === 0 ? (
+            <EmptyLeaderboardState loading={loading} />
           ) : (
             <div className="space-y-2 sm:space-y-3">
               {players.map((player) => (
@@ -190,7 +177,7 @@ export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: L
             </div>
           )}
 
-          {players.length > 0 && !loading && !apiLoading && (
+          {players.length > 0 && !loading && (
             <LoadMoreButton
               loading={loading}
               onLoadMore={() => loadPlayers(offset)}
