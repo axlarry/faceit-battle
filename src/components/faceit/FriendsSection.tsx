@@ -10,7 +10,6 @@ import { toast } from "@/hooks/use-toast";
 import { useFriendsAutoUpdate } from "@/hooks/useFriendsAutoUpdate";
 import { PasswordDialog } from "./PasswordDialog";
 import { useFaceitApi } from "@/hooks/useFaceitApi";
-import { useLcryptApi } from "@/hooks/useLcryptApi";
 
 interface FriendsSectionProps {
   friends: Player[];
@@ -57,22 +56,46 @@ export const FriendsSection = ({
   // Load Lcrypt data for each friend
   React.useEffect(() => {
     const loadLcryptData = async () => {
+      if (friends.length === 0) {
+        setFriendsWithLcrypt([]);
+        return;
+      }
+
+      console.log('Loading lcrypt data for friends:', friends.map(f => f.nickname));
+      
       const updatedFriends = await Promise.all(
         friends.map(async (friend) => {
           try {
-            const { data } = await useLcryptApi(friend.nickname);
-            return { ...friend, lcryptData: data };
+            console.log(`Fetching ELO data for nickname: ${friend.nickname}`);
+            
+            const { data: result, error: supabaseError } = await supabase.functions.invoke('get-lcrypt-elo', {
+              body: { nickname: friend.nickname }
+            });
+
+            if (supabaseError) {
+              console.error('Supabase error for', friend.nickname, ':', supabaseError);
+              return { ...friend, lcryptData: null };
+            }
+
+            if (result?.error) {
+              console.error('Lcrypt API error for', friend.nickname, ':', result.error);
+              return { ...friend, lcryptData: null };
+            }
+
+            console.log('Lcrypt data received for', friend.nickname, ':', result);
+            return { ...friend, lcryptData: result };
           } catch (error) {
+            console.error('Error fetching lcrypt data for', friend.nickname, ':', error);
             return { ...friend, lcryptData: null };
           }
         })
       );
+      
+      console.log('All friends with lcrypt data:', updatedFriends);
       setFriendsWithLcrypt(updatedFriends);
     };
 
-    if (friends.length > 0) {
-      loadLcryptData();
-    }
+    loadLcryptData();
   }, [friends]);
 
   const searchPlayer = async () => {
@@ -148,13 +171,23 @@ export const FriendsSection = ({
   };
 
   const renderEloChange = (lcryptData: any) => {
-    if (!lcryptData?.today?.present) return null;
+    console.log('Rendering ELO change for lcryptData:', lcryptData);
+    
+    if (!lcryptData?.today?.present) {
+      console.log('No today data present');
+      return null;
+    }
     
     const eloWin = lcryptData.today.elo_win || 0;
     const eloLose = lcryptData.today.elo_lose || 0;
     const totalChange = eloWin + eloLose;
     
-    if (totalChange === 0) return null;
+    console.log('ELO changes - Win:', eloWin, 'Lose:', eloLose, 'Total:', totalChange);
+    
+    if (totalChange === 0) {
+      console.log('Total change is 0, not showing');
+      return null;
+    }
     
     const isPositive = totalChange > 0;
     const color = isPositive ? 'text-green-400' : 'text-red-400';
