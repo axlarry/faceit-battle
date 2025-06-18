@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -22,31 +21,47 @@ export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: L
   const [pendingPlayer, setPendingPlayer] = useState<Player | null>(null);
   const limit = 20;
   const previousRegionRef = useRef<string>('');
+  const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   
-  const { makeApiCall, loading: apiLoading } = useFaceitApi();
+  const { makeApiCall } = useFaceitApi();
 
   useEffect(() => {
     console.log(`Region changed from ${previousRegionRef.current} to: ${region}`);
     
+    // Clear any pending timeout
+    if (loadingTimeoutRef.current) {
+      clearTimeout(loadingTimeoutRef.current);
+    }
+    
     // Clear data immediately when region changes
     setPlayers([]);
     setOffset(0);
+    setLoading(false); // Reset loading state
     
     // Store current region
     previousRegionRef.current = region;
     
-    // Start loading immediately to show the loading state
-    console.log(`Starting to load data for region: ${region}`);
-    loadPlayers(0, true);
+    // Start loading immediately with a small delay to ensure state is updated
+    loadingTimeoutRef.current = setTimeout(() => {
+      console.log(`Starting to load data for region: ${region}`);
+      loadPlayers(0, true);
+    }, 100);
+
+    return () => {
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current);
+      }
+    };
   }, [region]);
 
   const loadPlayers = async (currentOffset: number, reset = false) => {
-    if (loading || apiLoading) {
+    console.log(`Loading players for region: ${region}, offset: ${currentOffset}, reset: ${reset}, loading: ${loading}`);
+    
+    if (loading) {
       console.log('Already loading, skipping request');
       return;
     }
     
-    console.log(`Loading players for region: ${region}, offset: ${currentOffset}, reset: ${reset}`);
     setLoading(true);
     
     try {
@@ -54,16 +69,23 @@ export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: L
       
       if (!data || !data.items || data.items.length === 0) {
         console.log('No data or empty items array received');
-        toast({
-          title: "Nu există mai mulți jucători",
-          description: "S-au încărcat toți jucătorii disponibili.",
-        });
+        if (currentOffset === 0) {
+          toast({
+            title: "Nu există jucători",
+            description: "Nu s-au găsit jucători pentru această regiune.",
+          });
+        } else {
+          toast({
+            title: "Nu există mai mulți jucători",
+            description: "S-au încărcat toți jucătorii disponibili.",
+          });
+        }
         return;
       }
 
       console.log(`Received ${data.items.length} players for region ${region}`);
 
-      // Get detailed player info (NO Lcrypt API calls - completely removed for optimization)
+      // Get detailed player info
       const playersWithDetails = await Promise.all(
         data.items.map(async (item: any) => {
           try {
@@ -151,9 +173,13 @@ export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: L
             <span className="truncate">Clasament {region}</span>
           </h2>
           
-          {(loading || players.length === 0) ? (
+          {loading && players.length === 0 ? (
             <div className="text-center py-8">
               <div className="text-white">Se încarcă clasamentul...</div>
+            </div>
+          ) : players.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="text-gray-400">Nu s-au găsit jucători pentru această regiune.</div>
             </div>
           ) : (
             <div className="space-y-2 sm:space-y-3">
