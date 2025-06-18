@@ -14,15 +14,17 @@ import { getEloChange } from "@/utils/eloUtils";
 import { getPlayerStatsFromMatch, getKDA } from "@/utils/playerDataUtils";
 import { getKDRatio, getHeadshotPercentage, getADR } from "@/utils/statsUtils";
 import { useLcryptApi } from "@/hooks/useLcryptApi";
+import { parseLcryptReport, findMatchEloChange } from "@/utils/lcryptUtils";
 
 interface MatchRowProps {
   match: Match;
   player: Player;
   matchesStats: {[key: string]: any};
   onMatchClick: (match: Match) => void;
+  matchIndex: number;
 }
 
-export const MatchRow = ({ match, player, matchesStats, onMatchClick }: MatchRowProps) => {
+export const MatchRow = ({ match, player, matchesStats, onMatchClick, matchIndex }: MatchRowProps) => {
   const isWin = getMatchResult(match, player);
   const playerStats = getPlayerStatsFromMatch(match, player, matchesStats);
   const eloChange = getEloChange(match, player, matchesStats);
@@ -30,6 +32,10 @@ export const MatchRow = ({ match, player, matchesStats, onMatchClick }: MatchRow
   const matchScore = getMatchScore(match, matchesStats, player);
   const kda = getKDA(playerStats);
   const { data: lcryptData } = useLcryptApi(player.nickname);
+
+  // Parse lcrypt report and find ELO change for this match
+  const lcryptMatches = lcryptData?.report ? parseLcryptReport(lcryptData.report) : [];
+  const lcryptEloChange = findMatchEloChange(match, lcryptMatches, matchIndex);
 
   return (
     <TableRow 
@@ -110,13 +116,22 @@ export const MatchRow = ({ match, player, matchesStats, onMatchClick }: MatchRow
         </div>
       </TableCell>
 
-      {/* ELO Change - now showing actual ELO from lcrypt */}
+      {/* ELO Change - now showing from lcrypt report */}
       <TableCell>
-        {lcryptData ? (
+        {lcryptEloChange !== null ? (
           <div className="flex items-center gap-1">
-            <Trophy className="w-4 h-4 text-yellow-400" />
-            <span className="text-yellow-400 font-bold">
-              {lcryptData.elo}
+            {lcryptEloChange > 0 ? (
+              <TrendingUp className="w-4 h-4 text-green-400" />
+            ) : lcryptEloChange < 0 ? (
+              <TrendingDown className="w-4 h-4 text-red-400" />
+            ) : (
+              <Minus className="w-4 h-4 text-gray-400" />
+            )}
+            <span className={`font-bold ${
+              lcryptEloChange > 0 ? 'text-green-400' : 
+              lcryptEloChange < 0 ? 'text-red-400' : 'text-gray-400'
+            }`}>
+              {lcryptEloChange > 0 ? '+' : ''}{lcryptEloChange}
             </span>
           </div>
         ) : eloChange && typeof eloChange.elo_change === 'number' ? (

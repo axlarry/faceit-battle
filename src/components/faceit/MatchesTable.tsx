@@ -68,13 +68,14 @@ export const MatchesTable = ({ player, matches, matchesStats, loadingMatches }: 
               </TableRow>
             </TableHeader>
             <TableBody>
-              {matches.map((match) => (
+              {matches.map((match, index) => (
                 <MatchRow
                   key={match.match_id}
                   match={match}
                   player={player}
                   matchesStats={matchesStats}
                   onMatchClick={handleMatchClick}
+                  matchIndex={index}
                 />
               ))}
             </TableBody>
