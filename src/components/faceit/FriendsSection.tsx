@@ -2,14 +2,14 @@
 import React, { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Player } from "@/types/Player";
-import { Users } from "lucide-react";
 import { PasswordDialog } from "./PasswordDialog";
 import { useFriendsAutoUpdate } from "@/hooks/useFriendsAutoUpdate";
 import { useLcryptDataManager } from "@/hooks/useLcryptDataManager";
 import { FriendsSectionHeader } from "./FriendsSectionHeader";
 import { FriendSearchForm } from "./FriendSearchForm";
-import { FriendListItem } from "./FriendListItem";
-import { Progress } from "@/components/ui/progress";
+import { EmptyFriendsState } from "./EmptyFriendsState";
+import { FriendsLoadingProgress } from "./FriendsLoadingProgress";
+import { FriendsList } from "./FriendsList";
 
 interface FriendsSectionProps {
   friends: Player[];
@@ -86,11 +86,6 @@ export const FriendsSection = ({
     setPendingAction(null);
   };
 
-  // Sortare prieteni după ELO
-  const sortedFriends = React.useMemo(() => {
-    return [...friendsWithLcrypt].sort((a, b) => (b.elo || 0) - (a.elo || 0));
-  }, [friendsWithLcrypt]);
-
   return (
     <div className="space-y-4 px-4 md:px-0">
       <Card className="bg-[#1a1d21] border-[#2a2f36] shadow-xl">
@@ -103,37 +98,20 @@ export const FriendsSection = ({
 
           <FriendSearchForm onPlayerFound={handlePlayerFound} />
           
-          {/* Progress bar pentru încărcarea datelor ELO */}
-          {lcryptLoading && friends.length > 0 && (
-            <div className="mb-4 space-y-2">
-              <div className="flex justify-between text-sm text-[#9f9f9f]">
-                <span>Se încarcă datele ELO...</span>
-                <span>{Math.round(loadingProgress)}%</span>
-              </div>
-              <Progress value={loadingProgress} className="h-2" />
-            </div>
-          )}
+          <FriendsLoadingProgress 
+            isLoading={lcryptLoading}
+            progress={loadingProgress}
+            friendsCount={friends.length}
+          />
           
           {friends.length === 0 ? (
-            <div className="text-center py-8 md:py-10">
-              <div className="w-16 h-16 md:w-18 md:h-18 bg-[#ff6500] rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg">
-                <Users size={28} className="md:w-9 md:h-9 text-white" />
-              </div>
-              <h3 className="text-lg md:text-xl font-bold text-white mb-2">Niciun prieten adăugat</h3>
-              <p className="text-[#9f9f9f] text-sm md:text-base mb-4">Caută și adaugă prieteni pentru a-i vedea în clasamentul tău personal!</p>
-            </div>
+            <EmptyFriendsState />
           ) : (
-            <div className="space-y-2">
-              {sortedFriends.map((friend, index) => (
-                <FriendListItem
-                  key={friend.player_id}
-                  friend={friend}
-                  index={index}
-                  isFlashing={flashingPlayer === friend.player_id}
-                  onPlayerClick={handlePlayerClick}
-                />
-              ))}
-            </div>
+            <FriendsList 
+              friends={friendsWithLcrypt}
+              flashingPlayer={flashingPlayer}
+              onPlayerClick={handlePlayerClick}
+            />
           )}
         </div>
       </Card>
