@@ -1,11 +1,14 @@
 
 import { Player } from "@/types/Player";
+import { useLcryptApi } from "@/hooks/useLcryptApi";
 
 interface PlayerStatsCardsProps {
   player: Player;
 }
 
 export const PlayerStatsCards = ({ player }: PlayerStatsCardsProps) => {
+  const { data: lcryptData, loading: lcryptLoading } = useLcryptApi(player.nickname);
+
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
       <div className="bg-gradient-to-r from-green-500/20 to-green-600/20 rounded-lg p-2 text-center border border-green-500/30">
@@ -24,8 +27,12 @@ export const PlayerStatsCards = ({ player }: PlayerStatsCardsProps) => {
       </div>
       
       <div className="bg-gradient-to-r from-purple-500/20 to-purple-600/20 rounded-lg p-2 text-center border border-purple-500/30">
-        <div className="text-lg font-bold text-purple-400">{player.kdRatio}</div>
-        <div className="text-gray-400 text-xs">K/D Ratio</div>
+        <div className="text-lg font-bold text-purple-400">
+          {lcryptLoading ? '...' : lcryptData ? lcryptData.elo : player.kdRatio}
+        </div>
+        <div className="text-gray-400 text-xs">
+          {lcryptData ? 'ELO Actual' : 'K/D Ratio'}
+        </div>
       </div>
     </div>
   );

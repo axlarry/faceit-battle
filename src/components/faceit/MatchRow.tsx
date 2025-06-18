@@ -13,6 +13,7 @@ import {
 import { getEloChange } from "@/utils/eloUtils";
 import { getPlayerStatsFromMatch, getKDA } from "@/utils/playerDataUtils";
 import { getKDRatio, getHeadshotPercentage, getADR } from "@/utils/statsUtils";
+import { useLcryptApi } from "@/hooks/useLcryptApi";
 
 interface MatchRowProps {
   match: Match;
@@ -28,6 +29,7 @@ export const MatchRow = ({ match, player, matchesStats, onMatchClick }: MatchRow
   const mapName = getMapInfo(match, matchesStats);
   const matchScore = getMatchScore(match, matchesStats, player);
   const kda = getKDA(playerStats);
+  const { data: lcryptData } = useLcryptApi(player.nickname);
 
   return (
     <TableRow 
@@ -108,9 +110,16 @@ export const MatchRow = ({ match, player, matchesStats, onMatchClick }: MatchRow
         </div>
       </TableCell>
 
-      {/* ELO Change */}
+      {/* ELO Change - now showing actual ELO from lcrypt */}
       <TableCell>
-        {eloChange && typeof eloChange.elo_change === 'number' ? (
+        {lcryptData ? (
+          <div className="flex items-center gap-1">
+            <Trophy className="w-4 h-4 text-yellow-400" />
+            <span className="text-yellow-400 font-bold">
+              {lcryptData.elo}
+            </span>
+          </div>
+        ) : eloChange && typeof eloChange.elo_change === 'number' ? (
           <div className="flex items-center gap-1">
             {eloChange.elo_change > 0 ? (
               <TrendingUp className="w-4 h-4 text-green-400" />
