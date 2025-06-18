@@ -10,7 +10,16 @@ interface LcryptEloData {
   country_flag: string;
   region_ranking: number;
   country_ranking: number;
-  report: string; // Added this missing property
+  report: string;
+  today?: {
+    present: boolean;
+    win: number;
+    lose: number;
+    elo: number;
+    elo_win: number;
+    elo_lose: number;
+    count: number;
+  };
   detail?: {
     ladder?: {
       position: number;
