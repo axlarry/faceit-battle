@@ -194,7 +194,9 @@ export const FriendsSection = ({
     const arrow = isPositive ? '↑' : '↓';
     
     return (
-      <div className={`${color} font-bold text-sm animate-pulse flex items-center gap-1`}>
+      <div className={`${color} font-bold text-sm animate-pulse flex items-center gap-1`} style={{
+        animation: 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+      }}>
         <span>{arrow}</span>
         <span>{Math.abs(totalChange)}</span>
       </div>
