@@ -10,6 +10,7 @@ interface LcryptEloData {
   country_flag: string;
   region_ranking: number;
   country_ranking: number;
+  report: string; // Added this missing property
   detail?: {
     ladder?: {
       position: number;
