@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -24,25 +25,41 @@ export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: L
   const { makeApiCall, loading: apiLoading } = useFaceitApi();
 
   useEffect(() => {
+    console.log(`Region changed to: ${region}, clearing players and resetting offset`);
     setPlayers([]);
     setOffset(0);
-    loadPlayers(0, true);
+    setLoading(false);
+    
+    // Add a small delay to ensure state is cleared before loading
+    const timeoutId = setTimeout(() => {
+      loadPlayers(0, true);
+    }, 100);
+
+    return () => clearTimeout(timeoutId);
   }, [region]);
 
   const loadPlayers = async (currentOffset: number, reset = false) => {
-    if (loading || apiLoading) return;
+    if (loading || apiLoading) {
+      console.log('Already loading, skipping request');
+      return;
+    }
     
+    console.log(`Loading players for region: ${region}, offset: ${currentOffset}, reset: ${reset}`);
     setLoading(true);
+    
     try {
       const data = await makeApiCall(`/rankings/games/cs2/regions/${region}?offset=${currentOffset}&limit=${limit}`);
       
-      if (data.items.length === 0) {
+      if (!data || !data.items || data.items.length === 0) {
+        console.log('No data or empty items array received');
         toast({
           title: "Nu există mai mulți jucători",
           description: "S-au încărcat toți jucătorii disponibili.",
         });
         return;
       }
+
+      console.log(`Received ${data.items.length} players for region ${region}`);
 
       // Get detailed player info
       const playersWithDetails = await Promise.all(
@@ -82,8 +99,10 @@ export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: L
       );
 
       if (reset) {
+        console.log(`Setting ${playersWithDetails.length} players (reset)`);
         setPlayers(playersWithDetails);
       } else {
+        console.log(`Adding ${playersWithDetails.length} players to existing ${players.length}`);
         setPlayers(prev => [...prev, ...playersWithDetails]);
       }
       
@@ -130,78 +149,84 @@ export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: L
             Clasament {region}
           </h2>
           
-          <div className="space-y-3">
-            {players.map((player, index) => (
-              <div
-                key={player.player_id}
-                className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-white/10 hover:bg-white/10 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="text-2xl font-bold text-orange-400 min-w-[3rem]">
-                      #{player.position}
+          {loading && players.length === 0 ? (
+            <div className="text-center py-8">
+              <div className="text-white">Se încarcă clasamentul...</div>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {players.map((player, index) => (
+                <div
+                  key={player.player_id}
+                  className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-white/10 hover:bg-white/10 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="text-2xl font-bold text-orange-400 min-w-[3rem]">
+                        #{player.position}
+                      </div>
+                      
+                      <img
+                        src={player.avatar}
+                        alt={player.nickname}
+                        className="w-12 h-12 rounded-full border-2 border-orange-400"
+                      />
+                      
+                      <div>
+                        <h3 className="text-lg font-semibold text-white">{player.nickname}</h3>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Badge className={`bg-gradient-to-r ${getLevelColor(player.level || 0)} text-white border-0`}>
+                            Nivel {player.level}
+                          </Badge>
+                          <span className="text-orange-400 font-medium">{player.elo} ELO</span>
+                        </div>
+                      </div>
                     </div>
-                    
-                    <img
-                      src={player.avatar}
-                      alt={player.nickname}
-                      className="w-12 h-12 rounded-full border-2 border-orange-400"
-                    />
-                    
-                    <div>
-                      <h3 className="text-lg font-semibold text-white">{player.nickname}</h3>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Badge className={`bg-gradient-to-r ${getLevelColor(player.level || 0)} text-white border-0`}>
-                          Nivel {player.level}
-                        </Badge>
-                        <span className="text-orange-400 font-medium">{player.elo} ELO</span>
+
+                    <div className="flex items-center gap-6 text-sm">
+                      <div className="text-center">
+                        <div className="text-white font-medium">{player.wins}</div>
+                        <div className="text-gray-400">Victorii</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-white font-medium">{player.winRate}%</div>
+                        <div className="text-gray-400">Win Rate</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-white font-medium">{player.hsRate}%</div>
+                        <div className="text-gray-400">HS%</div>
+                      </div>
+                      <div className="text-center">
+                        <div className="text-white font-medium">{player.kdRatio}</div>
+                        <div className="text-gray-400">K/D</div>
+                      </div>
+                      
+                      <div className="flex gap-2">
+                        <Button 
+                          size="sm"
+                          variant="outline"
+                          onClick={() => onShowPlayerDetails(player)}
+                          className="border-orange-400 text-orange-400 hover:bg-orange-400 hover:text-white"
+                        >
+                          Detalii
+                        </Button>
+                        <Button 
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleAddFriend(player)}
+                          className="border-blue-400 text-blue-400 hover:bg-blue-400 hover:text-white"
+                        >
+                          Adaugă
+                        </Button>
                       </div>
                     </div>
                   </div>
-
-                  <div className="flex items-center gap-6 text-sm">
-                    <div className="text-center">
-                      <div className="text-white font-medium">{player.wins}</div>
-                      <div className="text-gray-400">Victorii</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-white font-medium">{player.winRate}%</div>
-                      <div className="text-gray-400">Win Rate</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-white font-medium">{player.hsRate}%</div>
-                      <div className="text-gray-400">HS%</div>
-                    </div>
-                    <div className="text-center">
-                      <div className="text-white font-medium">{player.kdRatio}</div>
-                      <div className="text-gray-400">K/D</div>
-                    </div>
-                    
-                    <div className="flex gap-2">
-                      <Button 
-                        size="sm"
-                        variant="outline"
-                        onClick={() => onShowPlayerDetails(player)}
-                        className="border-orange-400 text-orange-400 hover:bg-orange-400 hover:text-white"
-                      >
-                        Detalii
-                      </Button>
-                      <Button 
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleAddFriend(player)}
-                        className="border-blue-400 text-blue-400 hover:bg-blue-400 hover:text-white"
-                      >
-                        Adaugă
-                      </Button>
-                    </div>
-                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
 
-          {players.length > 0 && (
+          {players.length > 0 && !loading && (
             <div className="text-center pt-6">
               <Button
                 onClick={() => loadPlayers(offset)}
