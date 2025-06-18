@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -62,7 +63,7 @@ export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: L
 
       console.log(`Received ${data.items.length} players for region ${region}`);
 
-      // Get detailed player info (WITHOUT Lcrypt API calls for optimization)
+      // Get detailed player info (NO Lcrypt API calls - completely removed for optimization)
       const playersWithDetails = await Promise.all(
         data.items.map(async (item: any) => {
           try {
@@ -142,12 +143,12 @@ export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: L
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       <Card className="bg-white/5 backdrop-blur-lg border-white/10">
-        <div className="p-6">
-          <h2 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
-            <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-full"></div>
-            Clasament {region}
+        <div className="p-3 sm:p-4 md:p-6">
+          <h2 className="text-xl sm:text-2xl font-bold text-white mb-4 sm:mb-6 flex items-center gap-2 sm:gap-3">
+            <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-full"></div>
+            <span className="truncate">Clasament {region}</span>
           </h2>
           
           {(loading || players.length === 0) ? (
@@ -155,69 +156,71 @@ export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: L
               <div className="text-white">Se încarcă clasamentul...</div>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2 sm:space-y-3">
               {players.map((player, index) => (
                 <div
                   key={player.player_id}
-                  className="bg-white/5 backdrop-blur-sm rounded-lg p-4 border border-white/10 hover:bg-white/10 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg"
+                  className="bg-white/5 backdrop-blur-sm rounded-lg p-3 sm:p-4 border border-white/10 hover:bg-white/10 transition-all duration-300 hover:scale-[1.01] hover:shadow-lg"
                 >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className="text-2xl font-bold text-orange-400 min-w-[3rem]">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+                    <div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto min-w-0">
+                      <div className="text-lg sm:text-2xl font-bold text-orange-400 min-w-[2rem] sm:min-w-[3rem] flex-shrink-0">
                         #{player.position}
                       </div>
                       
                       <img
                         src={player.avatar}
                         alt={player.nickname}
-                        className="w-12 h-12 rounded-full border-2 border-orange-400"
+                        className="w-8 h-8 sm:w-12 sm:h-12 rounded-full border-2 border-orange-400 flex-shrink-0"
                       />
                       
-                      <div>
-                        <h3 className="text-lg font-semibold text-white">{player.nickname}</h3>
-                        <div className="flex items-center gap-2 mt-1">
-                          <Badge className={`bg-gradient-to-r ${getLevelColor(player.level || 0)} text-white border-0`}>
+                      <div className="min-w-0 flex-1">
+                        <h3 className="text-sm sm:text-lg font-semibold text-white truncate">{player.nickname}</h3>
+                        <div className="flex flex-wrap items-center gap-1 sm:gap-2 mt-1">
+                          <Badge className={`bg-gradient-to-r ${getLevelColor(player.level || 0)} text-white border-0 text-xs px-1 sm:px-2 py-0.5`}>
                             Nivel {player.level}
                           </Badge>
-                          <span className="text-orange-400 font-medium">{player.elo} ELO</span>
+                          <span className="text-orange-400 font-medium text-xs sm:text-sm">{player.elo} ELO</span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-6 text-sm">
+                    <div className="flex flex-wrap items-center gap-2 sm:gap-4 lg:gap-6 text-xs w-full sm:w-auto justify-between sm:justify-end">
                       <div className="text-center">
-                        <div className="text-white font-medium">{player.wins}</div>
-                        <div className="text-gray-400">Victorii</div>
+                        <div className="text-white font-medium text-xs sm:text-sm">{player.wins}</div>
+                        <div className="text-gray-400 text-xs">Victorii</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-white font-medium">{player.winRate}%</div>
-                        <div className="text-gray-400">Win Rate</div>
+                        <div className="text-white font-medium text-xs sm:text-sm">{player.winRate}%</div>
+                        <div className="text-gray-400 text-xs">Win Rate</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-white font-medium">{player.hsRate}%</div>
-                        <div className="text-gray-400">HS%</div>
+                        <div className="text-white font-medium text-xs sm:text-sm">{player.hsRate}%</div>
+                        <div className="text-gray-400 text-xs">HS%</div>
                       </div>
                       <div className="text-center">
-                        <div className="text-white font-medium">{player.kdRatio}</div>
-                        <div className="text-gray-400">K/D</div>
+                        <div className="text-white font-medium text-xs sm:text-sm">{player.kdRatio}</div>
+                        <div className="text-gray-400 text-xs">K/D</div>
                       </div>
                       
-                      <div className="flex gap-2">
+                      <div className="flex gap-1 sm:gap-2">
                         <Button 
                           size="sm"
                           variant="outline"
                           onClick={() => onShowPlayerDetails(player)}
-                          className="border-orange-400 text-orange-400 hover:bg-orange-400 hover:text-white"
+                          className="border-orange-400 text-orange-400 hover:bg-orange-400 hover:text-white text-xs px-2 sm:px-3 h-6 sm:h-8"
                         >
-                          Detalii
+                          <span className="hidden sm:inline">Detalii</span>
+                          <span className="sm:hidden">Info</span>
                         </Button>
                         <Button 
                           size="sm"
                           variant="outline"
                           onClick={() => handleAddFriend(player)}
-                          className="border-blue-400 text-blue-400 hover:bg-blue-400 hover:text-white"
+                          className="border-blue-400 text-blue-400 hover:bg-blue-400 hover:text-white text-xs px-2 sm:px-3 h-6 sm:h-8"
                         >
-                          Adaugă
+                          <span className="hidden sm:inline">Adaugă</span>
+                          <span className="sm:hidden">+</span>
                         </Button>
                       </div>
                     </div>
@@ -228,11 +231,11 @@ export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: L
           )}
 
           {players.length > 0 && !loading && (
-            <div className="text-center pt-6">
+            <div className="text-center pt-4 sm:pt-6">
               <Button
                 onClick={() => loadPlayers(offset)}
                 disabled={loading}
-                className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white border-0 px-8 py-3"
+                className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white border-0 px-6 sm:px-8 py-2 sm:py-3 text-sm sm:text-base"
               >
                 {loading ? 'Se încarcă...' : 'Încarcă mai mulți'}
               </Button>
