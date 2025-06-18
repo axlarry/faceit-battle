@@ -1,9 +1,11 @@
 
-import React, { useState, useEffect } from 'react';
-import { Badge } from "@/components/ui/badge";
+import React from 'react';
 import { Player } from "@/types/Player";
-import { EloChangeIndicator } from './EloChangeIndicator';
-import { useFaceitApi } from "@/hooks/useFaceitApi";
+import { FriendAvatar } from './FriendAvatar';
+import { FriendInfo } from './FriendInfo';
+import { FriendStats } from './FriendStats';
+import { FriendActions } from './FriendActions';
+import { useSteamIdConverter } from './SteamIdConverter';
 
 interface FriendWithLcrypt extends Player {
   lcryptData?: any;
@@ -16,76 +18,13 @@ interface FriendListItemProps {
   onPlayerClick: (player: Player) => void;
 }
 
-const getLevelIcon = (level: number) => {
-  // Faceit skill level icons with fallback
-  const iconMap: { [key: number]: string } = {
-    1: '/faceit-icons/skill-level-1.png',
-    2: '/faceit-icons/skill-level-2.png',
-    3: '/faceit-icons/skill-level-3.png',
-    4: '/faceit-icons/skill-level-4.png',
-    5: '/faceit-icons/skill-level-5.png',
-    6: '/faceit-icons/skill-level-6.png',
-    7: '/faceit-icons/skill-level-7.png',
-    8: '/faceit-icons/skill-level-8.png',
-    9: '/faceit-icons/skill-level-9.png',
-    10: '/faceit-icons/skill-level-10.png',
-  };
-  
-  return iconMap[level] || iconMap[1];
-};
-
-// Convert Steam ID to Steam ID64
-const convertSteamIdToSteamId64 = (steamId: string): string => {
-  // Steam ID format: STEAM_0:Y:Z where Y is 0 or 1, Z is the account number
-  const steamIdMatch = steamId.match(/^STEAM_[0-5]:([01]):(\d+)$/);
-  
-  if (!steamIdMatch) {
-    // If it's already a Steam ID64 or different format, return as is
-    return steamId;
-  }
-  
-  const y = parseInt(steamIdMatch[1]);
-  const z = parseInt(steamIdMatch[2]);
-  
-  // Steam ID64 calculation: 76561197960265728 + (Z * 2) + Y
-  const steamId64 = 76561197960265728n + BigInt(z * 2) + BigInt(y);
-  
-  return steamId64.toString();
-};
-
 export const FriendListItem = React.memo(({ 
   friend, 
   index, 
   isFlashing, 
   onPlayerClick 
 }: FriendListItemProps) => {
-  const [steamId, setSteamId] = useState<string | null>(null);
-  const [steamId64, setSteamId64] = useState<string | null>(null);
-  const [levelIconError, setLevelIconError] = useState(false);
-  const [faceitIconError, setFaceitIconError] = useState(false);
-  const [steamIconError, setSteamIconError] = useState(false);
-  const { makeApiCall } = useFaceitApi();
-
-  useEffect(() => {
-    const fetchSteamId = async () => {
-      try {
-        const playerData = await makeApiCall(`/players/${friend.player_id}`);
-        if (playerData?.platforms?.steam) {
-          const steamIdRaw = playerData.platforms.steam;
-          setSteamId(steamIdRaw);
-          const steamId64Converted = convertSteamIdToSteamId64(steamIdRaw);
-          setSteamId64(steamId64Converted);
-        }
-      } catch (error) {
-        console.error('Error fetching Steam ID:', error);
-      }
-    };
-
-    // Only fetch if we don't have steam ID yet and API is available
-    if (!steamId) {
-      fetchSteamId();
-    }
-  }, [friend.player_id, makeApiCall, steamId]);
+  const { steamId64 } = useSteamIdConverter(friend.player_id);
 
   const handleClick = () => {
     onPlayerClick(friend);
@@ -93,21 +32,6 @@ export const FriendListItem = React.memo(({
 
   const handleLinkClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-  };
-
-  const handleLevelIconError = () => {
-    console.error(`Failed to load level icon: ${getLevelIcon(friend.level || 1)}`);
-    setLevelIconError(true);
-  };
-
-  const handleFaceitIconError = () => {
-    console.error('Failed to load Faceit icon from: /icons/faceit icon.svg');
-    setFaceitIconError(true);
-  };
-
-  const handleSteamIconError = () => {
-    console.error('Failed to load Steam icon from: /icons/steam_icon.svg');
-    setSteamIconError(true);
   };
 
   return (
@@ -119,102 +43,33 @@ export const FriendListItem = React.memo(({
     >
       <div className="flex flex-col space-y-4 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
         <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto min-w-0">
-          <div className="text-2xl sm:text-3xl font-bold text-[#ff6500] min-w-[3rem] sm:min-w-[4rem] flex-shrink-0">
-            #{index + 1}
-          </div>
-          
-          <img
-            src={friend.avatar}
-            alt={friend.nickname}
-            className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg border-2 border-[#ff6500] shadow-lg flex-shrink-0"
+          <FriendAvatar 
+            avatar={friend.avatar}
+            nickname={friend.nickname}
+            index={index}
           />
           
-          <div className="min-w-0 flex-1">
-            <h3 className="text-xl sm:text-2xl font-bold text-white truncate">{friend.nickname}</h3>
-            <div className="flex flex-wrap items-center gap-3 sm:gap-4 mt-2">
-              <div className="flex items-center gap-2">
-                {!levelIconError ? (
-                  <img
-                    src={getLevelIcon(friend.level || 1)}
-                    alt={`Skill Level ${friend.level}`}
-                    className="w-10 h-10 sm:w-12 sm:h-12"
-                    onError={handleLevelIconError}
-                    onLoad={() => console.log(`✅ Level icon loaded successfully: ${getLevelIcon(friend.level || 1)}`)}
-                  />
-                ) : (
-                  <Badge 
-                    className="bg-gradient-to-r from-gray-500 to-gray-600 text-white border-0 px-3 sm:px-4 py-1 text-base"
-                  >
-                    Nivel {friend.level}
-                  </Badge>
-                )}
-              </div>
-              <span className="text-[#ff6500] font-bold text-xl sm:text-2xl">{friend.elo} ELO</span>
-              <div className="w-full sm:w-auto">
-                <EloChangeIndicator lcryptData={friend.lcryptData} />
-              </div>
-            </div>
-          </div>
+          <FriendInfo
+            nickname={friend.nickname}
+            level={friend.level}
+            elo={friend.elo}
+            lcryptData={friend.lcryptData}
+          />
         </div>
 
         <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-sm w-full sm:w-auto justify-between sm:justify-end">
-          <div className="grid grid-cols-4 gap-1 sm:flex sm:gap-1 flex-grow sm:flex-grow-0">
-            <div className="text-center min-w-[40px] sm:min-w-[45px]">
-              <div className="text-white font-bold text-lg sm:text-xl">{friend.wins}</div>
-              <div className="text-[#9f9f9f] text-xs sm:text-sm">Victorii</div>
-            </div>
-            <div className="text-center min-w-[40px] sm:min-w-[45px]">
-              <div className="text-white font-bold text-lg sm:text-xl">{friend.winRate}%</div>
-              <div className="text-[#9f9f9f] text-xs sm:text-sm">Win Rate</div>
-            </div>
-            <div className="text-center min-w-[40px] sm:min-w-[45px]">
-              <div className="text-white font-bold text-lg sm:text-xl">{friend.hsRate}%</div>
-              <div className="text-[#9f9f9f] text-xs sm:text-sm">HS%</div>
-            </div>
-            <div className="text-center min-w-[40px] sm:min-w-[45px]">
-              <div className="text-white font-bold text-lg sm:text-xl">{friend.kdRatio}</div>
-              <div className="text-[#9f9f9f] text-xs sm:text-sm">K/D</div>
-            </div>
-          </div>
+          <FriendStats
+            wins={friend.wins}
+            winRate={friend.winRate}
+            hsRate={friend.hsRate}
+            kdRatio={friend.kdRatio}
+          />
           
-          <div className="flex gap-2 mt-3 sm:mt-0" onClick={handleLinkClick}>
-            <a
-              href={`https://www.faceit.com/en/players/${friend.nickname}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-transparent border-2 border-[#ff6500] text-[#ff6500] hover:bg-[#ff6500] hover:text-white rounded-lg w-12 h-12 sm:w-14 sm:h-14 font-bold text-xs flex items-center justify-center transition-all duration-200 hover:scale-105"
-            >
-              {!faceitIconError ? (
-                <img 
-                  src="/icons/faceit icon.svg" 
-                  alt="Faceit" 
-                  className="w-6 h-6 sm:w-7 sm:h-7"
-                  onError={handleFaceitIconError}
-                  onLoad={() => console.log('✅ Faceit icon loaded successfully from /icons/faceit icon.svg')}
-                />
-              ) : (
-                <span className="text-sm font-bold">F</span>
-              )}
-            </a>
-            <a
-              href={steamId64 ? `https://steamcommunity.com/profiles/${steamId64}` : `https://steamcommunity.com/search/users/#text=${friend.nickname}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-transparent border-2 border-blue-400 text-blue-400 hover:bg-blue-500 hover:border-blue-500 hover:text-white rounded-lg w-12 h-12 sm:w-14 sm:h-14 font-bold text-xs flex items-center justify-center transition-all duration-200 hover:scale-105"
-            >
-              {!steamIconError ? (
-                <img 
-                  src="/icons/steam_icon.svg" 
-                  alt="Steam" 
-                  className="w-6 h-6 sm:w-7 sm:h-7"
-                  onError={handleSteamIconError}
-                  onLoad={() => console.log('✅ Steam icon loaded successfully from /icons/steam_icon.svg')}
-                />
-              ) : (
-                <span className="text-sm font-bold">S</span>
-              )}
-            </a>
-          </div>
+          <FriendActions
+            nickname={friend.nickname}
+            steamId64={steamId64}
+            onLinkClick={handleLinkClick}
+          />
         </div>
       </div>
     </div>
