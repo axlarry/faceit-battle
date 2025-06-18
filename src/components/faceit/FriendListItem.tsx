@@ -119,37 +119,37 @@ export const FriendListItem = React.memo(({
     >
       <div className="flex flex-col space-y-4 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
         <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto min-w-0">
-          <div className="text-xl sm:text-2xl font-bold text-[#ff6500] min-w-[3rem] sm:min-w-[3.5rem] flex-shrink-0">
+          <div className="text-2xl sm:text-3xl font-bold text-[#ff6500] min-w-[3rem] sm:min-w-[4rem] flex-shrink-0">
             #{index + 1}
           </div>
           
           <img
             src={friend.avatar}
             alt={friend.nickname}
-            className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg border-2 border-[#ff6500] shadow-lg flex-shrink-0"
+            className="w-16 h-16 sm:w-20 sm:h-20 rounded-lg border-2 border-[#ff6500] shadow-lg flex-shrink-0"
           />
           
           <div className="min-w-0 flex-1">
-            <h3 className="text-lg sm:text-xl font-bold text-white truncate">{friend.nickname}</h3>
-            <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-2">
+            <h3 className="text-xl sm:text-2xl font-bold text-white truncate">{friend.nickname}</h3>
+            <div className="flex flex-wrap items-center gap-3 sm:gap-4 mt-2">
               <div className="flex items-center gap-2">
                 {!levelIconError ? (
                   <img
                     src={getLevelIcon(friend.level || 1)}
                     alt={`Skill Level ${friend.level}`}
-                    className="w-8 h-8 sm:w-10 sm:h-10"
+                    className="w-10 h-10 sm:w-12 sm:h-12"
                     onError={handleLevelIconError}
                     onLoad={() => console.log(`✅ Level icon loaded successfully: ${getLevelIcon(friend.level || 1)}`)}
                   />
                 ) : (
                   <Badge 
-                    className="bg-gradient-to-r from-gray-500 to-gray-600 text-white border-0 px-2 sm:px-3 py-1 text-sm"
+                    className="bg-gradient-to-r from-gray-500 to-gray-600 text-white border-0 px-3 sm:px-4 py-1 text-base"
                   >
                     Nivel {friend.level}
                   </Badge>
                 )}
               </div>
-              <span className="text-[#ff6500] font-bold text-lg sm:text-xl">{friend.elo} ELO</span>
+              <span className="text-[#ff6500] font-bold text-xl sm:text-2xl">{friend.elo} ELO</span>
               <div className="w-full sm:w-auto">
                 <EloChangeIndicator lcryptData={friend.lcryptData} />
               </div>
@@ -158,22 +158,22 @@ export const FriendListItem = React.memo(({
         </div>
 
         <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-sm w-full sm:w-auto justify-between sm:justify-end">
-          <div className="grid grid-cols-4 gap-3 sm:flex sm:gap-4 flex-grow sm:flex-grow-0">
-            <div className="text-center">
+          <div className="grid grid-cols-4 gap-2 sm:flex sm:gap-3 flex-grow sm:flex-grow-0">
+            <div className="text-center min-w-[60px]">
               <div className="text-white font-bold text-lg sm:text-xl">{friend.wins}</div>
-              <div className="text-[#9f9f9f] text-sm">Victorii</div>
+              <div className="text-[#9f9f9f] text-xs sm:text-sm">Victorii</div>
             </div>
-            <div className="text-center">
+            <div className="text-center min-w-[60px]">
               <div className="text-white font-bold text-lg sm:text-xl">{friend.winRate}%</div>
-              <div className="text-[#9f9f9f] text-sm">Win Rate</div>
+              <div className="text-[#9f9f9f] text-xs sm:text-sm">Win Rate</div>
             </div>
-            <div className="text-center">
+            <div className="text-center min-w-[60px]">
               <div className="text-white font-bold text-lg sm:text-xl">{friend.hsRate}%</div>
-              <div className="text-[#9f9f9f] text-sm">HS%</div>
+              <div className="text-[#9f9f9f] text-xs sm:text-sm">HS%</div>
             </div>
-            <div className="text-center">
+            <div className="text-center min-w-[60px]">
               <div className="text-white font-bold text-lg sm:text-xl">{friend.kdRatio}</div>
-              <div className="text-[#9f9f9f] text-sm">K/D</div>
+              <div className="text-[#9f9f9f] text-xs sm:text-sm">K/D</div>
             </div>
           </div>
           
@@ -182,13 +182,13 @@ export const FriendListItem = React.memo(({
               href={`https://www.faceit.com/en/players/${friend.nickname}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-transparent border-2 border-[#ff6500] text-[#ff6500] hover:bg-[#ff6500] hover:text-white rounded-lg w-10 h-10 sm:w-12 sm:h-12 font-bold text-xs flex items-center justify-center transition-all duration-200 hover:scale-105"
+              className="bg-transparent border-2 border-[#ff6500] text-[#ff6500] hover:bg-[#ff6500] hover:text-white rounded-lg w-12 h-12 sm:w-14 sm:h-14 font-bold text-xs flex items-center justify-center transition-all duration-200 hover:scale-105"
             >
               {!faceitIconError ? (
                 <img 
                   src="/icons/faceit icon.svg" 
                   alt="Faceit" 
-                  className="w-5 h-5 sm:w-6 sm:h-6"
+                  className="w-6 h-6 sm:w-7 sm:h-7"
                   onError={handleFaceitIconError}
                   onLoad={() => console.log('✅ Faceit icon loaded successfully from /icons/faceit icon.svg')}
                 />
@@ -200,13 +200,13 @@ export const FriendListItem = React.memo(({
               href={steamId64 ? `https://steamcommunity.com/profiles/${steamId64}` : `https://steamcommunity.com/search/users/#text=${friend.nickname}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-transparent border-2 border-blue-400 text-blue-400 hover:bg-blue-500 hover:border-blue-500 hover:text-white rounded-lg w-10 h-10 sm:w-12 sm:h-12 font-bold text-xs flex items-center justify-center transition-all duration-200 hover:scale-105"
+              className="bg-transparent border-2 border-blue-400 text-blue-400 hover:bg-blue-500 hover:border-blue-500 hover:text-white rounded-lg w-12 h-12 sm:w-14 sm:h-14 font-bold text-xs flex items-center justify-center transition-all duration-200 hover:scale-105"
             >
               {!steamIconError ? (
                 <img 
                   src="/icons/steam_icon.svg" 
                   alt="Steam" 
-                  className="w-5 h-5 sm:w-6 sm:h-6"
+                  className="w-6 h-6 sm:w-7 sm:h-7"
                   onError={handleSteamIconError}
                   onLoad={() => console.log('✅ Steam icon loaded successfully from /icons/steam_icon.svg')}
                 />
