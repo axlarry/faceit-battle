@@ -37,12 +37,12 @@ export const FriendListItem = React.memo(({
   return (
     <div
       onClick={handleClick}
-      className={`bg-[#2a2f36] rounded-lg p-3 sm:p-4 border border-[#3a4048] hover:border-[#ff6500]/50 transition-all duration-300 shadow-lg cursor-pointer transform hover:scale-[1.01] ${
+      className={`bg-[#2a2f36] rounded-lg p-2 sm:p-3 border border-[#3a4048] hover:border-[#ff6500]/50 transition-all duration-300 shadow-lg cursor-pointer transform hover:scale-[1.01] ${
         isFlashing ? 'animate-pulse bg-[#ff6500]/20 border-[#ff6500]' : ''
       }`}
     >
-      <div className="flex flex-col space-y-4 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
-        <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto min-w-0">
+      <div className="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+        <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto min-w-0">
           <FriendAvatar 
             avatar={friend.avatar}
             nickname={friend.nickname}
@@ -57,7 +57,7 @@ export const FriendListItem = React.memo(({
           />
         </div>
 
-        <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-sm w-full sm:w-auto justify-between sm:justify-end">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-sm w-full sm:w-auto justify-between sm:justify-end">
           <FriendStats
             wins={friend.wins}
             winRate={friend.winRate}

@@ -37,26 +37,26 @@ export const FriendInfo = ({ nickname, level, elo, lcryptData }: FriendInfoProps
 
   return (
     <div className="min-w-0 flex-1">
-      <h3 className="text-xl sm:text-2xl font-bold text-white truncate">{nickname}</h3>
-      <div className="flex flex-wrap items-center gap-3 sm:gap-4 mt-2">
-        <div className="flex items-center gap-2">
+      <h3 className="text-lg sm:text-xl font-bold text-white truncate">{nickname}</h3>
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-1">
+        <div className="flex items-center gap-1">
           {!levelIconError ? (
             <img
               src={getLevelIcon(level || 1)}
               alt={`Skill Level ${level}`}
-              className="w-10 h-10 sm:w-12 sm:h-12"
+              className="w-8 h-8 sm:w-10 sm:h-10"
               onError={handleLevelIconError}
               onLoad={() => console.log(`✅ Level icon loaded successfully: ${getLevelIcon(level || 1)}`)}
             />
           ) : (
             <Badge 
-              className="bg-gradient-to-r from-gray-500 to-gray-600 text-white border-0 px-3 sm:px-4 py-1 text-base"
+              className="bg-gradient-to-r from-gray-500 to-gray-600 text-white border-0 px-2 sm:px-3 py-1 text-sm"
             >
               Nivel {level}
             </Badge>
           )}
         </div>
-        <span className="text-[#ff6500] font-bold text-xl sm:text-2xl">{elo} ELO</span>
+        <span className="text-[#ff6500] font-bold text-lg sm:text-xl">{elo} ELO</span>
         <div className="w-full sm:w-auto">
           <EloChangeIndicator lcryptData={lcryptData} />
         </div>
