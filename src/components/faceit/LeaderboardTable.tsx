@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -21,19 +21,26 @@ export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: L
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [pendingPlayer, setPendingPlayer] = useState<Player | null>(null);
   const limit = 20;
+  const previousRegionRef = useRef<string>('');
   
   const { makeApiCall, loading: apiLoading } = useFaceitApi();
 
   useEffect(() => {
-    console.log(`Region changed to: ${region}, clearing players and resetting offset`);
+    console.log(`Region changed from ${previousRegionRef.current} to: ${region}`);
+    
+    // Clear data immediately when region changes
     setPlayers([]);
     setOffset(0);
     setLoading(false);
     
-    // Add a small delay to ensure state is cleared before loading
+    // Store current region
+    previousRegionRef.current = region;
+    
+    // Load new data after a short delay to ensure state is cleared
     const timeoutId = setTimeout(() => {
+      console.log(`Starting to load data for region: ${region}`);
       loadPlayers(0, true);
-    }, 100);
+    }, 150);
 
     return () => clearTimeout(timeoutId);
   }, [region]);
@@ -99,10 +106,10 @@ export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: L
       );
 
       if (reset) {
-        console.log(`Setting ${playersWithDetails.length} players (reset)`);
+        console.log(`Setting ${playersWithDetails.length} players (reset) for region ${region}`);
         setPlayers(playersWithDetails);
       } else {
-        console.log(`Adding ${playersWithDetails.length} players to existing ${players.length}`);
+        console.log(`Adding ${playersWithDetails.length} players to existing ${players.length} for region ${region}`);
         setPlayers(prev => [...prev, ...playersWithDetails]);
       }
       

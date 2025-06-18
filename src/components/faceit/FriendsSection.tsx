@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Player } from "@/types/Player";
-import { UserPlus, Users, Trash2, RefreshCw } from "lucide-react";
+import { UserPlus, Users, RefreshCw, ExternalLink } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { useFriendsAutoUpdate } from "@/hooks/useFriendsAutoUpdate";
 import { PasswordDialog } from "./PasswordDialog";
@@ -36,6 +36,7 @@ export const FriendsSection = ({
     player?: Player;
     playerId?: string;
   } | null>(null);
+  const [flashingPlayer, setFlashingPlayer] = useState<string | null>(null);
 
   const { makeApiCall } = useFaceitApi();
 
@@ -91,6 +92,14 @@ export const FriendsSection = ({
     setShowPasswordDialog(true);
   };
 
+  const handlePlayerClick = (player: Player) => {
+    setFlashingPlayer(player.player_id);
+    setTimeout(() => {
+      setFlashingPlayer(null);
+      onShowPlayerDetails(player);
+    }, 200);
+  };
+
   const confirmAction = () => {
     if (pendingAction) {
       if (pendingAction.type === 'add' && pendingAction.player) {
@@ -109,14 +118,6 @@ export const FriendsSection = ({
     if (level >= 5) return 'bg-blue-500';
     if (level >= 3) return 'bg-green-500';
     return 'bg-gray-500';
-  };
-
-  const getLevelBorder = (level: number) => {
-    if (level >= 9) return 'border-red-400';
-    if (level >= 7) return 'border-purple-400';
-    if (level >= 5) return 'border-blue-400';
-    if (level >= 3) return 'border-green-400';
-    return 'border-gray-400';
   };
 
   const sortedFriends = [...friends].sort((a, b) => (b.elo || 0) - (a.elo || 0));
@@ -185,7 +186,10 @@ export const FriendsSection = ({
               {sortedFriends.map((friend, index) => (
                 <div
                   key={friend.player_id}
-                  className="bg-[#2a2f36] rounded-lg p-3 md:p-4 border border-[#3a4048] hover:border-[#ff6500]/50 transition-all duration-300 shadow-lg"
+                  onClick={() => handlePlayerClick(friend)}
+                  className={`bg-[#2a2f36] rounded-lg p-3 md:p-4 border border-[#3a4048] hover:border-[#ff6500]/50 transition-all duration-300 shadow-lg cursor-pointer transform hover:scale-[1.02] ${
+                    flashingPlayer === friend.player_id ? 'animate-pulse bg-[#ff6500]/20 border-[#ff6500]' : ''
+                  }`}
                 >
                   <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-3 lg:gap-4">
                     <div className="flex items-center gap-3 md:gap-4 w-full lg:w-auto">
@@ -228,21 +232,25 @@ export const FriendsSection = ({
                         <div className="text-[#9f9f9f] text-xs">K/D</div>
                       </div>
                       
-                      <div className="flex gap-2">
-                        <Button 
-                          size="sm"
-                          onClick={() => onShowPlayerDetails(friend)}
-                          className={`bg-transparent border-2 ${getLevelBorder(friend.level || 0)} text-white hover:bg-[#ff6500] hover:border-[#ff6500] rounded-lg px-3 h-8 font-bold text-xs`}
+                      <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+                        <a
+                          href={`https://www.faceit.com/en/players/${friend.nickname}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="bg-transparent border-2 border-[#ff6500] text-[#ff6500] hover:bg-[#ff6500] hover:text-white rounded-lg px-3 h-8 font-bold text-xs flex items-center gap-1 transition-all duration-200 hover:scale-105"
                         >
-                          Detalii
-                        </Button>
-                        <Button 
-                          size="sm"
-                          onClick={() => handleRemoveFriend(friend.player_id)}
-                          className="bg-transparent border-2 border-red-400 text-red-400 hover:bg-red-500 hover:border-red-500 hover:text-white rounded-lg px-3 h-8 font-bold"
+                          <ExternalLink size={12} />
+                          Faceit
+                        </a>
+                        <a
+                          href={`https://steamcommunity.com/search/users/#text=${friend.nickname}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="bg-transparent border-2 border-blue-400 text-blue-400 hover:bg-blue-500 hover:border-blue-500 hover:text-white rounded-lg px-3 h-8 font-bold text-xs flex items-center gap-1 transition-all duration-200 hover:scale-105"
                         >
-                          <Trash2 size={14} />
-                        </Button>
+                          <ExternalLink size={12} />
+                          Steam
+                        </a>
                       </div>
                     </div>
                   </div>
