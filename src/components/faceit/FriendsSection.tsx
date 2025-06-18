@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -10,6 +9,7 @@ import { toast } from "@/hooks/use-toast";
 import { useFriendsAutoUpdate } from "@/hooks/useFriendsAutoUpdate";
 import { PasswordDialog } from "./PasswordDialog";
 import { useFaceitApi } from "@/hooks/useFaceitApi";
+import { supabase } from "@/integrations/supabase/client";
 
 interface FriendsSectionProps {
   friends: Player[];
