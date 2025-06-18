@@ -158,20 +158,20 @@ export const FriendListItem = React.memo(({
         </div>
 
         <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-sm w-full sm:w-auto justify-between sm:justify-end">
-          <div className="grid grid-cols-4 gap-2 sm:flex sm:gap-3 flex-grow sm:flex-grow-0">
-            <div className="text-center min-w-[60px]">
+          <div className="grid grid-cols-4 gap-1 sm:flex sm:gap-1 flex-grow sm:flex-grow-0">
+            <div className="text-center min-w-[40px] sm:min-w-[45px]">
               <div className="text-white font-bold text-lg sm:text-xl">{friend.wins}</div>
               <div className="text-[#9f9f9f] text-xs sm:text-sm">Victorii</div>
             </div>
-            <div className="text-center min-w-[60px]">
+            <div className="text-center min-w-[40px] sm:min-w-[45px]">
               <div className="text-white font-bold text-lg sm:text-xl">{friend.winRate}%</div>
               <div className="text-[#9f9f9f] text-xs sm:text-sm">Win Rate</div>
             </div>
-            <div className="text-center min-w-[60px]">
+            <div className="text-center min-w-[40px] sm:min-w-[45px]">
               <div className="text-white font-bold text-lg sm:text-xl">{friend.hsRate}%</div>
               <div className="text-[#9f9f9f] text-xs sm:text-sm">HS%</div>
             </div>
-            <div className="text-center min-w-[60px]">
+            <div className="text-center min-w-[40px] sm:min-w-[45px]">
               <div className="text-white font-bold text-lg sm:text-xl">{friend.kdRatio}</div>
               <div className="text-[#9f9f9f] text-xs sm:text-sm">K/D</div>
             </div>
