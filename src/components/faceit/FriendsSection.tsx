@@ -1,15 +1,17 @@
 
-import React, { useState } from "react";
+import React from "react";
 import { Card } from "@/components/ui/card";
 import { Player } from "@/types/Player";
-import { PasswordDialog } from "./PasswordDialog";
 import { useFriendsAutoUpdate } from "@/hooks/useFriendsAutoUpdate";
 import { useLcryptDataManager } from "@/hooks/useLcryptDataManager";
+import { usePendingFriendActions } from "@/hooks/usePendingFriendActions";
+import { useFlashingPlayer } from "@/hooks/useFlashingPlayer";
 import { FriendsSectionHeader } from "./FriendsSectionHeader";
 import { FriendSearchForm } from "./FriendSearchForm";
 import { EmptyFriendsState } from "./EmptyFriendsState";
 import { FriendsLoadingProgress } from "./FriendsLoadingProgress";
 import { FriendsList } from "./FriendsList";
+import { FriendActionDialog } from "./FriendActionDialog";
 
 interface FriendsSectionProps {
   friends: Player[];
@@ -20,12 +22,6 @@ interface FriendsSectionProps {
   onReloadFriends?: () => void;
 }
 
-interface PendingAction {
-  type: 'add' | 'remove';
-  player?: Player;
-  playerId?: string;
-}
-
 export const FriendsSection = ({ 
   friends, 
   onAddFriend, 
@@ -34,10 +30,6 @@ export const FriendsSection = ({
   onUpdateFriend,
   onReloadFriends
 }: FriendsSectionProps) => {
-  const [showPasswordDialog, setShowPasswordDialog] = useState(false);
-  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
-  const [flashingPlayer, setFlashingPlayer] = useState<string | null>(null);
-
   // Hook optimizat pentru datele Lcrypt
   const { friendsWithLcrypt, isLoading: lcryptLoading, loadingProgress } = useLcryptDataManager({
     friends,
@@ -52,39 +44,18 @@ export const FriendsSection = ({
     enabled: true
   });
 
-  const handlePlayerFound = (player: Player) => {
-    setPendingAction({ type: 'add', player });
-    setShowPasswordDialog(true);
-  };
+  // Handle pending friend actions
+  const {
+    showPasswordDialog,
+    pendingAction,
+    handlePlayerFound,
+    handleRemoveFriend,
+    confirmAction,
+    closePasswordDialog
+  } = usePendingFriendActions(onAddFriend, onRemoveFriend);
 
-  const handleRemoveFriend = (playerId: string) => {
-    setPendingAction({ type: 'remove', playerId });
-    setShowPasswordDialog(true);
-  };
-
-  const handlePlayerClick = (player: Player) => {
-    setFlashingPlayer(player.player_id);
-    setTimeout(() => {
-      setFlashingPlayer(null);
-      onShowPlayerDetails(player);
-    }, 200);
-  };
-
-  const confirmAction = () => {
-    if (pendingAction) {
-      if (pendingAction.type === 'add' && pendingAction.player) {
-        onAddFriend(pendingAction.player);
-      } else if (pendingAction.type === 'remove' && pendingAction.playerId) {
-        onRemoveFriend(pendingAction.playerId);
-      }
-      setPendingAction(null);
-    }
-  };
-
-  const closePasswordDialog = () => {
-    setShowPasswordDialog(false);
-    setPendingAction(null);
-  };
+  // Handle flashing player state
+  const { flashingPlayer, handlePlayerClick } = useFlashingPlayer(onShowPlayerDetails);
 
   return (
     <div className="space-y-4 px-4 md:px-0">
@@ -116,16 +87,11 @@ export const FriendsSection = ({
         </div>
       </Card>
 
-      <PasswordDialog
+      <FriendActionDialog
         isOpen={showPasswordDialog}
+        pendingAction={pendingAction}
         onClose={closePasswordDialog}
         onConfirm={confirmAction}
-        title={pendingAction?.type === 'add' ? 'Adaugă Prieten' : 'Șterge Prieten'}
-        description={
-          pendingAction?.type === 'add' 
-            ? `Vrei să adaugi ${pendingAction.player?.nickname} în lista de prieteni?`
-            : 'Vrei să ștergi acest prieten din listă?'
-        }
       />
     </div>
   );
