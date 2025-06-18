@@ -12,17 +12,23 @@ interface PlayerActionsProps {
 
 export const PlayerActions = ({ player, isFriend, onFriendAction }: PlayerActionsProps) => {
   const [faceitIconError, setFaceitIconError] = useState(false);
+  const [steamIconError, setSteamIconError] = useState(false);
 
   const handleFaceitIconError = () => {
     console.error('Failed to load Faceit icon from: /icons/faceit icon.svg');
     setFaceitIconError(true);
   };
 
+  const handleSteamIconError = () => {
+    console.error('Failed to load Steam icon from: /icons/steam_icon.svg');
+    setSteamIconError(true);
+  };
+
   return (
-    <div className="flex gap-3 justify-center">
+    <div className="flex gap-4 justify-center">
       <Button
         onClick={onFriendAction}
-        className={`px-4 py-2 font-medium text-sm ${
+        className={`px-6 py-3 font-medium text-base ${
           isFriend
             ? 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700'
             : 'bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600'
@@ -30,12 +36,12 @@ export const PlayerActions = ({ player, isFriend, onFriendAction }: PlayerAction
       >
         {isFriend ? (
           <>
-            <UserMinus size={14} className="mr-2" />
+            <UserMinus size={16} className="mr-2" />
             Șterge din Prieteni
           </>
         ) : (
           <>
-            <UserPlus size={14} className="mr-2" />
+            <UserPlus size={16} className="mr-2" />
             Adaugă la Prieteni
           </>
         )}
@@ -43,21 +49,38 @@ export const PlayerActions = ({ player, isFriend, onFriendAction }: PlayerAction
       
       <Button
         variant="outline"
-        className="border-orange-400 text-orange-400 hover:bg-orange-400 hover:text-white px-4 py-2 text-sm"
+        className="border-orange-400 text-orange-400 hover:bg-orange-400 hover:text-white w-12 h-12 p-0"
         onClick={() => window.open(`https://www.faceit.com/en/players/${player.nickname}`, '_blank')}
       >
         {!faceitIconError ? (
           <img 
             src="/icons/faceit icon.svg" 
             alt="Faceit" 
-            className="w-4 h-4 mr-2"
+            className="w-6 h-6"
             onError={handleFaceitIconError}
             onLoad={() => console.log('✅ Faceit icon loaded successfully from /icons/faceit icon.svg')}
           />
         ) : (
-          <span className="text-sm mr-2 font-bold">F</span>
+          <span className="text-lg font-bold">F</span>
         )}
-        Vezi pe FACEIT
+      </Button>
+
+      <Button
+        variant="outline"
+        className="border-blue-400 text-blue-400 hover:bg-blue-400 hover:text-white w-12 h-12 p-0"
+        onClick={() => window.open(`https://steamcommunity.com/search/users/#text=${player.nickname}`, '_blank')}
+      >
+        {!steamIconError ? (
+          <img 
+            src="/icons/steam_icon.svg" 
+            alt="Steam" 
+            className="w-6 h-6"
+            onError={handleSteamIconError}
+            onLoad={() => console.log('✅ Steam icon loaded successfully from /icons/steam_icon.svg')}
+          />
+        ) : (
+          <span className="text-lg font-bold">S</span>
+        )}
       </Button>
     </div>
   );

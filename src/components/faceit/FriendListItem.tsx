@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Badge } from "@/components/ui/badge";
 import { Player } from "@/types/Player";
@@ -112,43 +113,43 @@ export const FriendListItem = React.memo(({
   return (
     <div
       onClick={handleClick}
-      className={`bg-[#2a2f36] rounded-lg p-2 sm:p-3 border border-[#3a4048] hover:border-[#ff6500]/50 transition-all duration-300 shadow-lg cursor-pointer transform hover:scale-[1.01] ${
+      className={`bg-[#2a2f36] rounded-lg p-3 sm:p-4 border border-[#3a4048] hover:border-[#ff6500]/50 transition-all duration-300 shadow-lg cursor-pointer transform hover:scale-[1.01] ${
         isFlashing ? 'animate-pulse bg-[#ff6500]/20 border-[#ff6500]' : ''
       }`}
     >
-      <div className="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-        <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto min-w-0">
-          <div className="text-base sm:text-lg font-bold text-[#ff6500] min-w-[2rem] sm:min-w-[2.5rem] flex-shrink-0">
+      <div className="flex flex-col space-y-4 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+        <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto min-w-0">
+          <div className="text-xl sm:text-2xl font-bold text-[#ff6500] min-w-[3rem] sm:min-w-[3.5rem] flex-shrink-0">
             #{index + 1}
           </div>
           
           <img
             src={friend.avatar}
             alt={friend.nickname}
-            className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg border-2 border-[#ff6500] shadow-lg flex-shrink-0"
+            className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg border-2 border-[#ff6500] shadow-lg flex-shrink-0"
           />
           
           <div className="min-w-0 flex-1">
-            <h3 className="text-sm sm:text-base font-bold text-white truncate">{friend.nickname}</h3>
-            <div className="flex flex-wrap items-center gap-1 sm:gap-2 mt-1">
-              <div className="flex items-center gap-1">
+            <h3 className="text-lg sm:text-xl font-bold text-white truncate">{friend.nickname}</h3>
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-2">
+              <div className="flex items-center gap-2">
                 {!levelIconError ? (
                   <img
                     src={getLevelIcon(friend.level || 1)}
                     alt={`Skill Level ${friend.level}`}
-                    className="w-5 h-5 sm:w-6 sm:h-6"
+                    className="w-8 h-8 sm:w-10 sm:h-10"
                     onError={handleLevelIconError}
                     onLoad={() => console.log(`✅ Level icon loaded successfully: ${getLevelIcon(friend.level || 1)}`)}
                   />
                 ) : (
                   <Badge 
-                    className="bg-gradient-to-r from-gray-500 to-gray-600 text-white border-0 px-1 sm:px-2 py-0.5 sm:py-1 text-xs"
+                    className="bg-gradient-to-r from-gray-500 to-gray-600 text-white border-0 px-2 sm:px-3 py-1 text-sm"
                   >
                     Nivel {friend.level}
                   </Badge>
                 )}
               </div>
-              <span className="text-[#ff6500] font-bold text-xs sm:text-sm">{friend.elo} ELO</span>
+              <span className="text-[#ff6500] font-bold text-lg sm:text-xl">{friend.elo} ELO</span>
               <div className="w-full sm:w-auto">
                 <EloChangeIndicator lcryptData={friend.lcryptData} />
               </div>
@@ -156,64 +157,62 @@ export const FriendListItem = React.memo(({
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs w-full sm:w-auto justify-between sm:justify-end">
-          <div className="grid grid-cols-4 gap-2 sm:flex sm:gap-3 flex-grow sm:flex-grow-0">
+        <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-sm w-full sm:w-auto justify-between sm:justify-end">
+          <div className="grid grid-cols-4 gap-3 sm:flex sm:gap-4 flex-grow sm:flex-grow-0">
             <div className="text-center">
-              <div className="text-white font-bold text-xs sm:text-sm">{friend.wins}</div>
-              <div className="text-[#9f9f9f] text-xs">Victorii</div>
+              <div className="text-white font-bold text-lg sm:text-xl">{friend.wins}</div>
+              <div className="text-[#9f9f9f] text-sm">Victorii</div>
             </div>
             <div className="text-center">
-              <div className="text-white font-bold text-xs sm:text-sm">{friend.winRate}%</div>
-              <div className="text-[#9f9f9f] text-xs">Win Rate</div>
+              <div className="text-white font-bold text-lg sm:text-xl">{friend.winRate}%</div>
+              <div className="text-[#9f9f9f] text-sm">Win Rate</div>
             </div>
             <div className="text-center">
-              <div className="text-white font-bold text-xs sm:text-sm">{friend.hsRate}%</div>
-              <div className="text-[#9f9f9f] text-xs">HS%</div>
+              <div className="text-white font-bold text-lg sm:text-xl">{friend.hsRate}%</div>
+              <div className="text-[#9f9f9f] text-sm">HS%</div>
             </div>
             <div className="text-center">
-              <div className="text-white font-bold text-xs sm:text-sm">{friend.kdRatio}</div>
-              <div className="text-[#9f9f9f] text-xs">K/D</div>
+              <div className="text-white font-bold text-lg sm:text-xl">{friend.kdRatio}</div>
+              <div className="text-[#9f9f9f] text-sm">K/D</div>
             </div>
           </div>
           
-          <div className="flex gap-1 sm:gap-2 mt-2 sm:mt-0" onClick={handleLinkClick}>
+          <div className="flex gap-2 mt-3 sm:mt-0" onClick={handleLinkClick}>
             <a
               href={`https://www.faceit.com/en/players/${friend.nickname}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-transparent border-2 border-[#ff6500] text-[#ff6500] hover:bg-[#ff6500] hover:text-white rounded-lg px-2 sm:px-3 h-6 sm:h-7 font-bold text-xs flex items-center gap-1 transition-all duration-200 hover:scale-105"
+              className="bg-transparent border-2 border-[#ff6500] text-[#ff6500] hover:bg-[#ff6500] hover:text-white rounded-lg w-10 h-10 sm:w-12 sm:h-12 font-bold text-xs flex items-center justify-center transition-all duration-200 hover:scale-105"
             >
               {!faceitIconError ? (
                 <img 
                   src="/icons/faceit icon.svg" 
                   alt="Faceit" 
-                  className="w-3 h-3 sm:w-4 sm:h-4"
+                  className="w-5 h-5 sm:w-6 sm:h-6"
                   onError={handleFaceitIconError}
                   onLoad={() => console.log('✅ Faceit icon loaded successfully from /icons/faceit icon.svg')}
                 />
               ) : (
-                <span className="text-xs font-bold">F</span>
+                <span className="text-sm font-bold">F</span>
               )}
-              <span className="hidden sm:inline">Faceit</span>
             </a>
             <a
               href={steamId64 ? `https://steamcommunity.com/profiles/${steamId64}` : `https://steamcommunity.com/search/users/#text=${friend.nickname}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-transparent border-2 border-blue-400 text-blue-400 hover:bg-blue-500 hover:border-blue-500 hover:text-white rounded-lg px-2 sm:px-3 h-6 sm:h-7 font-bold text-xs flex items-center gap-1 transition-all duration-200 hover:scale-105"
+              className="bg-transparent border-2 border-blue-400 text-blue-400 hover:bg-blue-500 hover:border-blue-500 hover:text-white rounded-lg w-10 h-10 sm:w-12 sm:h-12 font-bold text-xs flex items-center justify-center transition-all duration-200 hover:scale-105"
             >
               {!steamIconError ? (
                 <img 
                   src="/icons/steam_icon.svg" 
                   alt="Steam" 
-                  className="w-3 h-3 sm:w-4 sm:h-4"
+                  className="w-5 h-5 sm:w-6 sm:h-6"
                   onError={handleSteamIconError}
                   onLoad={() => console.log('✅ Steam icon loaded successfully from /icons/steam_icon.svg')}
                 />
               ) : (
-                <span className="text-xs font-bold">S</span>
+                <span className="text-sm font-bold">S</span>
               )}
-              <span className="hidden sm:inline">Steam</span>
             </a>
           </div>
         </div>

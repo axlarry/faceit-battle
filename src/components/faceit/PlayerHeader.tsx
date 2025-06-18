@@ -1,3 +1,4 @@
+
 import { Badge } from "@/components/ui/badge";
 import { Player } from "@/types/Player";
 import { useLcryptApi } from "@/hooks/useLcryptApi";
@@ -37,59 +38,59 @@ export const PlayerHeader = ({ player }: PlayerHeaderProps) => {
     const displayValue = isPositive ? `+${eloChange}` : `${eloChange}`;
     
     return (
-      <div className={`${color} text-sm font-bold flex items-center gap-1 mt-1`}>
-        <LightningIcon size={14} className={color} />
+      <div className={`${color} text-base font-bold flex items-center gap-1 mt-1`}>
+        <LightningIcon size={16} className={color} />
         <span>{displayValue} today</span>
       </div>
     );
   };
 
   return (
-    <div className="text-center space-y-4">
+    <div className="text-center space-y-6">
       <img
         src={player.avatar}
         alt={player.nickname}
-        className="w-20 h-20 rounded-full border-4 border-orange-400 mx-auto"
+        className="w-28 h-28 rounded-full border-4 border-orange-400 mx-auto"
       />
       <div>
-        <h2 className="text-2xl font-bold text-white">{player.nickname}</h2>
+        <h2 className="text-3xl font-bold text-white">{player.nickname}</h2>
         {player.position && (
-          <p className="text-orange-400 font-medium">#{player.position} în clasament</p>
+          <p className="text-orange-400 font-medium text-lg">#{player.position} în clasament</p>
         )}
       </div>
       
       {/* Level and Today Stats Cards */}
-      <div className="grid grid-cols-2 gap-3">
-        <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 text-center">
-          <div className="text-2xl font-bold text-orange-400">{player.level}</div>
-          <div className="text-gray-400 text-sm">Nivel</div>
-          <Badge className={`mt-2 bg-gradient-to-r ${getLevelColor(player.level || 0)} text-white border-0 text-xs`}>
+      <div className="grid grid-cols-2 gap-4">
+        <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 text-center">
+          <div className="text-3xl font-bold text-orange-400">{player.level}</div>
+          <div className="text-gray-400 text-base">Nivel</div>
+          <Badge className={`mt-2 bg-gradient-to-r ${getLevelColor(player.level || 0)} text-white border-0 text-sm px-3 py-1`}>
             Skill Level {player.level}
           </Badge>
           {lcryptData && (
-            <div className="mt-2 flex items-center justify-center gap-1">
-              <span className="text-lg">{lcryptData.country_flag}</span>
-              <span className="text-sm text-gray-300">#{lcryptData.country_ranking}</span>
+            <div className="mt-2 flex items-center justify-center gap-2">
+              <span className="text-xl">{lcryptData.country_flag}</span>
+              <span className="text-base text-gray-300">#{lcryptData.country_ranking}</span>
             </div>
           )}
         </div>
         
-        <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 text-center">
+        <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 text-center">
           {lcryptData?.today ? (
             <>
-              <div className="text-lg font-bold text-green-400">
+              <div className="text-xl font-bold text-green-400">
                 {lcryptData.today.win}W / {lcryptData.today.lose}L
               </div>
-              <div className="text-gray-400 text-xs">Astăzi</div>
+              <div className="text-gray-400 text-sm">Astăzi</div>
               {renderEloChange()}
-              <div className="text-xs text-gray-500 mt-1">
+              <div className="text-sm text-gray-500 mt-1">
                 {lcryptData.today.count} meciuri
               </div>
             </>
           ) : (
             <>
-              <div className="text-2xl font-bold text-blue-400">{player.elo}</div>
-              <div className="text-gray-400 text-sm">ELO Points</div>
+              <div className="text-3xl font-bold text-blue-400">{player.elo}</div>
+              <div className="text-gray-400 text-base">ELO Points</div>
             </>
           )}
         </div>
