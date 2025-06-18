@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -22,29 +21,19 @@ export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: L
   const [pendingPlayer, setPendingPlayer] = useState<Player | null>(null);
   const limit = 20;
   
-  const { makeApiCall, loading: apiLoading, apiKey } = useFaceitApi();
+  const { makeApiCall, loading: apiLoading } = useFaceitApi();
 
   useEffect(() => {
-    // Only load if we have an API key available
-    if (apiKey) {
-      console.log(`[LeaderboardTable] Region changed to: ${region}, loading players...`);
-      setPlayers([]);
-      setOffset(0);
-      loadPlayers(0, true);
-    } else {
-      console.log(`[LeaderboardTable] No API key available, waiting...`);
-    }
-  }, [region, apiKey]); // Added apiKey dependency
+    setPlayers([]);
+    setOffset(0);
+    loadPlayers(0, true);
+  }, [region]);
 
   const loadPlayers = async (currentOffset: number, reset = false) => {
-    if (loading || apiLoading || !apiKey) {
-      console.log(`[LeaderboardTable] Skipping load - loading: ${loading}, apiLoading: ${apiLoading}, apiKey: ${!!apiKey}`);
-      return;
-    }
+    if (loading || apiLoading) return;
     
     setLoading(true);
     try {
-      console.log(`[LeaderboardTable] Loading players for region: ${region}, offset: ${currentOffset}`);
       const data = await makeApiCall(`/rankings/games/cs2/regions/${region}?offset=${currentOffset}&limit=${limit}`);
       
       if (data.items.length === 0) {
@@ -92,8 +81,6 @@ export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: L
         })
       );
 
-      console.log(`[LeaderboardTable] Loaded ${playersWithDetails.length} players`);
-
       if (reset) {
         setPlayers(playersWithDetails);
       } else {
@@ -133,20 +120,6 @@ export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: L
       setPendingPlayer(null);
     }
   };
-
-  // Show loading state while API key is being loaded
-  if (!apiKey && apiLoading) {
-    return (
-      <Card className="bg-white/5 backdrop-blur-lg border-white/10">
-        <div className="p-6">
-          <div className="flex items-center justify-center py-12">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-400"></div>
-            <span className="ml-3 text-white">Se încarcă API key...</span>
-          </div>
-        </div>
-      </Card>
-    );
-  }
 
   return (
     <div className="space-y-6">
@@ -236,18 +209,6 @@ export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: L
                 className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white border-0 px-8 py-3"
               >
                 {loading ? 'Se încarcă...' : 'Încarcă mai mulți'}
-              </Button>
-            </div>
-          )}
-
-          {players.length === 0 && !loading && apiKey && (
-            <div className="text-center py-12">
-              <div className="text-gray-400 mb-4">Nu s-au găsit jucători pentru această regiune.</div>
-              <Button
-                onClick={() => loadPlayers(0, true)}
-                className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white border-0"
-              >
-                Încearcă din nou
               </Button>
             </div>
           )}

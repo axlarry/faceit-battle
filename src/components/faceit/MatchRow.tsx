@@ -1,3 +1,4 @@
+
 import { Badge } from "@/components/ui/badge";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Player, Match } from "@/types/Player";
@@ -12,8 +13,6 @@ import {
 import { getEloChange } from "@/utils/eloUtils";
 import { getPlayerStatsFromMatch, getKDA } from "@/utils/playerDataUtils";
 import { getKDRatio, getHeadshotPercentage, getADR } from "@/utils/statsUtils";
-import { useFaceitApi } from "@/hooks/useFaceitApi";
-import { useState, useEffect } from "react";
 
 interface MatchRowProps {
   match: Match;
@@ -23,46 +22,12 @@ interface MatchRowProps {
 }
 
 export const MatchRow = ({ match, player, matchesStats, onMatchClick }: MatchRowProps) => {
-  const [eloChange, setEloChange] = useState<{ elo_change: number } | null>(null);
-  const [loadingElo, setLoadingElo] = useState(true);
-  const { getMatchDetails, apiKey, loading: apiLoading } = useFaceitApi();
-  
   const isWin = getMatchResult(match, player);
   const playerStats = getPlayerStatsFromMatch(match, player, matchesStats);
+  const eloChange = getEloChange(match, player, matchesStats);
   const mapName = getMapInfo(match, matchesStats);
   const matchScore = getMatchScore(match, matchesStats, player);
   const kda = getKDA(playerStats);
-
-  useEffect(() => {
-    const fetchEloChange = async () => {
-      // Wait for API key to be loaded
-      if (apiLoading) {
-        return;
-      }
-      
-      // If no API key available, stop loading and show "-"
-      if (!apiKey) {
-        console.log(`[ELO] No API key available, skipping ELO detection`);
-        setLoadingElo(false);
-        return;
-      }
-
-      setLoadingElo(true);
-      try {
-        console.log(`[ELO] Starting ELO fetch for match ${match.match_id}`);
-        const result = await getEloChange(match, player, matchesStats, getMatchDetails);
-        console.log(`[ELO] ELO fetch result:`, result);
-        setEloChange(result);
-      } catch (error) {
-        console.error('[ELO] Error fetching ELO change:', error);
-        setEloChange(null);
-      } finally {
-        setLoadingElo(false);
-      }
-    };
-
-    fetchEloChange();
-  }, [match.match_id, player.player_id, apiKey, apiLoading]);
 
   return (
     <TableRow 
@@ -145,12 +110,7 @@ export const MatchRow = ({ match, player, matchesStats, onMatchClick }: MatchRow
 
       {/* ELO Change */}
       <TableCell>
-        {loadingElo ? (
-          <div className="flex items-center gap-1">
-            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-orange-400"></div>
-            <span className="text-gray-400 text-xs">...</span>
-          </div>
-        ) : eloChange && typeof eloChange.elo_change === 'number' ? (
+        {eloChange && typeof eloChange.elo_change === 'number' ? (
           <div className="flex items-center gap-1">
             {eloChange.elo_change > 0 ? (
               <TrendingUp className="w-4 h-4 text-green-400" />
