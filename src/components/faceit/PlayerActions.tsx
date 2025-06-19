@@ -15,12 +15,12 @@ export const PlayerActions = ({ player, isFriend, onFriendAction }: PlayerAction
   const [steamIconError, setSteamIconError] = useState(false);
 
   const handleFaceitIconError = () => {
-    console.error('Failed to load Faceit icon from: ./icons/faceit_icon.png');
+    console.error('Failed to load Faceit icon from: /icons/faceit_icon.png');
     setFaceitIconError(true);
   };
 
   const handleSteamIconError = () => {
-    console.error('Failed to load Steam icon from: ./icons/steam_icon.png');
+    console.error('Failed to load Steam icon from: /icons/steam_icon.png');
     setSteamIconError(true);
   };
 
@@ -54,11 +54,11 @@ export const PlayerActions = ({ player, isFriend, onFriendAction }: PlayerAction
       >
         {!faceitIconError ? (
           <img 
-            src="./icons/faceit_icon.png" 
+            src="/icons/faceit_icon.png" 
             alt="Faceit" 
             className="w-6 h-6"
             onError={handleFaceitIconError}
-            onLoad={() => console.log('✅ Faceit icon loaded successfully from ./icons/faceit_icon.png')}
+            onLoad={() => console.log('✅ Faceit icon loaded successfully from /icons/faceit_icon.png')}
           />
         ) : (
           <span className="text-lg font-bold">F</span>
@@ -72,11 +72,11 @@ export const PlayerActions = ({ player, isFriend, onFriendAction }: PlayerAction
       >
         {!steamIconError ? (
           <img 
-            src="./icons/steam_icon.png" 
+            src="/icons/steam_icon.png" 
             alt="Steam" 
             className="w-6 h-6"
             onError={handleSteamIconError}
-            onLoad={() => console.log('✅ Steam icon loaded successfully from ./icons/steam_icon.png')}
+            onLoad={() => console.log('✅ Steam icon loaded successfully from /icons/steam_icon.png')}
           />
         ) : (
           <span className="text-lg font-bold">S</span>
