@@ -6,7 +6,7 @@ export const Header = () => {
   const [faceitIconError, setFaceitIconError] = useState(false);
 
   const handleFaceitIconError = () => {
-    console.error('Failed to load Faceit icon from: ./icons/faceit_icon.svg');
+    console.error('Failed to load Faceit icon from: ./icons/faceit_icon.png');
     setFaceitIconError(true);
   };
 
@@ -23,11 +23,11 @@ export const Header = () => {
               FACEIT
               {!faceitIconError ? (
                 <img 
-                  src="./icons/faceit_icon.svg" 
+                  src="./icons/faceit_icon.png" 
                   alt="Faceit" 
                   className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 lg:w-12 lg:h-12 xl:w-14 xl:h-14"
                   onError={handleFaceitIconError}
-                  onLoad={() => console.log('✅ Faceit icon loaded successfully from ./icons/faceit_icon.svg')}
+                  onLoad={() => console.log('✅ Faceit icon loaded successfully from ./icons/faceit_icon.png')}
                 />
               ) : null}
             </h1>
