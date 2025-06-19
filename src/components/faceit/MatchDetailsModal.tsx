@@ -13,14 +13,14 @@ import {
   Clock, 
   Calendar, 
   Target, 
-  Crosshair, 
-  Zap,
   TrendingUp,
   TrendingDown,
   Minus,
   Users,
   Star,
-  Sword
+  Shield,
+  Crosshair,
+  Zap
 } from "lucide-react";
 import { 
   formatDate, 
@@ -55,7 +55,6 @@ export const MatchDetailsModal = ({
   const eloChange = getEloChange(match, player, matchesStats);
   const mapName = getMapInfo(match, matchesStats);
   const matchScore = getMatchScore(match, matchesStats, player);
-  const kda = getKDA(playerStats);
 
   // Get all players from both teams
   const getAllPlayers = () => {
@@ -85,64 +84,76 @@ export const MatchDetailsModal = ({
   const allPlayers = getAllPlayers();
   const team1Players = allPlayers.filter(p => p.teamId === Object.keys(match.teams || {})[0]);
   const team2Players = allPlayers.filter(p => p.teamId === Object.keys(match.teams || {})[1]);
+  const team1Name = team1Players[0]?.teamName || 'Team 1';
+  const team2Name = team2Players[0]?.teamName || 'Team 2';
 
-  const PlayerRow = ({ playerData }: { playerData: any }) => {
-    const playerKda = getKDA(playerData.stats);
+  // Parse match score for individual team scores
+  const parseTeamScores = () => {
+    if (matchScore && matchScore !== 'N/A') {
+      const scores = matchScore.split(' - ').map(s => parseInt(s.trim()));
+      if (scores.length === 2) {
+        return { team1Score: scores[0], team2Score: scores[1] };
+      }
+    }
+    return { team1Score: 0, team2Score: 0 };
+  };
+
+  const { team1Score, team2Score } = parseTeamScores();
+
+  const PlayerStatsRow = ({ playerData, teamSide }: { playerData: any, teamSide: 'left' | 'right' }) => {
+    const kda = getKDA(playerData.stats);
     
     return (
-      <div className={`relative overflow-hidden rounded-xl p-4 transition-all duration-300 hover:scale-[1.02] ${
-        playerData.isCurrentPlayer 
-          ? 'bg-gradient-to-r from-orange-500/20 via-red-500/20 to-orange-500/20 border-2 border-orange-500/50 shadow-lg shadow-orange-500/20' 
-          : 'bg-white/5 border border-white/10 hover:bg-white/10'
+      <div className={`flex items-center py-3 px-4 bg-slate-800/50 rounded-lg border border-slate-700/50 ${
+        playerData.isCurrentPlayer ? 'ring-2 ring-orange-500/50 bg-orange-500/10' : ''
       }`}>
-        {playerData.isCurrentPlayer && (
-          <div className="absolute top-2 right-2">
-            <Star className="w-4 h-4 text-orange-400 fill-orange-400" />
+        {/* Player Info */}
+        <div className="flex items-center gap-3 min-w-[180px]">
+          <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${
+            playerData.isCurrentPlayer 
+              ? 'bg-orange-500 text-white' 
+              : 'bg-slate-600 text-slate-200'
+          }`}>
+            {playerData.nickname.charAt(0).toUpperCase()}
           </div>
-        )}
-        
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-bold text-sm ${
-              playerData.isCurrentPlayer 
-                ? 'bg-gradient-to-br from-orange-500 to-red-500 text-white' 
-                : 'bg-gradient-to-br from-slate-600 to-slate-700 text-white'
+          <div>
+            <div className={`font-semibold text-sm flex items-center gap-1 ${
+              playerData.isCurrentPlayer ? 'text-orange-400' : 'text-white'
             }`}>
-              {playerData.nickname.charAt(0).toUpperCase()}
+              {playerData.nickname}
+              {playerData.isCurrentPlayer && <Star className="w-3 h-3 fill-orange-400" />}
             </div>
-            <div>
-              <span className={`font-semibold text-sm ${
-                playerData.isCurrentPlayer ? 'text-orange-300' : 'text-white'
-              }`}>
-                {playerData.nickname}
-              </span>
-              <div className="text-xs text-gray-400">Level {playerData.skill_level || '-'}</div>
+            <div className="text-xs text-slate-400">
+              Level {playerData.skill_level || '-'}
             </div>
           </div>
-          
-          <div className="flex items-center gap-6 text-xs">
-            <div className="flex items-center gap-1 bg-black/20 rounded-lg px-2 py-1">
-              <span className="text-green-400 font-bold">{playerKda.kills}</span>
-              <span className="text-gray-400">/</span>
-              <span className="text-red-400 font-bold">{playerKda.deaths}</span>
-              <span className="text-gray-400">/</span>
-              <span className="text-blue-400 font-bold">{playerKda.assists}</span>
-            </div>
-            
-            <div className="flex items-center gap-1 bg-black/20 rounded-lg px-2 py-1">
-              <Target className="w-3 h-3 text-blue-400" />
-              <span className="text-blue-400 font-bold">{getKDRatio(playerData.stats)}</span>
-            </div>
-            
-            <div className="flex items-center gap-1 bg-black/20 rounded-lg px-2 py-1">
-              <Crosshair className="w-3 h-3 text-red-400" />
-              <span className="text-red-400 font-bold">{getHeadshotPercentage(playerData.stats)}%</span>
-            </div>
-            
-            <div className="flex items-center gap-1 bg-black/20 rounded-lg px-2 py-1">
-              <Zap className="w-3 h-3 text-yellow-400" />
-              <span className="text-yellow-400 font-bold">{getADR(playerData.stats)}</span>
-            </div>
+        </div>
+
+        {/* Stats */}
+        <div className="flex items-center gap-6 ml-auto text-xs">
+          <div className="text-center">
+            <div className="text-slate-400 mb-1">K/D</div>
+            <div className="text-white font-semibold">{getKDRatio(playerData.stats)}</div>
+          </div>
+          <div className="text-center">
+            <div className="text-slate-400 mb-1">K</div>
+            <div className="text-green-400 font-semibold">{kda.kills}</div>
+          </div>
+          <div className="text-center">
+            <div className="text-slate-400 mb-1">A</div>
+            <div className="text-blue-400 font-semibold">{kda.assists}</div>
+          </div>
+          <div className="text-center">
+            <div className="text-slate-400 mb-1">D</div>
+            <div className="text-red-400 font-semibold">{kda.deaths}</div>
+          </div>
+          <div className="text-center">
+            <div className="text-slate-400 mb-1">HS%</div>
+            <div className="text-purple-400 font-semibold">{getHeadshotPercentage(playerData.stats)}%</div>
+          </div>
+          <div className="text-center">
+            <div className="text-slate-400 mb-1">ADR</div>
+            <div className="text-yellow-400 font-semibold">{getADR(playerData.stats)}</div>
           </div>
         </div>
       </div>
@@ -151,174 +162,163 @@ export const MatchDetailsModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 border border-white/20 text-white max-w-6xl max-h-[95vh] overflow-y-auto">
-        <DialogHeader className="border-b border-white/10 pb-6">
-          <DialogTitle className="text-3xl font-bold text-center bg-gradient-to-r from-orange-400 to-red-400 bg-clip-text text-transparent">
-            Detalii Meci Complete
+      <DialogContent className="bg-slate-900 border border-slate-700 text-white max-w-7xl max-h-[95vh] overflow-y-auto">
+        <DialogHeader className="border-b border-slate-700 pb-4">
+          <DialogTitle className="text-2xl font-bold text-center text-orange-400">
+            Match Details
           </DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-8 p-2">
-          {/* Match Header - Enhanced */}
-          <div className="relative bg-gradient-to-br from-white/10 to-white/5 rounded-2xl p-8 border border-white/20 overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-r from-orange-500/5 to-red-500/5"></div>
-            <div className="relative">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-6">
-                  <Badge className={`${
-                    isWin 
-                      ? 'bg-gradient-to-r from-green-500 to-green-600 text-white border-0 shadow-lg shadow-green-500/30' 
-                      : 'bg-gradient-to-r from-red-500 to-red-600 text-white border-0 shadow-lg shadow-red-500/30'
-                  } font-bold text-lg px-6 py-3 rounded-xl`}>
-                    {isWin ? '🏆 VICTORIE' : '💥 ÎNFRÂNGERE'}
-                  </Badge>
-                  
-                  <div className="flex items-center gap-3 bg-black/20 rounded-xl px-4 py-2">
-                    <MapPin className="w-6 h-6 text-orange-400" />
-                    <span className="text-2xl font-bold text-white">{mapName}</span>
-                  </div>
+        <div className="space-y-6 p-4">
+          {/* Match Header - Team vs Team */}
+          <div className="bg-slate-800/50 rounded-xl p-6 border border-slate-700">
+            <div className="flex items-center justify-between mb-6">
+              {/* Team 1 */}
+              <div className="flex items-center gap-4">
+                <div className="text-right">
+                  <div className="text-2xl font-bold text-white mb-1">{team1Name}</div>
+                  <div className="text-slate-400 text-sm">Team</div>
                 </div>
-                
-                <div className="text-right bg-black/20 rounded-xl p-4">
-                  <div className="text-3xl font-bold text-white mb-1">{matchScore}</div>
-                  <div className="text-gray-300 text-sm font-medium">Scor Final</div>
+                <div className="w-12 h-12 bg-slate-700 rounded-lg flex items-center justify-center">
+                  <Shield className="w-6 h-6 text-slate-400" />
                 </div>
               </div>
-              
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                <div className="bg-black/20 rounded-xl p-4 flex items-center gap-3">
-                  <Calendar className="w-5 h-5 text-orange-400" />
-                  <div>
-                    <div className="text-gray-300 text-xs font-medium">Data</div>
-                    <div className="text-white text-sm font-bold">{formatDate(match.started_at)}</div>
+
+              {/* Match Score & Status */}
+              <div className="text-center px-8">
+                <div className="flex items-center gap-4 mb-2">
+                  <div className={`text-4xl font-bold ${team1Score > team2Score ? 'text-green-400' : 'text-red-400'}`}>
+                    {team1Score}
+                  </div>
+                  <div className="text-2xl text-slate-400">:</div>
+                  <div className={`text-4xl font-bold ${team2Score > team1Score ? 'text-green-400' : 'text-red-400'}`}>
+                    {team2Score}
                   </div>
                 </div>
-                
-                <div className="bg-black/20 rounded-xl p-4 flex items-center gap-3">
-                  <Clock className="w-5 h-5 text-blue-400" />
-                  <div>
-                    <div className="text-gray-300 text-xs font-medium">Durată</div>
-                    <div className="text-white text-sm font-bold">{formatMatchDuration(match.started_at, match.finished_at)}</div>
-                  </div>
+                <Badge className={`${
+                  isWin 
+                    ? 'bg-green-500/20 text-green-400 border-green-500/30' 
+                    : 'bg-red-500/20 text-red-400 border-red-500/30'
+                } border font-semibold px-4 py-1`}>
+                  {isWin ? 'VICTORY' : 'DEFEAT'}
+                </Badge>
+              </div>
+
+              {/* Team 2 */}
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-slate-700 rounded-lg flex items-center justify-center">
+                  <Shield className="w-6 h-6 text-slate-400" />
                 </div>
-                
-                <div className="bg-black/20 rounded-xl p-4 flex items-center gap-3">
-                  <Trophy className="w-5 h-5 text-yellow-400" />
-                  <div>
-                    <div className="text-gray-300 text-xs font-medium">Mod Joc</div>
-                    <div className="text-white text-sm font-bold">{match.game_mode}</div>
-                  </div>
+                <div className="text-left">
+                  <div className="text-2xl font-bold text-white mb-1">{team2Name}</div>
+                  <div className="text-slate-400 text-sm">Team</div>
                 </div>
-                
-                <div className="bg-black/20 rounded-xl p-4 flex items-center gap-3">
-                  {eloChange && typeof eloChange.elo_change === 'number' ? (
-                    eloChange.elo_change > 0 ? (
-                      <TrendingUp className="w-5 h-5 text-green-400" />
-                    ) : eloChange.elo_change < 0 ? (
-                      <TrendingDown className="w-5 h-5 text-red-400" />
-                    ) : (
-                      <Minus className="w-5 h-5 text-gray-400" />
-                    )
+              </div>
+            </div>
+
+            {/* Match Info Row */}
+            <div className="grid grid-cols-4 gap-4 pt-4 border-t border-slate-700">
+              <div className="flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-orange-400" />
+                <div>
+                  <div className="text-slate-400 text-xs">Map</div>
+                  <div className="text-white font-semibold">{mapName}</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-blue-400" />
+                <div>
+                  <div className="text-slate-400 text-xs">Date</div>
+                  <div className="text-white font-semibold text-sm">{formatDate(match.started_at)}</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-green-400" />
+                <div>
+                  <div className="text-slate-400 text-xs">Duration</div>
+                  <div className="text-white font-semibold">{formatMatchDuration(match.started_at, match.finished_at)}</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                {eloChange && typeof eloChange.elo_change === 'number' ? (
+                  eloChange.elo_change > 0 ? (
+                    <TrendingUp className="w-4 h-4 text-green-400" />
+                  ) : eloChange.elo_change < 0 ? (
+                    <TrendingDown className="w-4 h-4 text-red-400" />
                   ) : (
-                    <Minus className="w-5 h-5 text-gray-400" />
-                  )}
-                  <div>
-                    <div className="text-gray-300 text-xs font-medium">Schimbare ELO</div>
-                    <div className={`text-sm font-bold ${
-                      eloChange && typeof eloChange.elo_change === 'number' ? (
-                        eloChange.elo_change > 0 ? 'text-green-400' : 
-                        eloChange.elo_change < 0 ? 'text-red-400' : 'text-gray-400'
-                      ) : 'text-gray-400'
-                    }`}>
-                      {eloChange && typeof eloChange.elo_change === 'number' ? (
-                        `${eloChange.elo_change > 0 ? '+' : ''}${eloChange.elo_change}`
-                      ) : 'N/A'}
-                    </div>
+                    <Minus className="w-4 h-4 text-slate-400" />
+                  )
+                ) : (
+                  <Minus className="w-4 h-4 text-slate-400" />
+                )}
+                <div>
+                  <div className="text-slate-400 text-xs">ELO Change</div>
+                  <div className={`font-semibold ${
+                    eloChange && typeof eloChange.elo_change === 'number' ? (
+                      eloChange.elo_change > 0 ? 'text-green-400' : 
+                      eloChange.elo_change < 0 ? 'text-red-400' : 'text-slate-400'
+                    ) : 'text-slate-400'
+                  }`}>
+                    {eloChange && typeof eloChange.elo_change === 'number' ? (
+                      `${eloChange.elo_change > 0 ? '+' : ''}${eloChange.elo_change}`
+                    ) : 'N/A'}
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Personal Stats - Enhanced */}
-          <div className="bg-gradient-to-br from-white/10 to-white/5 rounded-2xl p-8 border border-white/20">
-            <h3 className="text-2xl font-bold text-white mb-6 flex items-center gap-3">
-              <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
-                <Target className="w-4 h-4 text-white" />
+          {/* Players Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Team 1 Players */}
+            {team1Players.length > 0 && (
+              <div className="bg-slate-800/30 rounded-xl p-6 border border-slate-700">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                  <h3 className="text-lg font-bold text-white">{team1Name}</h3>
+                  <div className="ml-auto text-2xl font-bold text-blue-400">{team1Score}</div>
+                </div>
+                <div className="space-y-2">
+                  {team1Players.map((playerData, index) => (
+                    <PlayerStatsRow key={index} playerData={playerData} teamSide="left" />
+                  ))}
+                </div>
               </div>
-              Statisticile Tale
-            </h3>
-            
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
-              <div className="bg-gradient-to-br from-green-500/20 to-green-600/20 rounded-xl p-6 text-center border border-green-500/30">
-                <div className="text-3xl font-bold text-green-400 mb-2">{kda.kills}</div>
-                <div className="text-green-300 text-sm font-medium">Ucideri</div>
+            )}
+
+            {/* Team 2 Players */}
+            {team2Players.length > 0 && (
+              <div className="bg-slate-800/30 rounded-xl p-6 border border-slate-700">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                  <h3 className="text-lg font-bold text-white">{team2Name}</h3>
+                  <div className="ml-auto text-2xl font-bold text-red-400">{team2Score}</div>
+                </div>
+                <div className="space-y-2">
+                  {team2Players.map((playerData, index) => (
+                    <PlayerStatsRow key={index} playerData={playerData} teamSide="right" />
+                  ))}
+                </div>
               </div>
-              <div className="bg-gradient-to-br from-red-500/20 to-red-600/20 rounded-xl p-6 text-center border border-red-500/30">
-                <div className="text-3xl font-bold text-red-400 mb-2">{kda.deaths}</div>
-                <div className="text-red-300 text-sm font-medium">Decese</div>
+            )}
+          </div>
+
+          {/* Server Info */}
+          <div className="bg-slate-800/30 rounded-xl p-4 border border-slate-700 text-center">
+            <div className="flex items-center justify-center gap-4 text-sm">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
+                <span className="text-slate-400">Server:</span>
+                <span className="text-white font-semibold">{match.game_mode}</span>
               </div>
-              <div className="bg-gradient-to-br from-blue-500/20 to-blue-600/20 rounded-xl p-6 text-center border border-blue-500/30">
-                <div className="text-3xl font-bold text-blue-400 mb-2">{kda.assists}</div>
-                <div className="text-blue-300 text-sm font-medium">Asistențe</div>
-              </div>
-              <div className="bg-gradient-to-br from-purple-500/20 to-purple-600/20 rounded-xl p-6 text-center border border-purple-500/30">
-                <div className="text-3xl font-bold text-purple-400 mb-2">{getKDRatio(playerStats)}</div>
-                <div className="text-purple-300 text-sm font-medium">K/D Ratio</div>
-              </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-6">
-              <div className="bg-gradient-to-br from-orange-500/20 to-red-500/20 rounded-xl p-6 text-center border border-orange-500/30">
-                <div className="text-2xl font-bold text-orange-400 mb-2">{getHeadshotPercentage(playerStats)}%</div>
-                <div className="text-orange-300 text-sm font-medium">Headshot %</div>
-              </div>
-              <div className="bg-gradient-to-br from-yellow-500/20 to-amber-500/20 rounded-xl p-6 text-center border border-yellow-500/30">
-                <div className="text-2xl font-bold text-yellow-400 mb-2">{getADR(playerStats)}</div>
-                <div className="text-yellow-300 text-sm font-medium">ADR</div>
+              <div className="w-px h-4 bg-slate-600"></div>
+              <div className="flex items-center gap-2">
+                <Trophy className="w-4 h-4 text-yellow-400" />
+                <span className="text-slate-400">Competition:</span>
+                <span className="text-white font-semibold">{match.competition_name}</span>
               </div>
             </div>
           </div>
-
-          {/* Teams - Enhanced */}
-          {(team1Players.length > 0 || team2Players.length > 0) && (
-            <div className="space-y-6">
-              <h3 className="text-2xl font-bold text-white flex items-center gap-3">
-                <div className="w-8 h-8 bg-gradient-to-r from-orange-500 to-red-500 rounded-full flex items-center justify-center">
-                  <Users className="w-4 h-4 text-white" />
-                </div>
-                Jucători
-              </h3>
-              
-              {team1Players.length > 0 && (
-                <div className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 rounded-2xl p-6 border border-blue-500/20">
-                  <h4 className="text-lg font-bold text-blue-300 mb-4 flex items-center gap-2">
-                    <Sword className="w-5 h-5" />
-                    {team1Players[0]?.teamName || 'Echipa 1'}
-                  </h4>
-                  <div className="space-y-3">
-                    {team1Players.map((playerData, index) => (
-                      <PlayerRow key={index} playerData={playerData} />
-                    ))}
-                  </div>
-                </div>
-              )}
-              
-              {team2Players.length > 0 && (
-                <div className="bg-gradient-to-br from-red-500/10 to-red-600/10 rounded-2xl p-6 border border-red-500/20">
-                  <h4 className="text-lg font-bold text-red-300 mb-4 flex items-center gap-2">
-                    <Sword className="w-5 h-5" />
-                    {team2Players[0]?.teamName || 'Echipa 2'}
-                  </h4>
-                  <div className="space-y-3">
-                    {team2Players.map((playerData, index) => (
-                      <PlayerRow key={index} playerData={playerData} />
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
         </div>
       </DialogContent>
     </Dialog>
