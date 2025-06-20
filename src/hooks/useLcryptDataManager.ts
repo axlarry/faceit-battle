@@ -20,12 +20,14 @@ export const useLcryptDataManager = ({
   const [friendsWithLcrypt, setFriendsWithLcrypt] = useState<FriendWithLcrypt[]>(friends);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
+  const [processingState, setProcessingState] = useState(false);
   const processingRef = useRef(false);
 
   const loadLcryptDataForFriends = async () => {
     if (!enabled || friends.length === 0 || processingRef.current) return;
     
     processingRef.current = true;
+    setProcessingState(true);
     setIsLoading(true);
     setLoadingProgress(0);
 
@@ -81,6 +83,7 @@ export const useLcryptDataManager = ({
     } finally {
       setIsLoading(false);
       setLoadingProgress(0);
+      setProcessingState(false);
       processingRef.current = false;
     }
   };
