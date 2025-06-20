@@ -6,6 +6,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Player, Match } from "@/types/Player";
 import { useState, useEffect } from "react";
 import { PasswordDialog } from "./PasswordDialog";
@@ -122,17 +123,17 @@ export const PlayerModal = ({
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="bg-gradient-to-br from-slate-900 to-slate-800 border border-white/20 text-white w-[95vw] max-w-7xl h-[90vh] max-h-[90vh] overflow-hidden p-0">
-          <div className="flex flex-col h-full">
-            <DialogHeader className="px-4 sm:px-6 py-4 border-b border-white/10 flex-shrink-0">
-              <DialogTitle className="text-xl sm:text-2xl font-bold text-center">
-                Profil Jucător - Detalii Complete
-              </DialogTitle>
-              <DialogDescription className="text-gray-400 text-center text-sm sm:text-base">
-                Informații detaliate despre jucător și istoricul meciurilor recente
-              </DialogDescription>
-            </DialogHeader>
-            
-            <div className="flex-1 overflow-y-auto scrollbar-hide px-4 sm:px-6 pb-6">
+          <DialogHeader className="px-4 sm:px-6 py-4 border-b border-white/10 flex-shrink-0">
+            <DialogTitle className="text-xl sm:text-2xl font-bold text-center">
+              Profil Jucător - Detalii Complete
+            </DialogTitle>
+            <DialogDescription className="text-gray-400 text-center text-sm sm:text-base">
+              Informații detaliate despre jucător și istoricul meciurilor recente
+            </DialogDescription>
+          </DialogHeader>
+          
+          <ScrollArea className="flex-1" hideScrollbar={true}>
+            <div className="px-4 sm:px-6 pb-6">
               <div className="space-y-4 sm:space-y-6 py-4">
                 <PlayerHeader player={player} />
                 <PlayerStatsCards player={player} />
@@ -143,7 +144,7 @@ export const PlayerModal = ({
                   loadingMatches={loadingMatches} 
                 />
                 
-                {/* Friend Action Button - Simplified without external links */}
+                {/* Friend Action Button */}
                 <div className="flex justify-center pt-4">
                   <Button
                     onClick={handleFriendAction}
@@ -168,7 +169,7 @@ export const PlayerModal = ({
                 </div>
               </div>
             </div>
-          </div>
+          </ScrollArea>
         </DialogContent>
       </Dialog>
 

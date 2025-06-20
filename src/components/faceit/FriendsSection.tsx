@@ -9,7 +9,6 @@ import { useFlashingPlayer } from "@/hooks/useFlashingPlayer";
 import { FriendsSectionHeader } from "./FriendsSectionHeader";
 import { FriendSearchForm } from "./FriendSearchForm";
 import { EmptyFriendsState } from "./EmptyFriendsState";
-import { ModernLoadingOverlay } from "./ModernLoadingOverlay";
 import { FriendsList } from "./FriendsList";
 import { FriendActionDialog } from "./FriendActionDialog";
 
@@ -59,17 +58,6 @@ export const FriendsSection = ({
 
   return (
     <div className="space-y-4 px-4 md:px-0">
-      {/* ELO Loading Animation - moved to top center */}
-      {lcryptLoading && friends.length > 0 && (
-        <div className="flex justify-center py-4">
-          <ModernLoadingOverlay 
-            isLoading={lcryptLoading}
-            progress={loadingProgress}
-            friendsCount={friends.length}
-          />
-        </div>
-      )}
-
       <Card className="bg-[#1a1d21] border-[#2a2f36] shadow-xl">
         <div className="p-4 md:p-5">
           <FriendsSectionHeader 
