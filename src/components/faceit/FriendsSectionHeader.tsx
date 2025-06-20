@@ -25,7 +25,7 @@ export const FriendsSectionHeader = React.memo(({
       
       <div className="flex flex-col md:flex-row items-start md:items-center gap-3">
         <span className="text-xs text-[#9f9f9f]">
-          Actualizare automată la 5 min
+          Actualizare automată la 15 min
         </span>
         <Button
           onClick={onUpdateAll}

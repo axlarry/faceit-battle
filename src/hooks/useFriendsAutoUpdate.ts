@@ -29,7 +29,7 @@ export const useFriendsAutoUpdate = ({
     enabled,
     itemCount: friends.length,
     updateFunction: memoizedUpdateFunction,
-    intervalMs: 300000 // 5 minutes
+    intervalMs: 900000 // 15 minutes (900000ms)
   });
 
   return {

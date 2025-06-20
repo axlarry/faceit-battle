@@ -6,7 +6,6 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Player, Match } from "@/types/Player";
 import { useState, useEffect } from "react";
 import { PasswordDialog } from "./PasswordDialog";
@@ -122,7 +121,7 @@ export const PlayerModal = ({
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="bg-gradient-to-br from-slate-900 to-slate-800 border border-white/20 text-white w-[95vw] max-w-7xl h-[90vh] max-h-[90vh] overflow-hidden p-0">
+        <DialogContent className="bg-gradient-to-br from-slate-900 to-slate-800 border border-white/20 text-white w-[95vw] max-w-7xl h-[90vh] flex flex-col p-0 overflow-hidden">
           <DialogHeader className="px-4 sm:px-6 py-4 border-b border-white/10 flex-shrink-0">
             <DialogTitle className="text-xl sm:text-2xl font-bold text-center">
               Profil Jucător - Detalii Complete
@@ -132,44 +131,42 @@ export const PlayerModal = ({
             </DialogDescription>
           </DialogHeader>
           
-          <ScrollArea className="flex-1" hideScrollbar={true}>
-            <div className="px-4 sm:px-6 pb-6">
-              <div className="space-y-4 sm:space-y-6 py-4">
-                <PlayerHeader player={player} />
-                <PlayerStatsCards player={player} />
-                <MatchesTable 
-                  player={player} 
-                  matches={matches} 
-                  matchesStats={matchesStats} 
-                  loadingMatches={loadingMatches} 
-                />
-                
-                {/* Friend Action Button */}
-                <div className="flex justify-center pt-4">
-                  <Button
-                    onClick={handleFriendAction}
-                    className={`px-6 py-3 font-medium text-base ${
-                      isFriend
-                        ? 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700'
-                        : 'bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600'
-                    } text-white border-0`}
-                  >
-                    {isFriend ? (
-                      <>
-                        <UserMinus size={16} className="mr-2" />
-                        Șterge din Prieteni
-                      </>
-                    ) : (
-                      <>
-                        <UserPlus size={16} className="mr-2" />
-                        Adaugă la Prieteni
-                      </>
-                    )}
-                  </Button>
-                </div>
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 pb-6" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+            <div className="space-y-4 sm:space-y-6 py-4">
+              <PlayerHeader player={player} />
+              <PlayerStatsCards player={player} />
+              <MatchesTable 
+                player={player} 
+                matches={matches} 
+                matchesStats={matchesStats} 
+                loadingMatches={loadingMatches} 
+              />
+              
+              {/* Friend Action Button */}
+              <div className="flex justify-center pt-4">
+                <Button
+                  onClick={handleFriendAction}
+                  className={`px-6 py-3 font-medium text-base ${
+                    isFriend
+                      ? 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700'
+                      : 'bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600'
+                  } text-white border-0`}
+                >
+                  {isFriend ? (
+                    <>
+                      <UserMinus size={16} className="mr-2" />
+                      Șterge din Prieteni
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus size={16} className="mr-2" />
+                      Adaugă la Prieteni
+                    </>
+                  )}
+                </Button>
               </div>
             </div>
-          </ScrollArea>
+          </div>
         </DialogContent>
       </Dialog>
 
