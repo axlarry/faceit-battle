@@ -7,10 +7,15 @@ interface EloChangeIndicatorProps {
 }
 
 export const EloChangeIndicator = React.memo(({ lcryptData }: EloChangeIndicatorProps) => {
-  console.log('Rendering ELO change for lcryptData:', lcryptData);
+  console.log('EloChangeIndicator - lcryptData:', lcryptData);
   
-  if (!lcryptData?.today?.present) {
-    console.log('No today data present');
+  if (!lcryptData) {
+    console.log('EloChangeIndicator - No lcryptData provided');
+    return null;
+  }
+  
+  if (!lcryptData.today?.present) {
+    console.log('EloChangeIndicator - No today data present for:', lcryptData);
     return null;
   }
   
@@ -19,13 +24,14 @@ export const EloChangeIndicator = React.memo(({ lcryptData }: EloChangeIndicator
   
   // If it's a string like "+30" or "-43", parse it
   if (typeof eloChange === 'string') {
-    eloChange = parseInt(eloChange);
+    // Remove + sign if present and parse as integer
+    eloChange = parseInt(eloChange.replace('+', ''));
   }
   
-  console.log('ELO change from today.elo:', eloChange);
+  console.log('EloChangeIndicator - Parsed ELO change:', eloChange);
   
-  if (eloChange === 0) {
-    console.log('ELO change is 0, not showing');
+  if (isNaN(eloChange) || eloChange === 0) {
+    console.log('EloChangeIndicator - ELO change is 0 or invalid, not showing');
     return null;
   }
   

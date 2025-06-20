@@ -20,14 +20,12 @@ export const useLcryptDataManager = ({
   const [friendsWithLcrypt, setFriendsWithLcrypt] = useState<FriendWithLcrypt[]>(friends);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
-  const [processingState, setProcessingState] = useState(false);
   const processingRef = useRef(false);
 
   const loadLcryptDataForFriends = async () => {
     if (!enabled || friends.length === 0 || processingRef.current) return;
     
     processingRef.current = true;
-    setProcessingState(true);
     setIsLoading(true);
     setLoadingProgress(0);
 
@@ -48,10 +46,15 @@ export const useLcryptDataManager = ({
 
           let lcryptData = null;
           if (lcryptResponse.ok) {
-            lcryptData = await lcryptResponse.json();
-            console.log(`✅ ELO data loaded for ${friend.nickname}:`, lcryptData);
+            const responseData = await lcryptResponse.json();
+            if (responseData && !responseData.error) {
+              lcryptData = responseData;
+              console.log(`✅ ELO data loaded for ${friend.nickname}:`, lcryptData);
+            } else {
+              console.warn(`⚠️ ELO API returned error for ${friend.nickname}:`, responseData);
+            }
           } else {
-            console.warn(`⚠️ Failed to load ELO data for ${friend.nickname}`);
+            console.warn(`⚠️ Failed to load ELO data for ${friend.nickname} - HTTP ${lcryptResponse.status}`);
           }
 
           updatedFriends.push({
@@ -61,7 +64,10 @@ export const useLcryptDataManager = ({
 
         } catch (error) {
           console.error(`❌ Error processing ${friend.nickname}:`, error);
-          updatedFriends.push(friend);
+          updatedFriends.push({
+            ...friend,
+            lcryptData: null
+          });
         }
 
         processedCount++;
@@ -75,6 +81,7 @@ export const useLcryptDataManager = ({
         }
       }
 
+      console.log('✅ Setting friends with lcrypt data:', updatedFriends);
       setFriendsWithLcrypt(updatedFriends);
       console.log('✅ Completed ELO data loading for all friends');
 
@@ -83,7 +90,6 @@ export const useLcryptDataManager = ({
     } finally {
       setIsLoading(false);
       setLoadingProgress(0);
-      setProcessingState(false);
       processingRef.current = false;
     }
   };
