@@ -13,7 +13,7 @@ import { useFaceitApi } from "@/hooks/useFaceitApi";
 import { PlayerHeader } from "./PlayerHeader";
 import { PlayerStatsCards } from "./PlayerStatsCards";
 import { MatchesTable } from "./MatchesTable";
-import { X } from "lucide-react";
+import { PlayerActions } from "./PlayerActions";
 
 interface PlayerModalProps {
   player: Player | null;
@@ -120,17 +120,9 @@ export const PlayerModal = ({
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="bg-gradient-to-br from-slate-900 to-slate-800 border border-white/20 text-white max-w-4xl max-h-[85vh] overflow-y-auto fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50">
-          {/* Modern X Button */}
-          <button
-            onClick={onClose}
-            className="absolute right-4 top-4 z-50 p-2 rounded-full bg-slate-800/80 hover:bg-slate-700/80 border border-slate-600/50 hover:border-slate-500 transition-all duration-200 group"
-          >
-            <X className="w-4 h-4 text-slate-400 group-hover:text-white transition-colors" />
-          </button>
-
-          <DialogHeader className="pr-12">
-            <DialogTitle className="text-xl font-bold text-center">
+        <DialogContent className="bg-gradient-to-br from-slate-900 to-slate-800 border border-white/20 text-white max-w-6xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-center">
               Profil Jucător - Detalii Complete
             </DialogTitle>
             <DialogDescription className="text-gray-400 text-center">
@@ -138,7 +130,7 @@ export const PlayerModal = ({
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-4">
+          <div className="space-y-6">
             <PlayerHeader player={player} />
             <PlayerStatsCards player={player} />
             <MatchesTable 
@@ -146,6 +138,11 @@ export const PlayerModal = ({
               matches={matches} 
               matchesStats={matchesStats} 
               loadingMatches={loadingMatches} 
+            />
+            <PlayerActions 
+              player={player} 
+              isFriend={isFriend} 
+              onFriendAction={handleFriendAction} 
             />
           </div>
         </DialogContent>

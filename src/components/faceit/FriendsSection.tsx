@@ -1,96 +1,105 @@
 
-import React from 'react';
+import React from "react";
+import { Card } from "@/components/ui/card";
 import { Player } from "@/types/Player";
-import { FriendsSectionHeader } from './FriendsSectionHeader';
-import { FriendsList } from './FriendsList';
-import { EmptyFriendsState } from './EmptyFriendsState';
-import { ModernLoadingOverlay } from './ModernLoadingOverlay';
-import { useLcryptDataManager } from '@/hooks/useLcryptDataManager';
-import { useFriendsAutoUpdate } from '@/hooks/useFriendsAutoUpdate';
-import { useFlashingPlayer } from '@/hooks/useFlashingPlayer';
+import { useFriendsAutoUpdate } from "@/hooks/useFriendsAutoUpdate";
+import { useLcryptDataManager } from "@/hooks/useLcryptDataManager";
+import { usePendingFriendActions } from "@/hooks/usePendingFriendActions";
+import { useFlashingPlayer } from "@/hooks/useFlashingPlayer";
+import { FriendsSectionHeader } from "./FriendsSectionHeader";
+import { FriendSearchForm } from "./FriendSearchForm";
+import { EmptyFriendsState } from "./EmptyFriendsState";
+import { ModernLoadingOverlay } from "./ModernLoadingOverlay";
+import { FriendsList } from "./FriendsList";
+import { FriendActionDialog } from "./FriendActionDialog";
 
 interface FriendsSectionProps {
   friends: Player[];
   onAddFriend: (player: Player) => void;
-  onUpdateFriend: (player: Player) => void;
   onRemoveFriend: (playerId: string) => void;
   onShowPlayerDetails: (player: Player) => void;
-  onReloadFriends: () => void;
+  onUpdateFriend?: (player: Player) => void;
+  onReloadFriends?: () => void;
 }
 
-export const FriendsSection = ({
-  friends,
-  onAddFriend,
-  onUpdateFriend,
-  onRemoveFriend,
+export const FriendsSection = ({ 
+  friends, 
+  onAddFriend, 
+  onRemoveFriend, 
   onShowPlayerDetails,
+  onUpdateFriend,
   onReloadFriends
 }: FriendsSectionProps) => {
-  const { flashingPlayer } = useFlashingPlayer();
-  
-  // Use Lcrypt data manager for ELO loading (separate from Supabase updates)
-  const { 
-    friendsWithLcrypt, 
-    isLoading: isLoadingElo, 
-    loadingProgress,
-    reloadData: reloadEloData 
-  } = useLcryptDataManager({
+  // Hook optimizat pentru datele Lcrypt
+  const { friendsWithLcrypt, isLoading: lcryptLoading, loadingProgress } = useLcryptDataManager({
     friends,
     enabled: true
   });
 
-  // Use auto update for Faceit data only (not ELO)
+  // Auto-update friends data every 5 minutes
   const { isUpdating, updateAllFriends } = useFriendsAutoUpdate({
     friends,
-    updateFriend: onUpdateFriend,
-    reloadFriends: onReloadFriends,
+    updateFriend: onUpdateFriend || (() => {}),
+    reloadFriends: onReloadFriends || (() => {}),
     enabled: true
   });
 
-  const handleRefreshAll = async () => {
-    console.log('🔄 Manual refresh triggered');
-    await updateAllFriends();
-    await reloadEloData();
-  };
+  // Handle pending friend actions
+  const {
+    showPasswordDialog,
+    pendingAction,
+    handlePlayerFound,
+    handleRemoveFriend,
+    confirmAction,
+    closePasswordDialog
+  } = usePendingFriendActions(onAddFriend, onRemoveFriend);
 
-  if (friends.length === 0) {
-    return <EmptyFriendsState />;
-  }
+  // Handle flashing player state
+  const { flashingPlayer, handlePlayerClick } = useFlashingPlayer(onShowPlayerDetails);
 
   return (
-    <div className="space-y-4 relative">
-      <FriendsSectionHeader 
-        friendsCount={friends.length}
-        onUpdateAll={handleRefreshAll}
-        isUpdating={isUpdating}
-      />
-      
-      <FriendsList 
-        friends={friendsWithLcrypt}
-        flashingPlayer={flashingPlayer}
-        onPlayerClick={onShowPlayerDetails}
-      />
-      
-      {/* Show loading overlay only for general Faceit updates */}
-      {isUpdating && (
-        <ModernLoadingOverlay 
-          isLoading={isUpdating}
-          progress={0}
-          friendsCount={friends.length}
-        />
-      )}
-      
-      {/* Show ELO loading progress */}
-      {isLoadingElo && (
-        <div className="fixed bottom-4 right-4 bg-[#2a2f36] border border-[#ff6500]/30 rounded-lg p-4 shadow-lg z-50">
-          <div className="flex items-center gap-3">
-            <div className="w-4 h-4 border-2 border-[#ff6500] border-t-transparent rounded-full animate-spin"></div>
-            <div className="text-white text-sm">
-              Se încarcă datele ELO... {Math.round(loadingProgress)}%
-            </div>
-          </div>
+    <div className="space-y-4 px-4 md:px-0">
+      {/* ELO Loading Animation - moved to top center */}
+      {lcryptLoading && friends.length > 0 && (
+        <div className="flex justify-center py-4">
+          <ModernLoadingOverlay 
+            isLoading={lcryptLoading}
+            progress={loadingProgress}
+            friendsCount={friends.length}
+          />
         </div>
       )}
+
+      <Card className="bg-[#1a1d21] border-[#2a2f36] shadow-xl">
+        <div className="p-4 md:p-5">
+          <FriendsSectionHeader 
+            friendsCount={friends.length}
+            isUpdating={isUpdating || lcryptLoading}
+            onUpdateAll={updateAllFriends}
+          />
+
+          <FriendSearchForm onPlayerFound={handlePlayerFound} />
+          
+          {friends.length === 0 ? (
+            <EmptyFriendsState />
+          ) : (
+            <div className={lcryptLoading ? 'opacity-50 pointer-events-none' : ''}>
+              <FriendsList 
+                friends={friendsWithLcrypt}
+                flashingPlayer={flashingPlayer}
+                onPlayerClick={handlePlayerClick}
+              />
+            </div>
+          )}
+        </div>
+      </Card>
+
+      <FriendActionDialog
+        isOpen={showPasswordDialog}
+        pendingAction={pendingAction}
+        onClose={closePasswordDialog}
+        onConfirm={confirmAction}
+      />
     </div>
   );
 };
