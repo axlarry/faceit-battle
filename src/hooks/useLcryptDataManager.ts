@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Player } from '@/types/Player';
 import { supabase } from '@/integrations/supabase/client';
@@ -36,6 +37,7 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
   const [isLoading, setIsLoading] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [loadingFriends, setLoadingFriends] = useState<Set<string>>(new Set());
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const fetchLcryptData = useCallback(async (nickname: string): Promise<any> => {
@@ -81,6 +83,7 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
     if (!enabled || friends.length === 0) {
       setFriendsWithLcrypt([]);
       setLoadingProgress(0);
+      setLoadingFriends(new Set());
       return;
     }
 
@@ -93,6 +96,7 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
     setIsLoading(true);
     setError(null);
     setLoadingProgress(0);
+    setLoadingFriends(new Set());
 
     try {
       console.log('Loading lcrypt data for friends:', friends.map(f => f.nickname));
@@ -108,15 +112,36 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
       for (let i = 0; i < friends.length; i += BATCH_SIZE) {
         const batch = friends.slice(i, i + BATCH_SIZE);
         
+        // Marchează prietenii ca fiind în curs de încărcare
+        const currentlyLoading = new Set<string>();
+        batch.forEach(friend => currentlyLoading.add(friend.nickname));
+        setLoadingFriends(prev => new Set([...prev, ...currentlyLoading]));
+        
         // Procesează batch-ul concurrent
         const batchPromises = batch.map(async (friend, batchIndex) => {
           try {
             const lcryptData = await fetchLcryptData(friend.nickname);
             const actualIndex = i + batchIndex;
             updatedFriends[actualIndex] = { ...friend, lcryptData };
+            
+            // Elimină din loading după completare
+            setLoadingFriends(prev => {
+              const newSet = new Set(prev);
+              newSet.delete(friend.nickname);
+              return newSet;
+            });
+            
             return { index: actualIndex, data: lcryptData };
           } catch (error) {
             console.error(`Error loading lcrypt data for ${friend.nickname}:`, error);
+            
+            // Elimină din loading chiar și în caz de eroare
+            setLoadingFriends(prev => {
+              const newSet = new Set(prev);
+              newSet.delete(friend.nickname);
+              return newSet;
+            });
+            
             return { index: i + batchIndex, data: null };
           }
         });
@@ -143,10 +168,14 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
     } finally {
       setIsLoading(false);
       setLoadingProgress(100);
+      setLoadingFriends(new Set());
     }
   }, [friends, enabled, fetchLcryptData]);
 
   const refreshLcryptData = useCallback(async (nickname: string) => {
+    // Marchează prietenul ca fiind în loading
+    setLoadingFriends(prev => new Set([...prev, nickname]));
+    
     // Forțează refresh pentru un singur prieten
     dataCache.delete(nickname);
     const lcryptData = await fetchLcryptData(nickname);
@@ -158,6 +187,13 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
           : friend
       )
     );
+    
+    // Elimină din loading după completare
+    setLoadingFriends(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(nickname);
+      return newSet;
+    });
   }, [fetchLcryptData]);
 
   const clearCache = useCallback(() => {
@@ -180,6 +216,7 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
     isLoading,
     loadingProgress,
     error,
+    loadingFriends,
     refreshLcryptData,
     clearCache,
     reloadAll: loadAllLcryptData

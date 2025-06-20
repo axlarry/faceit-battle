@@ -10,12 +10,14 @@ interface FriendsWithLcrypt extends Player {
 interface FriendsListProps {
   friends: FriendsWithLcrypt[];
   flashingPlayer: string | null;
+  loadingFriends: Set<string>;
   onPlayerClick: (player: Player) => void;
 }
 
 export const FriendsList = React.memo(({ 
   friends, 
   flashingPlayer, 
+  loadingFriends,
   onPlayerClick 
 }: FriendsListProps) => {
   // Sort friends by ELO
@@ -31,6 +33,7 @@ export const FriendsList = React.memo(({
           friend={friend}
           index={index}
           isFlashing={flashingPlayer === friend.player_id}
+          isLoadingElo={loadingFriends.has(friend.nickname)}
           onPlayerClick={onPlayerClick}
         />
       ))}

@@ -31,7 +31,7 @@ export const FriendsSection = ({
   onReloadFriends
 }: FriendsSectionProps) => {
   // Hook optimizat pentru datele Lcrypt
-  const { friendsWithLcrypt, isLoading: lcryptLoading, loadingProgress } = useLcryptDataManager({
+  const { friendsWithLcrypt, isLoading: lcryptLoading, loadingProgress, loadingFriends } = useLcryptDataManager({
     friends,
     enabled: true
   });
@@ -83,13 +83,12 @@ export const FriendsSection = ({
           {friends.length === 0 ? (
             <EmptyFriendsState />
           ) : (
-            <div className={lcryptLoading ? 'opacity-50 pointer-events-none' : ''}>
-              <FriendsList 
-                friends={friendsWithLcrypt}
-                flashingPlayer={flashingPlayer}
-                onPlayerClick={handlePlayerClick}
-              />
-            </div>
+            <FriendsList 
+              friends={friendsWithLcrypt}
+              flashingPlayer={flashingPlayer}
+              loadingFriends={loadingFriends}
+              onPlayerClick={handlePlayerClick}
+            />
           )}
         </div>
       </Card>
