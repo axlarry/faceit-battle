@@ -30,13 +30,14 @@ export const FriendsSection = ({
   onUpdateFriend,
   onReloadFriends
 }: FriendsSectionProps) => {
-  // Hook optimizat pentru datele Lcrypt
+  // Hook optimizat pentru datele Lcrypt cu actualizare Faceit
   const { friendsWithLcrypt, isLoading: lcryptLoading, loadingProgress } = useLcryptDataManager({
     friends,
-    enabled: true
+    enabled: true,
+    onUpdateFriend
   });
 
-  // Auto-update friends data every 5 minutes
+  // Auto-update friends data every 15 seconds
   const { isUpdating, updateAllFriends } = useFriendsAutoUpdate({
     friends,
     updateFriend: onUpdateFriend || (() => {}),
