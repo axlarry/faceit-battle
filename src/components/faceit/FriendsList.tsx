@@ -11,10 +11,6 @@ interface FriendsListProps {
   friends: FriendsWithLcrypt[];
   flashingPlayer: string | null;
   loadingFriends: Set<string>;
-  livePlayerChecker?: {
-    isPlayerLive: (playerId: string) => boolean;
-    getPlayerMatchData: (playerId: string) => any;
-  };
   onPlayerClick: (player: Player) => void;
 }
 
@@ -22,7 +18,6 @@ export const FriendsList = React.memo(({
   friends, 
   flashingPlayer, 
   loadingFriends,
-  livePlayerChecker,
   onPlayerClick 
 }: FriendsListProps) => {
   // Sort friends by ELO
@@ -39,7 +34,6 @@ export const FriendsList = React.memo(({
           index={index}
           isFlashing={flashingPlayer === friend.player_id}
           isLoadingElo={loadingFriends.has(friend.nickname)}
-          isLive={livePlayerChecker?.isPlayerLive(friend.player_id) || false}
           onPlayerClick={onPlayerClick}
         />
       ))}
