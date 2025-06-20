@@ -6,9 +6,11 @@ import { FriendInfo } from './FriendInfo';
 import { FriendStats } from './FriendStats';
 import { FriendActions } from './FriendActions';
 import { useSteamIdConverter } from './SteamIdConverter';
+import { LoaderCircle } from 'lucide-react';
 
 interface FriendWithLcrypt extends Player {
   lcryptData?: any;
+  isLoadingElo?: boolean;
 }
 
 interface FriendListItemProps {
@@ -37,10 +39,17 @@ export const FriendListItem = React.memo(({
   return (
     <div
       onClick={handleClick}
-      className={`bg-[#2a2f36] rounded-lg p-2 sm:p-3 border border-[#3a4048] hover:border-[#ff6500]/50 transition-all duration-300 shadow-lg cursor-pointer transform hover:scale-[1.01] ${
+      className={`bg-[#2a2f36] rounded-lg p-2 sm:p-3 border border-[#3a4048] hover:border-[#ff6500]/50 transition-all duration-300 shadow-lg cursor-pointer transform hover:scale-[1.01] relative ${
         isFlashing ? 'animate-pulse bg-[#ff6500]/20 border-[#ff6500]' : ''
-      }`}
+      } ${friend.isLoadingElo ? 'blur-sm' : ''}`}
     >
+      {/* Loading Overlay */}
+      {friend.isLoadingElo && (
+        <div className="absolute inset-0 flex items-center justify-center z-10 bg-black/20 rounded-lg">
+          <LoaderCircle className="w-8 h-8 text-[#ff6500] animate-spin" />
+        </div>
+      )}
+
       <div className="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
         <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto min-w-0">
           <FriendAvatar 

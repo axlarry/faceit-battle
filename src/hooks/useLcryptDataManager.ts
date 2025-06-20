@@ -4,6 +4,7 @@ import { Player } from '@/types/Player';
 
 interface FriendWithLcrypt extends Player {
   lcryptData?: any;
+  isLoadingElo?: boolean;
 }
 
 interface UseLcryptDataManagerProps {
@@ -22,6 +23,26 @@ export const useLcryptDataManager = ({
   const [loadingProgress, setLoadingProgress] = useState(0);
   const processingRef = useRef(false);
 
+  const setPlayerLoadingState = (playerId: string, isLoading: boolean) => {
+    setFriendsWithLcrypt(prev => 
+      prev.map(friend => 
+        friend.player_id === playerId 
+          ? { ...friend, isLoadingElo: isLoading }
+          : friend
+      )
+    );
+  };
+
+  const updatePlayerLcryptData = (playerId: string, lcryptData: any) => {
+    setFriendsWithLcrypt(prev => 
+      prev.map(friend => 
+        friend.player_id === playerId 
+          ? { ...friend, lcryptData, isLoadingElo: false }
+          : friend
+      )
+    );
+  };
+
   const loadLcryptDataForFriends = async () => {
     if (!enabled || friends.length === 0 || processingRef.current) return;
     
@@ -32,12 +53,15 @@ export const useLcryptDataManager = ({
     console.log('🔄 Starting ELO data loading for', friends.length, 'friends...');
 
     try {
-      const updatedFriends: FriendWithLcrypt[] = [];
       let processedCount = 0;
 
       for (const friend of friends) {
         try {
           console.log(`📈 Loading ELO data for ${friend.nickname}...`);
+          
+          // Set loading state for this specific player
+          setPlayerLoadingState(friend.player_id, true);
+          
           const lcryptResponse = await fetch('/api/lcrypt-elo', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -57,17 +81,12 @@ export const useLcryptDataManager = ({
             console.warn(`⚠️ Failed to load ELO data for ${friend.nickname} - HTTP ${lcryptResponse.status}`);
           }
 
-          updatedFriends.push({
-            ...friend,
-            lcryptData
-          });
+          // Update this specific player's data
+          updatePlayerLcryptData(friend.player_id, lcryptData);
 
         } catch (error) {
           console.error(`❌ Error processing ${friend.nickname}:`, error);
-          updatedFriends.push({
-            ...friend,
-            lcryptData: null
-          });
+          updatePlayerLcryptData(friend.player_id, null);
         }
 
         processedCount++;
@@ -81,8 +100,6 @@ export const useLcryptDataManager = ({
         }
       }
 
-      console.log('✅ Setting friends with lcrypt data:', updatedFriends);
-      setFriendsWithLcrypt(updatedFriends);
       console.log('✅ Completed ELO data loading for all friends');
 
     } catch (error) {
@@ -97,6 +114,14 @@ export const useLcryptDataManager = ({
   // Load data when friends change
   useEffect(() => {
     if (friends.length > 0) {
+      // Initialize friends with lcrypt data structure
+      const initialFriends = friends.map(friend => ({
+        ...friend,
+        lcryptData: null,
+        isLoadingElo: false
+      }));
+      setFriendsWithLcrypt(initialFriends);
+      
       loadLcryptDataForFriends();
     } else {
       setFriendsWithLcrypt([]);
