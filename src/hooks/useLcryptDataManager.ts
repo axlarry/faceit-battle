@@ -1,8 +1,6 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { Player } from '@/types/Player';
-import { useLcryptApi } from '@/hooks/useLcryptApi';
-import { usePlayerDataUpdater } from '@/hooks/usePlayerDataUpdater';
 
 interface FriendWithLcrypt extends Player {
   lcryptData?: any;
@@ -22,7 +20,6 @@ export const useLcryptDataManager = ({
   const [friendsWithLcrypt, setFriendsWithLcrypt] = useState<FriendWithLcrypt[]>(friends);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
-  const { updatePlayerData } = usePlayerDataUpdater();
   const processingRef = useRef(false);
 
   const loadLcryptDataForFriends = async () => {
@@ -32,7 +29,7 @@ export const useLcryptDataManager = ({
     setIsLoading(true);
     setLoadingProgress(0);
 
-    console.log('🔄 Starting ELO data loading and Faceit updates for', friends.length, 'friends...');
+    console.log('🔄 Starting ELO data loading for', friends.length, 'friends...');
 
     try {
       const updatedFriends: FriendWithLcrypt[] = [];
@@ -40,18 +37,6 @@ export const useLcryptDataManager = ({
 
       for (const friend of friends) {
         try {
-          console.log(`📊 Processing ${friend.nickname}...`);
-          
-          // Update Faceit data first
-          console.log(`🎮 Updating Faceit data for ${friend.nickname}...`);
-          const updatedFaceitData = await updatePlayerData(friend);
-          
-          if (updatedFaceitData && onUpdateFriend) {
-            console.log(`💾 Saving updated Faceit data for ${friend.nickname} to Supabase...`);
-            await onUpdateFriend(updatedFaceitData);
-          }
-
-          // Then load Lcrypt data
           console.log(`📈 Loading ELO data for ${friend.nickname}...`);
           const lcryptResponse = await fetch('/api/lcrypt-elo', {
             method: 'POST',
@@ -67,10 +52,8 @@ export const useLcryptDataManager = ({
             console.warn(`⚠️ Failed to load ELO data for ${friend.nickname}`);
           }
 
-          // Use updated Faceit data if available, otherwise use original
-          const finalFriendData = updatedFaceitData || friend;
           updatedFriends.push({
-            ...finalFriendData,
+            ...friend,
             lcryptData
           });
 
@@ -91,7 +74,7 @@ export const useLcryptDataManager = ({
       }
 
       setFriendsWithLcrypt(updatedFriends);
-      console.log('✅ Completed ELO data loading and Faceit updates for all friends');
+      console.log('✅ Completed ELO data loading for all friends');
 
     } catch (error) {
       console.error('❌ Error during data loading:', error);
