@@ -6,6 +6,7 @@ import { useFriendsAutoUpdate } from "@/hooks/useFriendsAutoUpdate";
 import { useLcryptDataManager } from "@/hooks/useLcryptDataManager";
 import { usePendingFriendActions } from "@/hooks/usePendingFriendActions";
 import { useFlashingPlayer } from "@/hooks/useFlashingPlayer";
+import { useLiveMatchChecker } from "@/hooks/useLiveMatchChecker";
 import { FriendsSectionHeader } from "./FriendsSectionHeader";
 import { FriendSearchForm } from "./FriendSearchForm";
 import { EmptyFriendsState } from "./EmptyFriendsState";
@@ -35,13 +36,16 @@ export const FriendsSection = ({
     enabled: true
   });
 
-  // Auto-update friends data every 5 minutes
+  // Auto-update friends data every 15 minutes
   const { isUpdating, updateAllFriends } = useFriendsAutoUpdate({
     friends,
     updateFriend: onUpdateFriend || (() => {}),
     reloadFriends: onReloadFriends || (() => {}),
     enabled: true
   });
+
+  // Live match checker
+  const liveMatchChecker = useLiveMatchChecker(friends);
 
   // Handle pending friend actions
   const {
@@ -75,6 +79,7 @@ export const FriendsSection = ({
               friends={friendsWithLcrypt}
               flashingPlayer={flashingPlayer}
               loadingFriends={loadingFriends}
+              livePlayerChecker={liveMatchChecker}
               onPlayerClick={handlePlayerClick}
             />
           )}
