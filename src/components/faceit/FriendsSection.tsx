@@ -6,6 +6,7 @@ import { useFriendsAutoUpdate } from "@/hooks/useFriendsAutoUpdate";
 import { useLcryptDataManager } from "@/hooks/useLcryptDataManager";
 import { usePendingFriendActions } from "@/hooks/usePendingFriendActions";
 import { useFlashingPlayer } from "@/hooks/useFlashingPlayer";
+import { useLiveMatchChecker } from "@/hooks/useLiveMatchChecker";
 import { FriendsSectionHeader } from "./FriendsSectionHeader";
 import { FriendSearchForm } from "./FriendSearchForm";
 import { EmptyFriendsState } from "./EmptyFriendsState";
@@ -56,13 +57,16 @@ export const FriendsSection = ({
   // Handle flashing player state
   const { flashingPlayer, handlePlayerClick } = useFlashingPlayer(onShowPlayerDetails);
 
+  // Check for live matches
+  const { liveMatches, isChecking } = useLiveMatchChecker(friends);
+
   return (
     <div className="space-y-4 px-4 md:px-0">
       <Card className="bg-[#1a1d21] border-[#2a2f36] shadow-xl">
         <div className="p-4 md:p-5">
           <FriendsSectionHeader 
             friendsCount={friends.length}
-            isUpdating={isUpdating || lcryptLoading}
+            isUpdating={isUpdating || lcryptLoading || isChecking}
             onUpdateAll={updateAllFriends}
           />
 
@@ -75,6 +79,7 @@ export const FriendsSection = ({
               friends={friendsWithLcrypt}
               flashingPlayer={flashingPlayer}
               loadingFriends={loadingFriends}
+              liveMatches={liveMatches}
               onPlayerClick={handlePlayerClick}
             />
           )}

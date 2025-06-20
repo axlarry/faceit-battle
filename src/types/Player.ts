@@ -1,4 +1,3 @@
-
 export interface Player {
   player_id: string;
   nickname: string;
@@ -11,6 +10,9 @@ export interface Player {
   hsRate?: number;
   kdRatio?: number;
   matches?: Match[];
+  isLive?: boolean;
+  liveMatchId?: string;
+  liveCompetition?: string;
 }
 
 export interface Match {

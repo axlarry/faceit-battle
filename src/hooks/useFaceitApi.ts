@@ -60,6 +60,39 @@ export const useFaceitApi = () => {
     });
   };
 
+  const checkPlayerLiveMatch = async (playerId: string) => {
+    try {
+      console.log(`Checking live match for player: ${playerId}`);
+      const data = await makeApiCall(`/players/${playerId}`, false);
+      
+      // Verificăm dacă jucătorul este în meci live
+      if (data && data.games && data.games.cs2 && data.games.cs2.game_player_id) {
+        // Încercăm să obținem informații despre meciul curent
+        try {
+          const matchData = await makeApiCall(`/players/${playerId}/history?game=cs2&limit=1`, false);
+          if (matchData && matchData.items && matchData.items.length > 0) {
+            const lastMatch = matchData.items[0];
+            // Verificăm dacă meciul este în desfășurare (status: 'ONGOING' sau similar)
+            if (lastMatch.status === 'ONGOING' || lastMatch.status === 'LIVE') {
+              return {
+                isLive: true,
+                matchId: lastMatch.match_id,
+                competition: lastMatch.competition_name
+              };
+            }
+          }
+        } catch (matchError) {
+          console.error('Error fetching match history:', matchError);
+        }
+      }
+      
+      return { isLive: false };
+    } catch (error) {
+      console.error('Error checking live match:', error);
+      return { isLive: false };
+    }
+  };
+
   const getPlayerStats = async (playerId: string) => {
     try {
       const data = await makeApiCall(`/players/${playerId}/stats/cs2`, false);
@@ -242,6 +275,7 @@ export const useFaceitApi = () => {
     getMatchDetails,
     getMatchStats,
     getLeaderboard,
-    searchPlayer
+    searchPlayer,
+    checkPlayerLiveMatch
   };
 };
