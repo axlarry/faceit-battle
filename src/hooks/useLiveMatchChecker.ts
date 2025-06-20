@@ -43,14 +43,14 @@ export const useLiveMatchChecker = (friends: Player[]) => {
     }
   };
 
-  // Verifică la început și apoi la fiecare 30 de secunde
+  // Verifică la început și apoi la fiecare 4 minute
   useEffect(() => {
     if (friends.length > 0) {
       checkAllFriendsLiveMatches();
       
       intervalRef.current = setInterval(() => {
         checkAllFriendsLiveMatches();
-      }, 30000); // 30 secunde
+      }, 240000); // 4 minute (240000ms)
     }
 
     return () => {
