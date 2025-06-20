@@ -12,7 +12,7 @@ export const useAutoUpdateTimer = ({
   enabled, 
   itemCount, 
   updateFunction, 
-  intervalMs = 300000 // 5 minutes default
+  intervalMs = 900000 // 15 minutes default (15 * 60 * 1000)
 }: UseAutoUpdateTimerProps) => {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
