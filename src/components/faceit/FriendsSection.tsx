@@ -54,14 +54,14 @@ export const FriendsSection = ({
   };
 
   if (friends.length === 0) {
-    return <EmptyFriendsState onAddFriend={onAddFriend} />;
+    return <EmptyFriendsState />;
   }
 
   return (
     <div className="space-y-4 relative">
       <FriendsSectionHeader 
         friendsCount={friends.length}
-        onRefreshAll={handleRefreshAll}
+        onUpdateAll={handleRefreshAll}
         isUpdating={isUpdating}
       />
       
@@ -74,7 +74,9 @@ export const FriendsSection = ({
       {/* Show loading overlay only for general Faceit updates */}
       {isUpdating && (
         <ModernLoadingOverlay 
-          message="Se actualizează datele Faceit..."
+          isLoading={isUpdating}
+          progress={0}
+          friendsCount={friends.length}
         />
       )}
       
