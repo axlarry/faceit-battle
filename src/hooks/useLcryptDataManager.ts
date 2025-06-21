@@ -26,7 +26,7 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
 
     try {
       console.log(`Fetching Lcrypt data for ${friend.nickname}...`);
-      const lcryptData = await fetchLcryptData(friend.player_id);
+      const lcryptData = await fetchLcryptData(friend.nickname);
       
       const updatedFriend: FriendWithLcrypt = {
         ...friend,
@@ -68,8 +68,8 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
     setLoadingProgress(0);
     console.log(`🔄 Starting to load Lcrypt data for ${friends.length} friends...`);
     
-    // Procesează prietenii în paralel cu limit de 3 cereri simultane
-    const batchSize = 3;
+    // Procesează prietenii în paralel cu limit de 5 cereri simultane pentru încărcare mai rapidă
+    const batchSize = 5;
     const updatedFriends: FriendWithLcrypt[] = [];
     
     for (let i = 0; i < friends.length; i += batchSize) {
@@ -93,9 +93,9 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
         // Continuă cu următorul batch chiar dacă unul eșuează
       }
       
-      // Pauză scurtă între batch-uri pentru a evita supraîncărcarea serverului
+      // Pauză mai scurtă între batch-uri pentru încărcare mai rapidă
       if (i + batchSize < friends.length) {
-        await new Promise(resolve => setTimeout(resolve, 200));
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
     }
 

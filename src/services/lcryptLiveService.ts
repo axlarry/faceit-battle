@@ -1,3 +1,4 @@
+
 import { supabase } from '@/integrations/supabase/client';
 
 export class LcryptLiveService {
@@ -165,29 +166,29 @@ export class LcryptLiveService {
   }
 }
 
-// Add the missing fetchLcryptData function
-export const fetchLcryptData = async (playerId: string) => {
+// Fixed fetchLcryptData function to use nickname properly
+export const fetchLcryptData = async (nickname: string) => {
   try {
-    console.log(`🔍 Fetching Lcrypt data for player ID: ${playerId}`);
+    console.log(`🔍 Fetching Lcrypt data for nickname: ${nickname}`);
     
     const { data, error } = await supabase.functions.invoke('get-lcrypt-elo', {
-      body: { player_id: playerId }
+      body: { nickname }
     });
 
     if (error) {
-      console.warn(`Lcrypt API error for player ${playerId}:`, error);
+      console.warn(`Lcrypt API error for player ${nickname}:`, error);
       throw error;
     }
 
     if (data?.error === true || data?.message === "player not found") {
-      console.log(`❌ Player ${playerId} not found in Lcrypt database`);
+      console.log(`❌ Player ${nickname} not found in Lcrypt database`);
       return null;
     }
 
-    console.log(`✅ Successfully fetched Lcrypt data for player ${playerId}`);
+    console.log(`✅ Successfully fetched Lcrypt data for player ${nickname}`);
     return data;
   } catch (error) {
-    console.error(`❌ Failed to fetch Lcrypt data for player ${playerId}:`, error);
+    console.error(`❌ Failed to fetch Lcrypt data for player ${nickname}:`, error);
     throw error;
   }
 };
