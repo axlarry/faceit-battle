@@ -18,6 +18,7 @@ interface FriendListItemProps {
   isLoadingElo: boolean;
   isLive?: boolean;
   liveCompetition?: string;
+  liveMatchDetails?: any;
   onPlayerClick: (player: Player) => void;
 }
 
@@ -28,6 +29,7 @@ export const FriendListItem = React.memo(({
   isLoadingElo,
   isLive = false,
   liveCompetition,
+  liveMatchDetails,
   onPlayerClick 
 }: FriendListItemProps) => {
   const { steamId64 } = useSteamIdConverter(friend.player_id);
@@ -46,7 +48,7 @@ export const FriendListItem = React.memo(({
   // Stiluri pentru jucătorii live
   const liveStyles = isLive ? {
     border: 'border-green-500',
-    animation: 'animate-pulse',
+    animation: 'animate-[pulse_3s_ease-in-out_infinite]', // Clipoceală mai lentă
     background: 'bg-green-500/10'
   } : {
     border: 'border-[#3a4048]',
@@ -77,18 +79,49 @@ export const FriendListItem = React.memo(({
                 elo={friend.elo}
                 lcryptData={friend.lcryptData}
               />
-              
-              {/* Live Playing Indicator */}
-              {isLive && (
-                <span className="text-green-500 text-sm font-medium animate-pulse">
-                  Is Playing Faceit
-                </span>
-              )}
             </div>
             
-            {isLive && liveCompetition && (
-              <div className="text-xs text-green-400 mt-1 truncate">
-                {liveCompetition}
+            {/* Live Match Details */}
+            {isLive && liveMatchDetails && (
+              <div className="mt-2 space-y-1">
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="bg-green-500 text-white px-2 py-1 rounded text-xs font-bold">
+                    {liveMatchDetails.status || 'LIVE'}
+                  </span>
+                  <span className="text-green-400 font-medium">
+                    {liveMatchDetails.map || 'Unknown Map'}
+                  </span>
+                  <span className="text-gray-300 text-xs">
+                    ({liveMatchDetails.server || 'Unknown Server'})
+                  </span>
+                </div>
+                
+                <div className="flex items-center gap-3 text-sm">
+                  {liveMatchDetails.score && (
+                    <span className="text-white font-bold">
+                      Score: {liveMatchDetails.score}
+                    </span>
+                  )}
+                  {liveMatchDetails.result && (
+                    <span className={`font-medium capitalize ${
+                      liveMatchDetails.result === 'winning' ? 'text-green-400' : 
+                      liveMatchDetails.result === 'losing' ? 'text-red-400' : 'text-yellow-400'
+                    }`}>
+                      {liveMatchDetails.result}
+                    </span>
+                  )}
+                  {liveMatchDetails.duration && (
+                    <span className="text-gray-400 text-xs">
+                      {liveMatchDetails.duration}
+                    </span>
+                  )}
+                </div>
+                
+                {liveCompetition && (
+                  <div className="text-xs text-green-300 truncate">
+                    {liveCompetition}
+                  </div>
+                )}
               </div>
             )}
           </div>

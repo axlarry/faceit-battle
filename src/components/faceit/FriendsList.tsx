@@ -11,6 +11,7 @@ interface LiveMatchInfo {
   isLive: boolean;
   matchId?: string;
   competition?: string;
+  matchDetails?: any;
 }
 
 interface FriendsListProps {
@@ -56,6 +57,7 @@ export const FriendsList = React.memo(({
             isLoadingElo={loadingFriends.has(friend.nickname)}
             isLive={liveInfo?.isLive || false}
             liveCompetition={liveInfo?.competition}
+            liveMatchDetails={liveInfo?.matchDetails}
             onPlayerClick={onPlayerClick}
           />
         );
