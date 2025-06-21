@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -84,11 +85,34 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'golden-glow': {
+					'0%, 100%': {
+						boxShadow: '0 0 20px rgba(251, 191, 36, 0.5), 0 0 40px rgba(251, 191, 36, 0.3)',
+						transform: 'scale(1)'
+					},
+					'50%': {
+						boxShadow: '0 0 30px rgba(251, 191, 36, 0.8), 0 0 60px rgba(251, 191, 36, 0.5)',
+						transform: 'scale(1.02)'
+					}
+				},
+				'crown-bounce': {
+					'0%, 100%': {
+						transform: 'translateY(0) rotate(0deg)'
+					},
+					'25%': {
+						transform: 'translateY(-2px) rotate(-2deg)'
+					},
+					'75%': {
+						transform: 'translateY(-1px) rotate(2deg)'
+					}
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'golden-glow': 'golden-glow 3s ease-in-out infinite',
+				'crown-bounce': 'crown-bounce 2s ease-in-out infinite'
 			}
 		}
 	},
