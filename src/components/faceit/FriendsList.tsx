@@ -29,20 +29,13 @@ export const FriendsList = React.memo(({
   liveMatches,
   onPlayerClick 
 }: FriendsListProps) => {
-  // Sort friends by ELO, cu jucătorii live la început
+  // Sortează prietenii doar după ELO, fără să îi mute pe cei live la început
   const sortedFriends = React.useMemo(() => {
     return [...friends].sort((a, b) => {
-      // Jucătorii live vin primii
-      const aIsLive = liveMatches[a.player_id]?.isLive || false;
-      const bIsLive = liveMatches[b.player_id]?.isLive || false;
-      
-      if (aIsLive && !bIsLive) return -1;
-      if (!aIsLive && bIsLive) return 1;
-      
-      // Apoi sortare după ELO
+      // Sortare doar după ELO pentru a păstra pozițiile consistente
       return (b.elo || 0) - (a.elo || 0);
     });
-  }, [friends, liveMatches]);
+  }, [friends]);
 
   return (
     <div className="space-y-2">

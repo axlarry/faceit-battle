@@ -45,10 +45,10 @@ export const FriendListItem = React.memo(({
   // Determină dacă jucătorul nu are date ELO încărcate
   const hasNoEloData = !friend.lcryptData || !friend.elo;
 
-  // Stiluri pentru jucătorii live
+  // Stiluri pentru jucătorii live cu animație mai lentă
   const liveStyles = isLive ? {
     border: 'border-green-500',
-    animation: 'animate-[pulse_3s_ease-in-out_infinite]', // Clipoceală mai lentă
+    animation: 'animate-[pulse_1.5s_cubic-bezier(0.4,0,0.6,1)_infinite]', // Aceeași viteză ca ELO today
     background: 'bg-green-500/10'
   } : {
     border: 'border-[#3a4048]',
@@ -71,7 +71,7 @@ export const FriendListItem = React.memo(({
             index={index}
           />
           
-          <div className="flex flex-col min-w-0">
+          <div className="flex flex-col min-w-0 flex-1">
             <div className="flex items-center gap-2 flex-wrap">
               <FriendInfo
                 nickname={friend.nickname}
@@ -81,10 +81,10 @@ export const FriendListItem = React.memo(({
               />
             </div>
             
-            {/* Live Match Details */}
+            {/* Live Match Details - centrat și fără Europe 5v5 Queue */}
             {isLive && liveMatchDetails && (
-              <div className="mt-2 space-y-1">
-                <div className="flex items-center gap-2 text-sm">
+              <div className="mt-2 space-y-1 flex flex-col items-center text-center">
+                <div className="flex items-center justify-center gap-2 text-sm">
                   <span className="bg-green-500 text-white px-2 py-1 rounded text-xs font-bold">
                     {liveMatchDetails.status || 'LIVE'}
                   </span>
@@ -96,7 +96,7 @@ export const FriendListItem = React.memo(({
                   </span>
                 </div>
                 
-                <div className="flex items-center gap-3 text-sm">
+                <div className="flex items-center justify-center gap-3 text-sm">
                   {liveMatchDetails.score && (
                     <span className="text-white font-bold">
                       Score: {liveMatchDetails.score}
@@ -116,12 +116,6 @@ export const FriendListItem = React.memo(({
                     </span>
                   )}
                 </div>
-                
-                {liveCompetition && (
-                  <div className="text-xs text-green-300 truncate">
-                    {liveCompetition}
-                  </div>
-                )}
               </div>
             )}
           </div>
