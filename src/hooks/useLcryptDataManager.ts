@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useCallback } from 'react';
 import { Player } from '@/types/Player';
 import { fetchLcryptData } from '@/services/lcryptLiveService';
@@ -137,17 +138,20 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
     setIsLoading(true);
     setLoadingProgress(0);
     setLastUpdateTime(now);
-    console.log(`🔄 Starting to load Lcrypt data, live status and cover images for ${friends.length} friends...`);
+    
+    // Sortează prietenii după ELO (cel mai mare ELO primul - rank #1)
+    const sortedFriends = [...friends].sort((a, b) => (b.elo || 0) - (a.elo || 0));
+    console.log(`🔄 Starting to load Lcrypt data, live status and cover images for ${sortedFriends.length} friends in rank order...`);
     
     // Inițializează lista cu toți prietenii cu lcryptData undefined pentru a declașa loading-ul individual
-    setFriendsWithLcrypt(friends.map(f => ({ ...f, lcryptData: undefined })));
+    setFriendsWithLcrypt(sortedFriends.map(f => ({ ...f, lcryptData: undefined })));
     
     // Procesare individuală pentru fiecare prieten cu delay mai mare între requesturi
     const batchSize = 2; // Redus pentru a nu supraîncărca serverul
     const updatedFriends: FriendWithLcrypt[] = [];
     
-    for (let i = 0; i < friends.length; i += batchSize) {
-      const batch = friends.slice(i, i + batchSize);
+    for (let i = 0; i < sortedFriends.length; i += batchSize) {
+      const batch = sortedFriends.slice(i, i + batchSize);
       
       try {
         // Procesează batch-ul în paralel
@@ -164,24 +168,24 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
         updatedFriends.push(...validResults);
         
         // Actualizează progresul
-        const progress = Math.min(100, ((i + batch.length) / friends.length) * 100);
+        const progress = Math.min(100, ((i + batch.length) / sortedFriends.length) * 100);
         setLoadingProgress(progress);
         
-        console.log(`📊 Progress: ${Math.round(progress)}% (${i + batch.length}/${friends.length})`);
+        console.log(`📊 Progress: ${Math.round(progress)}% (${i + batch.length}/${sortedFriends.length}) - Processing rank ${i + 1}-${Math.min(i + batchSize, sortedFriends.length)}`);
       } catch (error) {
         console.error('Error processing batch:', error);
         // Continuă cu următorul batch chiar dacă unul eșuează
       }
       
       // Pauză mai mare între batch-uri pentru a nu supraîncărca serverul Lcrypt
-      if (i + batchSize < friends.length) {
-        await new Promise(resolve => setTimeout(resolve, 800)); // Mărit la 800ms
+      if (i + batchSize < sortedFriends.length) {
+        await new Promise(resolve => setTimeout(resolve, 800)); // 800ms delay
       }
     }
 
     setIsLoading(false);
     setLoadingProgress(100);
-    console.log(`✅ Completed loading Lcrypt data, live status and cover images for all friends`);
+    console.log(`✅ Completed loading Lcrypt data, live status and cover images for all friends in rank order`);
   }, [friends, enabled, updateFriendLcryptData, lastUpdateTime]);
 
   // Auto-refresh la intervale mai mici
