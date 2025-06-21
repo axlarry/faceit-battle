@@ -15,6 +15,9 @@ export const FACEIT_CONFIG = {
     'CONFIGURING',
     'PREPARING',
     'MANUAL_RESULT',
-    'PAUSED'
+    'PAUSED',
+    'SUBSTITUTION',
+    'WARMUP',
+    'KNIFE_ROUND'
   ]
 } as const;

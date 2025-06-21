@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { Player } from '@/types/Player';
 import { useFaceitApi } from './useFaceitApi';
@@ -7,8 +8,9 @@ interface LiveMatchInfo {
   matchId?: string;
   competition?: string;
   status?: string;
+  state?: string;
   matchDetails?: any;
-  liveMatch?: any; // Full match object for live matches
+  liveMatch?: any;
 }
 
 export const useLiveMatchChecker = (friends: Player[]) => {
@@ -24,43 +26,41 @@ export const useLiveMatchChecker = (friends: Player[]) => {
     const now = Date.now();
     const timeSinceLastCheck = now - lastCheckTime;
     
-    // Don't check too frequently (minimum 90 seconds between checks for better detection)
-    if (timeSinceLastCheck < 90000) {
+    // Check less frequently to avoid rate limiting (minimum 2 minutes)
+    if (timeSinceLastCheck < 120000) {
       console.log(`⏱️ Skipping live check, only ${Math.round(timeSinceLastCheck / 1000)}s since last check`);
       return;
     }
     
     setIsChecking(true);
     setLastCheckTime(now);
-    console.log(`🔍 Starting live matches check for ${friends.length} friends...`);
+    console.log(`🔍 Starting enhanced live matches check for ${friends.length} friends...`);
     
     try {
-      // Process friends individually with delays
       const newLiveMatches: Record<string, LiveMatchInfo> = { ...liveMatches };
       let processedCount = 0;
       
       for (const friend of friends) {
         try {
-          console.log(`🎯 Checking live status for: ${friend.nickname} (${friend.player_id})`);
+          console.log(`🎯 Enhanced checking live status for: ${friend.nickname} (${friend.player_id})`);
           const liveInfo = await checkPlayerLiveMatch(friend.player_id);
           
           newLiveMatches[friend.player_id] = liveInfo;
           processedCount++;
           
           if (liveInfo.isLive) {
-            console.log(`🟢 LIVE PLAYER FOUND: ${friend.nickname} in ${liveInfo.competition} (${liveInfo.status}) - Match ID: ${liveInfo.matchId}`);
+            console.log(`🟢 LIVE PLAYER DETECTED: ${friend.nickname} in ${liveInfo.competition} (${liveInfo.status}${liveInfo.state ? ` / ${liveInfo.state}` : ''}) - Match ID: ${liveInfo.matchId}`);
           } else {
-            console.log(`⚪ ${friend.nickname} is not live`);
+            console.log(`⚪ ${friend.nickname} is not live (enhanced check)`);
           }
           
-          // Delay between individual checks (reduced to 800ms for faster detection)
+          // Longer delay between checks to respect rate limits
           if (processedCount < friends.length) {
-            await new Promise(resolve => setTimeout(resolve, 800));
+            await new Promise(resolve => setTimeout(resolve, 1500));
           }
           
         } catch (error) {
-          console.warn(`⚠️ Error checking ${friend.nickname}:`, error);
-          // Keep previous state on error
+          console.warn(`⚠️ Error in enhanced check for ${friend.nickname}:`, error);
           newLiveMatches[friend.player_id] = liveMatches[friend.player_id] || { isLive: false };
         }
       }
@@ -68,27 +68,26 @@ export const useLiveMatchChecker = (friends: Player[]) => {
       setLiveMatches(newLiveMatches);
       
       const liveCount = Object.values(newLiveMatches).filter(match => match.isLive).length;
-      console.log(`✅ Live matches check completed: ${liveCount}/${friends.length} friends are live`);
+      console.log(`✅ Enhanced live matches check completed: ${liveCount}/${friends.length} friends are live`);
       
     } catch (error) {
-      console.warn('⚠️ Live matches check failed:', error);
+      console.warn('⚠️ Enhanced live matches check failed:', error);
     } finally {
       setIsChecking(false);
     }
   };
 
-  // Check initially after a delay and then periodically
   useEffect(() => {
     if (friends.length > 0) {
-      // Initial check after 2 seconds
+      // Initial check after 3 seconds
       const initialTimeout = setTimeout(() => {
         checkAllFriendsLiveMatches();
-      }, 2000);
+      }, 3000);
       
-      // Periodic checks every 3 minutes (180000ms) for more frequent updates
+      // Check every 5 minutes for live matches
       intervalRef.current = setInterval(() => {
         checkAllFriendsLiveMatches();
-      }, 180000);
+      }, 300000);
 
       return () => {
         clearTimeout(initialTimeout);
@@ -99,7 +98,6 @@ export const useLiveMatchChecker = (friends: Player[]) => {
     }
   }, [friends]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (intervalRef.current) {
