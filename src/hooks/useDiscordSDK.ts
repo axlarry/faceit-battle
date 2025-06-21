@@ -8,8 +8,9 @@ interface DiscordAuth {
     id: string;
     username: string;
     discriminator: string;
-    avatar: string | null;
-    global_name: string | null;
+    avatar?: string;
+    global_name?: string;
+    public_flags?: number;
   } | null;
 }
 
@@ -35,7 +36,7 @@ export const useDiscordSDK = () => {
           return;
         }
 
-        const clientId = import.meta.env.VITE_DISCORD_CLIENT_ID || '';
+        const clientId = import.meta.env.VITE_DISCORD_CLIENT_ID;
         if (!clientId) {
           throw new Error('Discord Client ID not configured');
         }
@@ -48,7 +49,7 @@ export const useDiscordSDK = () => {
         // Authenticate with Discord if needed
         try {
           const authResponse = await sdk.commands.authenticate({
-            scopes: ['identify']
+            access_token: undefined
           });
           
           if (authResponse) {
@@ -59,8 +60,9 @@ export const useDiscordSDK = () => {
                 id: authResponse.user.id,
                 username: authResponse.user.username,
                 discriminator: authResponse.user.discriminator,
-                avatar: authResponse.user.avatar || null,
-                global_name: authResponse.user.global_name || null,
+                avatar: authResponse.user.avatar || undefined,
+                global_name: authResponse.user.global_name || undefined,
+                public_flags: authResponse.user.public_flags || undefined,
               } : null
             };
             
