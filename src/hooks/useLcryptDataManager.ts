@@ -41,6 +41,7 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [loadingFriends, setLoadingFriends] = useState<Set<string>>(new Set());
   const [liveMatches, setLiveMatches] = useState<Record<string, LiveMatchInfo>>({});
+  const [lastUpdateTime, setLastUpdateTime] = useState<number>(0);
 
   const updateFriendLcryptData = useCallback(async (friend: Player) => {
     if (!enabled) return friend;
@@ -123,15 +124,23 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
       return;
     }
 
+    // Verifică dacă au trecut cel puțin 3 minute de la ultimul update pentru a reduce stresul pe API
+    const now = Date.now();
+    if (lastUpdateTime > 0 && (now - lastUpdateTime) < 180000) { // 3 minute = 180000ms
+      console.log(`⏱️ Skipping Lcrypt update, only ${Math.round((now - lastUpdateTime) / 1000)}s since last update. Waiting for 3 minutes between updates.`);
+      return;
+    }
+
     setIsLoading(true);
     setLoadingProgress(0);
+    setLastUpdateTime(now);
     console.log(`🔄 Starting to load Lcrypt data and live status for ${friends.length} friends...`);
     
     // Inițializează lista cu toți prietenii cu lcryptData undefined pentru a declașa loading-ul individual
     setFriendsWithLcrypt(friends.map(f => ({ ...f, lcryptData: undefined })));
     
-    // Procesare individuală pentru fiecare prieten
-    const batchSize = 3; // Redus pentru a nu supraîncărca serverul
+    // Procesare individuală pentru fiecare prieten cu delay mai mare între requesturi
+    const batchSize = 2; // Redus pentru a nu supraîncărca serverul
     const updatedFriends: FriendWithLcrypt[] = [];
     
     for (let i = 0; i < friends.length; i += batchSize) {
@@ -161,20 +170,32 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
         // Continuă cu următorul batch chiar dacă unul eșuează
       }
       
-      // Pauză între batch-uri pentru a nu supraîncărca serverul
+      // Pauză mai mare între batch-uri pentru a nu supraîncărca serverul Lcrypt
       if (i + batchSize < friends.length) {
-        await new Promise(resolve => setTimeout(resolve, 100));
+        await new Promise(resolve => setTimeout(resolve, 500)); // Mărit la 500ms
       }
     }
 
     setIsLoading(false);
     setLoadingProgress(100);
     console.log(`✅ Completed loading Lcrypt data and live status for all friends`);
-  }, [friends, enabled, updateFriendLcryptData]);
+  }, [friends, enabled, updateFriendLcryptData, lastUpdateTime]);
 
+  // Auto-refresh la intervale mai mari pentru a nu stresa API-ul
   useEffect(() => {
+    if (!enabled || friends.length === 0) return;
+
+    // Primul load imediat
     loadLcryptDataForAllFriends();
-  }, [loadLcryptDataForAllFriends]);
+
+    // Auto-refresh la fiecare 10 minute (în loc de 5) pentru a reduce stresul pe API
+    const interval = setInterval(() => {
+      console.log('🔄 Auto-refreshing Lcrypt data (every 10 minutes)...');
+      loadLcryptDataForAllFriends();
+    }, 600000); // 10 minute = 600000ms
+
+    return () => clearInterval(interval);
+  }, [friends, enabled]);
 
   return {
     friendsWithLcrypt,
