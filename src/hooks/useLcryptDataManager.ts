@@ -62,8 +62,8 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
         lcryptData,
         elo: lcryptData?.elo || friend.elo || 0,
         isLive: liveInfo.isLive,
-        liveMatchDetails: liveInfo.matchDetails,
-        liveCompetition: liveInfo.competition
+        liveMatchDetails: liveInfo.isLive && 'matchDetails' in liveInfo ? liveInfo.matchDetails : undefined,
+        liveCompetition: liveInfo.isLive && 'competition' in liveInfo ? liveInfo.competition : undefined
       };
 
       // Actualizează și statusul LIVE în state-ul separat
