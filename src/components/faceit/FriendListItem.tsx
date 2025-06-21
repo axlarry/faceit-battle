@@ -35,7 +35,6 @@ export const FriendListItem = React.memo(({
   onPlayerClick 
 }: FriendListItemProps) => {
   const { steamId64 } = useSteamIdConverter(friend.player_id);
-  const isFirstPlace = index === 0;
 
   const handleClick = () => {
     onPlayerClick(friend);
@@ -45,19 +44,8 @@ export const FriendListItem = React.memo(({
     e.stopPropagation();
   };
 
-  // Styles pentru primul loc - mai subtile
+  // Styles pentru toți playerii - fără diferențiere specială pentru primul loc
   const getPlayerStyles = () => {
-    if (isFirstPlace) {
-      return {
-        border: 'border-yellow-400/50 border-2',
-        background: 'from-gray-800 via-gray-900 to-gray-800',
-        glow: 'shadow-lg shadow-yellow-500/20',
-        animation: '',
-        ring: 'ring-2 ring-yellow-400/20',
-        transform: ''
-      };
-    }
-    
     if (isLive) {
       return {
         border: 'border-green-400/60',
