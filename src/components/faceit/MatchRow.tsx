@@ -1,8 +1,9 @@
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Player, Match } from "@/types/Player";
-import { Trophy, Calendar, MapPin, Clock, Target, TrendingUp, TrendingDown, Minus, Zap, Crosshair, Radio } from "lucide-react";
+import { Trophy, Calendar, MapPin, Clock, Target, TrendingUp, TrendingDown, Minus, Zap, Crosshair, Radio, Download } from "lucide-react";
 import { 
   formatDate, 
   formatMatchDuration, 
@@ -36,6 +37,16 @@ export const MatchRow = ({ match, player, matchesStats, onMatchClick, matchIndex
   // Parse lcrypt report and find ELO change for this match
   const lcryptMatches = lcryptData?.report ? parseLcryptReport(lcryptData.report) : [];
   const lcryptEloChange = findMatchEloChange(match, lcryptMatches, matchIndex);
+
+  const handleDownloadDemo = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent row click
+    
+    // Create the demo download URL using match ID
+    const demoUrl = `https://www.faceit.com/en/cs2/room/${match.match_id}`;
+    
+    // Open in new tab
+    window.open(demoUrl, '_blank');
+  };
 
   // Handle live match differently
   if (match.isLiveMatch) {
@@ -111,6 +122,11 @@ export const MatchRow = ({ match, player, matchesStats, onMatchClick, matchIndex
               Acum
             </span>
           </div>
+        </TableCell>
+
+        {/* Demo Download - Not available for live matches */}
+        <TableCell>
+          <span className="text-gray-400 text-sm">N/A</span>
         </TableCell>
 
         {/* Duration */}
@@ -253,6 +269,19 @@ export const MatchRow = ({ match, player, matchesStats, onMatchClick, matchIndex
             {formatDate(match.started_at)}
           </span>
         </div>
+      </TableCell>
+
+      {/* Demo Download Button */}
+      <TableCell>
+        <Button
+          onClick={handleDownloadDemo}
+          size="sm"
+          variant="outline"
+          className="bg-orange-500/10 border-orange-500/30 text-orange-400 hover:bg-orange-500/20 hover:text-orange-300 transition-colors"
+        >
+          <Download className="w-3 h-3 mr-1" />
+          Demo
+        </Button>
       </TableCell>
 
       {/* Duration */}

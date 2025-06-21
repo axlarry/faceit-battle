@@ -64,6 +64,7 @@ export const MatchesTable = ({ player, matches, matchesStats, loadingMatches }: 
                 <TableHead className="text-gray-300 font-semibold">ADR</TableHead>
                 <TableHead className="text-gray-300 font-semibold">ELO</TableHead>
                 <TableHead className="text-gray-300 font-semibold">Data</TableHead>
+                <TableHead className="text-gray-300 font-semibold">Demo</TableHead>
                 <TableHead className="text-gray-300 font-semibold">Durată</TableHead>
               </TableRow>
             </TableHeader>
