@@ -1,24 +1,21 @@
 
+import { supabase } from '@/integrations/supabase/client';
+
 export class LcryptLiveService {
   async checkPlayerLiveFromLcrypt(nickname: string) {
     try {
       console.log(`🔍 Checking Lcrypt live status for: ${nickname}`);
       
-      // Use the same Supabase edge function that's used for ELO fetching
-      const response = await fetch('/api/functions/v1/get-lcrypt-elo', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ nickname })
+      // Use Supabase function invoke instead of direct fetch
+      const { data, error } = await supabase.functions.invoke('get-lcrypt-elo', {
+        body: { nickname }
       });
 
-      if (!response.ok) {
-        console.warn(`Lcrypt API error for ${nickname}:`, response.status);
+      if (error) {
+        console.warn(`Lcrypt API error for ${nickname}:`, error);
         return { isLive: false };
       }
 
-      const data = await response.json();
       console.log(`📊 Lcrypt data for ${nickname}:`, data);
 
       // Check if player is currently playing using current.present and current.status
