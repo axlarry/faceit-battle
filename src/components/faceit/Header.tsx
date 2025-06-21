@@ -26,7 +26,7 @@ export const Header = () => {
                 <img 
                   src="/favicon.ico" 
                   alt="Site Icon" 
-                  className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 lg:w-8 lg:h-8"
+                  className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 lg:w-12 lg:h-12"
                   onError={handleFaviconError}
                   onLoad={() => console.log('✅ Favicon loaded successfully from /favicon.ico')}
                 />
