@@ -2,7 +2,7 @@
 import React from 'react';
 import { Player } from "@/types/Player";
 import { useSteamIdConverter } from './SteamIdConverter';
-import { LoaderCircle, Crown } from 'lucide-react';
+import { LoaderCircle } from 'lucide-react';
 import { PlayerAvatar } from './PlayerAvatar';
 import { PlayerInfo } from './PlayerInfo';
 import { PlayerStatsCompact } from './PlayerStatsCompact';
@@ -45,16 +45,16 @@ export const FriendListItem = React.memo(({
     e.stopPropagation();
   };
 
-  // Enhanced styles for #1 player
+  // Styles pentru primul loc - mai subtile
   const getPlayerStyles = () => {
     if (isFirstPlace) {
       return {
-        border: 'border-yellow-400/80 border-4',
-        background: 'from-yellow-500/30 via-amber-600/20 to-yellow-500/30',
-        glow: 'shadow-2xl shadow-yellow-500/50',
-        animation: 'animate-pulse',
-        ring: 'ring-4 ring-yellow-400/30',
-        transform: 'scale-105'
+        border: 'border-yellow-400/50 border-2',
+        background: 'from-gray-800 via-gray-900 to-gray-800',
+        glow: 'shadow-lg shadow-yellow-500/20',
+        animation: '',
+        ring: 'ring-2 ring-yellow-400/20',
+        transform: ''
       };
     }
     
@@ -85,24 +85,10 @@ export const FriendListItem = React.memo(({
   return (
     <div
       onClick={handleClick}
-      className={`relative bg-gradient-to-br ${playerStyles.background} rounded-xl p-3 border-2 ${playerStyles.border} ${playerStyles.ring} hover:border-orange-500/50 transition-all duration-500 ${playerStyles.glow} cursor-pointer ${playerStyles.transform} hover:scale-[1.02] ${playerStyles.animation} ${
+      className={`relative bg-gradient-to-br ${playerStyles.background} rounded-xl p-3 border-2 ${playerStyles.border} ${playerStyles.ring} hover:border-orange-500/50 transition-all duration-500 ${playerStyles.glow} cursor-pointer ${playerStyles.transform} hover:scale-[1.02] ${
         isFlashing ? 'animate-pulse bg-gradient-to-br from-orange-500/20 via-orange-600/10 to-orange-500/20 border-orange-500' : ''
-      } ${isFirstPlace ? 'relative overflow-hidden' : ''}`}
+      }`}
     >
-      {/* Special crown effect for #1 player */}
-      {isFirstPlace && (
-        <>
-          <div className="absolute -top-2 -right-2 z-10">
-            <div className="relative">
-              <Crown className="w-8 h-8 text-yellow-400 animate-bounce" />
-              <div className="absolute inset-0 w-8 h-8 bg-yellow-400/20 rounded-full animate-ping"></div>
-            </div>
-          </div>
-          <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/10 via-transparent to-yellow-500/10 animate-pulse rounded-xl"></div>
-          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-400 animate-pulse rounded-t-xl"></div>
-        </>
-      )}
-
       {/* Loading Overlay pentru întregul player până la finalizarea datelor */}
       {isPlayerDataLoading && (
         <div className="absolute inset-0 bg-gray-900/90 rounded-xl flex items-center justify-center z-20 backdrop-blur-sm">
@@ -130,7 +116,7 @@ export const FriendListItem = React.memo(({
           isLive={isLive}
         />
 
-        {/* Player Info - Enhanced for #1 player */}
+        {/* Player Info */}
         <PlayerInfo
           nickname={friend.nickname}
           level={friend.level}
@@ -155,7 +141,7 @@ export const FriendListItem = React.memo(({
           kdRatio={friend.kdRatio || 0}
         />
 
-        {/* Actions - Enhanced for #1 player */}
+        {/* Actions */}
         <PlayerActionsCompact
           nickname={friend.nickname}
           steamId64={steamId64}

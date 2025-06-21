@@ -15,14 +15,17 @@ export const PlayerAvatar = ({ avatar, nickname, index, isLive }: PlayerAvatarPr
   return (
     <div className="flex items-center gap-2 flex-shrink-0">
       <div className={`text-lg font-bold min-w-[2rem] text-center relative ${
-        isFirstPlace ? 'text-yellow-400 animate-pulse text-xl' : 'text-[#ff6500]'
+        isFirstPlace ? 'text-yellow-400' : 'text-[#ff6500]'
       }`}>
-        {isFirstPlace && (
-          <div className="absolute -top-1 -left-1 w-2 h-2 bg-yellow-400 rounded-full animate-ping"></div>
-        )}
-        #{index + 1}
-        {isFirstPlace && (
-          <Crown className="inline-block w-4 h-4 ml-1 text-yellow-400 animate-bounce" />
+        {isFirstPlace ? (
+          <div className="flex items-center justify-center">
+            <div className="relative">
+              <Crown className="w-6 h-6 text-yellow-400" />
+              <span className="absolute inset-0 flex items-center justify-center text-xs font-bold text-black">1</span>
+            </div>
+          </div>
+        ) : (
+          <>#{index + 1}</>
         )}
       </div>
       <div className="relative">
@@ -31,7 +34,7 @@ export const PlayerAvatar = ({ avatar, nickname, index, isLive }: PlayerAvatarPr
           alt={nickname}
           className={`w-12 h-12 rounded-lg border-2 shadow-lg flex-shrink-0 transition-all duration-300 ${
             isFirstPlace 
-              ? 'border-yellow-400 ring-4 ring-yellow-500/50 shadow-yellow-500/50 animate-pulse' 
+              ? 'border-yellow-400 ring-2 ring-yellow-500/30' 
               : isLive 
                 ? 'border-green-400 ring-2 ring-green-500/50' 
                 : 'border-[#ff6500]'
@@ -43,8 +46,8 @@ export const PlayerAvatar = ({ avatar, nickname, index, isLive }: PlayerAvatarPr
           </div>
         )}
         {isFirstPlace && (
-          <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full border-2 border-white flex items-center justify-center">
-            <span className="text-xs text-black font-bold">1</span>
+          <div className="absolute -top-2 -right-2 w-5 h-5 flex items-center justify-center">
+            <Crown className="w-5 h-5 text-yellow-400" />
           </div>
         )}
       </div>
