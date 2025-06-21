@@ -13,6 +13,8 @@ export interface Player {
   isLive?: boolean;
   liveMatchId?: string;
   liveCompetition?: string;
+  liveStatus?: string;
+  liveMatchDetails?: any;
 }
 
 export interface Match {

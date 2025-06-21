@@ -11,6 +11,10 @@ export const FACEIT_CONFIG = {
     'LIVE',
     'VOTING',
     'CAPTAIN_PICK',
-    'READY'
+    'READY',
+    'CONFIGURING',
+    'PREPARING',
+    'MANUAL_RESULT',
+    'PAUSED'
   ]
 } as const;
