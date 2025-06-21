@@ -20,7 +20,19 @@ interface LiveMatchInfo {
   isLive: boolean;
   matchId?: string;
   competition?: string;
-  matchDetails?: any;
+  status?: string;
+  state?: string;
+  matchDetails?: {
+    map?: any;
+    server?: any;
+    score?: any;
+    duration?: any;
+    round?: any;
+    elo_change?: any;
+    result?: any;
+    chance?: any;
+  };
+  liveMatch?: any;
 }
 
 export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataManagerProps) => {
