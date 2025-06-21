@@ -48,7 +48,7 @@ export const useDiscordSDK = () => {
         // Authenticate with Discord if needed
         try {
           const authResponse = await sdk.commands.authenticate({
-            access_token: true,
+            scopes: ['identify']
           });
           
           if (authResponse) {
