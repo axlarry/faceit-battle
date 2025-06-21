@@ -36,6 +36,13 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
 
       console.log(`✅ Successfully updated ${friend.nickname} with ELO: ${updatedFriend.elo}`);
       
+      // Actualizează prietenul în lista principală imediat după finalizare
+      setFriendsWithLcrypt(prevFriends => 
+        prevFriends.map(prevFriend => 
+          prevFriend.player_id === updatedFriend.player_id ? updatedFriend : prevFriend
+        )
+      );
+      
       // Elimină prietenul din setul de încărcare
       setLoadingFriends(prev => {
         const newSet = new Set(prev);
@@ -47,6 +54,14 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
     } catch (error) {
       console.error(`❌ Failed to fetch Lcrypt data for ${friend.nickname}:`, error);
       
+      // Actualizează cu date null în caz de eroare
+      const failedFriend: FriendWithLcrypt = { ...friend, lcryptData: null };
+      setFriendsWithLcrypt(prevFriends => 
+        prevFriends.map(prevFriend => 
+          prevFriend.player_id === failedFriend.player_id ? failedFriend : prevFriend
+        )
+      );
+      
       // Elimină prietenul din setul de încărcare chiar și în caz de eroare
       setLoadingFriends(prev => {
         const newSet = new Set(prev);
@@ -54,7 +69,7 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
         return newSet;
       });
 
-      return { ...friend, lcryptData: null } as FriendWithLcrypt;
+      return failedFriend;
     }
   }, [enabled]);
 
@@ -68,12 +83,12 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
     setLoadingProgress(0);
     console.log(`🔄 Starting to load Lcrypt data for ${friends.length} friends...`);
     
-    // Optimizat pentru încărcare mai rapidă - procesare în batches mai mari cu delay mai mic
-    const batchSize = 8; // Crescut de la 5 la 8
-    const updatedFriends: FriendWithLcrypt[] = [];
+    // Inițializează lista cu toți prietenii cu lcryptData undefined pentru a declașa loading-ul individual
+    setFriendsWithLcrypt(friends.map(f => ({ ...f, lcryptData: undefined })));
     
-    // Inițializează lista cu toți prietenii pentru feedback vizual rapid
-    setFriendsWithLcrypt(friends.map(f => ({ ...f, lcryptData: null })));
+    // Procesare individuală pentru fiecare prieten
+    const batchSize = 3; // Redus pentru a nu supraîncărca serverul
+    const updatedFriends: FriendWithLcrypt[] = [];
     
     for (let i = 0; i < friends.length; i += batchSize) {
       const batch = friends.slice(i, i + batchSize);
@@ -96,23 +111,15 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
         const progress = Math.min(100, ((i + batch.length) / friends.length) * 100);
         setLoadingProgress(progress);
         
-        // Actualizează starea incrementală pentru feedback vizual rapid
-        setFriendsWithLcrypt(prevFriends => 
-          prevFriends.map(prevFriend => {
-            const updated = validResults.find(r => r.player_id === prevFriend.player_id);
-            return updated || prevFriend;
-          })
-        );
-        
         console.log(`📊 Progress: ${Math.round(progress)}% (${i + batch.length}/${friends.length})`);
       } catch (error) {
         console.error('Error processing batch:', error);
         // Continuă cu următorul batch chiar dacă unul eșuează
       }
       
-      // Pauză foarte scurtă între batch-uri pentru a nu supraîncărca serverul
+      // Pauză între batch-uri pentru a nu supraîncărca serverul
       if (i + batchSize < friends.length) {
-        await new Promise(resolve => setTimeout(resolve, 50)); // Redus de la 100ms la 50ms
+        await new Promise(resolve => setTimeout(resolve, 100));
       }
     }
 

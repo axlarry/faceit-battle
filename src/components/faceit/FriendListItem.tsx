@@ -55,6 +55,9 @@ export const FriendListItem = React.memo(({
     glow: 'shadow-gray-900/50'
   };
 
+  // Check if player data is still loading (no lcryptData means still loading)
+  const isPlayerDataLoading = friend.lcryptData === undefined || isLoadingElo;
+
   return (
     <div
       onClick={handleClick}
@@ -62,12 +65,19 @@ export const FriendListItem = React.memo(({
         isFlashing ? 'animate-pulse bg-gradient-to-br from-orange-500/20 via-orange-600/10 to-orange-500/20 border-orange-500' : ''
       }`}
     >
-      {/* Loading Overlay pentru ELO */}
-      {isLoadingElo && (
-        <div className="absolute inset-0 bg-gray-900/80 rounded-xl flex items-center justify-center z-20">
-          <div className="flex flex-col items-center gap-2">
-            <LoaderCircle className="w-8 h-8 text-orange-400 animate-spin" />
-            <span className="text-xs text-orange-400 font-medium">Se încarcă ELO...</span>
+      {/* Loading Overlay pentru întregul player până la finalizarea datelor */}
+      {isPlayerDataLoading && (
+        <div className="absolute inset-0 bg-gray-900/90 rounded-xl flex items-center justify-center z-20 backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-3">
+            <div className="relative">
+              <div className="w-12 h-12 rounded-full border-4 border-gray-600/30"></div>
+              <div className="absolute top-0 left-0 w-12 h-12 rounded-full border-4 border-orange-500 border-t-transparent animate-spin"></div>
+              <LoaderCircle className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-orange-400 animate-spin" size={16} />
+            </div>
+            <div className="text-center">
+              <span className="text-xs text-orange-400 font-medium block">Se încarcă...</span>
+              <span className="text-xs text-gray-400">{friend.nickname}</span>
+            </div>
           </div>
         </div>
       )}
