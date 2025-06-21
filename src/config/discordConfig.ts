@@ -1,6 +1,6 @@
 
 export const DISCORD_CONFIG = {
-  CLIENT_ID: 'your_discord_client_id_here', // Înlocuiește cu ID-ul real
+  CLIENT_ID: '1386122028167331902', // Înlocuiește cu ID-ul real
   REDIRECT_URI: import.meta.env.VITE_DISCORD_REDIRECT_URI || '',
   SCOPES: ['identify', 'guilds'],
   
