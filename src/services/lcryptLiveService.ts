@@ -4,7 +4,7 @@ export class LcryptLiveService {
     try {
       console.log(`🔍 Checking Lcrypt live status for: ${nickname}`);
       
-      // Make request to our Supabase edge function that calls Lcrypt
+      // Use the same Supabase edge function that's used for ELO fetching
       const response = await fetch('/api/functions/v1/get-lcrypt-elo', {
         method: 'POST',
         headers: {
@@ -21,8 +21,8 @@ export class LcryptLiveService {
       const data = await response.json();
       console.log(`📊 Lcrypt data for ${nickname}:`, data);
 
-      // Check if player is currently playing according to Lcrypt
-      if (data.current && data.current.present && data.current.status === 'LIVE') {
+      // Check if player is currently playing using current.present and current.status
+      if (data.current && data.current.present === true && data.current.status === 'LIVE') {
         console.log(`✅ ${nickname} is LIVE according to Lcrypt`);
         
         // Create match ID from current timestamp since Lcrypt doesn't provide one
@@ -56,13 +56,15 @@ export class LcryptLiveService {
                 pick: [data.current.map]
               }
             },
-            lcryptData: data.current
+            lcryptData: data.current,
+            fullLcryptData: data // Store complete Lcrypt response
           }
         };
 
         return liveMatchInfo;
       }
 
+      console.log(`⚪ ${nickname} is not live - current.present: ${data.current?.present}, current.status: ${data.current?.status}`);
       return { isLive: false };
     } catch (error) {
       console.warn(`⚠️ Error checking Lcrypt live status for ${nickname}:`, error);
