@@ -1,4 +1,3 @@
-
 import {
   Dialog,
   DialogContent,
@@ -15,7 +14,6 @@ import { PlayerStatsCards } from "./PlayerStatsCards";
 import { MatchesTable } from "./MatchesTable";
 import { Button } from "@/components/ui/button";
 import { UserPlus, UserMinus } from "lucide-react";
-import "../../styles/modalBackgrounds.css";
 
 interface PlayerModalProps {
   player: Player | null;

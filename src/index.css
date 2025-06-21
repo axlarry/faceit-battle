@@ -1,9 +1,8 @@
+@import './styles/modalBackgrounds.css';
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-@import './styles/modalBackgrounds.css';
 
 @layer base {
   :root {
