@@ -13,12 +13,12 @@ export const LivePlayersIndicator = React.memo(({ livePlayersCount }: LivePlayer
   
   return (
     <div 
-      className="text-green-500 font-bold text-sm flex items-center gap-1" 
+      className="text-green-500 font-bold text-base flex items-center gap-1" 
       style={{
         animation: 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite'
       }}
     >
-      <Users size={14} className="text-green-500" />
+      <Users size={16} className="text-green-500" />
       <span>{livePlayersCount} LIVE</span>
     </div>
   );
