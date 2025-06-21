@@ -1,6 +1,6 @@
 
 export const DISCORD_CONFIG = {
-  CLIENT_ID: import.meta.env.VITE_DISCORD_CLIENT_ID || '',
+  CLIENT_ID: 'your_discord_client_id_here', // Înlocuiește cu ID-ul real
   REDIRECT_URI: import.meta.env.VITE_DISCORD_REDIRECT_URI || '',
   SCOPES: ['identify', 'guilds'],
   
@@ -23,11 +23,11 @@ export const validateDiscordConfig = () => {
   const missingVars = [];
   
   if (!DISCORD_CONFIG.CLIENT_ID) {
-    missingVars.push('VITE_DISCORD_CLIENT_ID');
+    missingVars.push('DISCORD_CLIENT_ID');
   }
   
   if (missingVars.length > 0) {
-    console.warn('⚠️ Missing Discord environment variables:', missingVars);
+    console.warn('⚠️ Missing Discord configuration:', missingVars);
     return false;
   }
   

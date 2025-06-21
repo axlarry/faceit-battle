@@ -36,9 +36,12 @@ export const useDiscordSDK = () => {
           return;
         }
 
-        const clientId = import.meta.env.VITE_DISCORD_CLIENT_ID;
-        if (!clientId) {
-          throw new Error('Discord Client ID not configured');
+        // Folosește configurația din discordConfig
+        const { DISCORD_CONFIG } = await import('@/config/discordConfig');
+        const clientId = DISCORD_CONFIG.CLIENT_ID;
+        
+        if (!clientId || clientId === 'your_discord_client_id_here') {
+          throw new Error('Discord Client ID not configured properly');
         }
 
         const sdk = new DiscordSDK(clientId);
