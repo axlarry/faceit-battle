@@ -23,7 +23,7 @@ export const useFaceitApi = () => {
     
     return apiService.dedupedRequest(requestKey, async () => {
       return apiService.retryRequest(async () => {
-        console.log(`Making API call to: ${API_BASE}${endpoint} with ${useLeaderboardApi ? 'leaderboard' : 'friends'} API`);
+        console.log(`Making API call to: ${API_BASE}${endpoint}`);
         
         try {
           const response = await fetch(`${API_BASE}${endpoint}`, {
@@ -35,49 +35,50 @@ export const useFaceitApi = () => {
 
           if (!response.ok) {
             if (response.status === 429) {
-              console.log('Rate limited, waiting before retry...');
               throw new Error('Rate limited');
             }
             
             if (response.status >= 500) {
-              console.log('Server error, will retry...');
               throw new Error('Server error');
             }
 
-            const errorData = await response.json().catch(() => ({}));
-            console.error('API Error:', errorData);
-            throw new Error(`API Error: ${errorData.error || response.statusText}`);
+            // Pentru alte erori, nu mai aruncăm excepții agresive
+            console.warn(`API Warning ${response.status}:`, response.statusText);
+            return null;
           }
 
           const data = await response.json();
-          console.log('API Response successful');
           return data;
         } catch (error) {
-          console.error('Network or fetch error:', error);
+          // Tratăm erorile de rețea mai blând
+          if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+            console.warn('Network connectivity issue, will retry later');
+          }
           throw error;
         }
-      }, { maxRetries: 2, baseDelay: 2000 });
+      }, { maxRetries: 1, baseDelay: 3000 });
     });
   };
 
   const checkPlayerLiveMatch = async (playerId: string) => {
     try {
-      console.log(`Checking live match for player: ${playerId}`);
-      
       // Încearcă să obțină informații despre jucător
       const data = await makeApiCall(`/players/${playerId}`, false);
+      
+      // Dacă nu avem date, returnăm offline
+      if (!data) {
+        return { isLive: false };
+      }
       
       // Verificăm dacă jucătorul este activ în CS2
       if (data && data.games && data.games.cs2) {
         // Pentru moment, returnăm doar false deoarece API-ul nu oferă informații directe despre meciurile live
-        // În viitor, această logică poate fi extinsă când API-ul va fi mai stabil
         return { isLive: false };
       }
       
       return { isLive: false };
     } catch (error) {
-      // Nu mai logăm eroarea pentru fiecare jucător individual pentru a reduce spam-ul în consolă
-      console.warn(`Could not check live match for player ${playerId} - API may be temporarily unavailable`);
+      // Nu mai logăm fiecare eroare individual
       return { isLive: false };
     }
   };
