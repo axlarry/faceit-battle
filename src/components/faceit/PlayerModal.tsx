@@ -23,6 +23,7 @@ interface PlayerModalProps {
   onAddFriend: (player: Player) => void;
   onRemoveFriend: (playerId: string) => void;
   isFriend: boolean;
+  liveMatchInfo?: any; // Pass live match info from parent
 }
 
 export const PlayerModal = ({ 
@@ -31,14 +32,15 @@ export const PlayerModal = ({
   onClose, 
   onAddFriend, 
   onRemoveFriend, 
-  isFriend 
+  isFriend,
+  liveMatchInfo
 }: PlayerModalProps) => {
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [pendingAction, setPendingAction] = useState<'add' | 'remove' | null>(null);
   const [matches, setMatches] = useState<Match[]>([]);
   const [loadingMatches, setLoadingMatches] = useState(false);
   const [matchesStats, setMatchesStats] = useState<{[key: string]: any}>({});
-  const { getPlayerMatches, getMatchDetails, getMatchStats } = useFaceitApi();
+  const { getPlayerMatches, getMatchDetails, getMatchStats, checkPlayerLiveMatch } = useFaceitApi();
 
   // Load matches when player changes and modal is open
   useEffect(() => {
@@ -55,13 +57,41 @@ export const PlayerModal = ({
     try {
       console.log('Loading matches for player:', player.player_id);
       
+      // First check if player has a live match
+      const liveInfo = await checkPlayerLiveMatch(player.player_id);
+      let allMatches = [];
+      
+      // If player is live, add the live match at the beginning
+      if (liveInfo.isLive && liveInfo.liveMatch) {
+        console.log('Adding live match to matches list:', liveInfo.liveMatch);
+        allMatches.push({
+          ...liveInfo.liveMatch,
+          isLiveMatch: true, // Mark as live match
+          liveMatchDetails: liveInfo.matchDetails
+        });
+      }
+      
+      // Load regular match history
       const matchesData = await getPlayerMatches(player.player_id, 10);
       console.log('Matches data received:', matchesData);
-      setMatches(matchesData);
+      
+      // Filter out the live match if it's already in history to avoid duplicates
+      const filteredMatches = liveInfo.isLive ? 
+        matchesData.filter((match: Match) => match.match_id !== liveInfo.matchId) : 
+        matchesData;
+      
+      // Combine live match with history
+      allMatches = [...allMatches, ...filteredMatches];
+      setMatches(allMatches);
 
-      // Load detailed stats for each match
-      if (matchesData.length > 0) {
-        const statsPromises = matchesData.map(async (match: Match) => {
+      // Load detailed stats for each match (skip live match for stats)
+      if (allMatches.length > 0) {
+        const statsPromises = allMatches.map(async (match: Match, index: number) => {
+          // Skip loading stats for live match as it doesn't have complete stats yet
+          if (match.isLiveMatch) {
+            return { [match.match_id]: { isLive: true, ...match.liveMatchDetails } };
+          }
+          
           try {
             console.log('Loading stats for match:', match.match_id);
             

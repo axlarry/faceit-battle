@@ -7,8 +7,8 @@ export class PlayerService {
     try {
       console.log(`🔍 Checking live match for player: ${playerId}`);
       
-      // First check player's recent match history
-      const historyData = await faceitApiClient.makeApiCall(`/players/${playerId}/history?game=cs2&limit=5`, false);
+      // First check player's recent match history with more matches
+      const historyData = await faceitApiClient.makeApiCall(`/players/${playerId}/history?game=cs2&limit=20`, false);
       
       if (!historyData || !historyData.items || historyData.items.length === 0) {
         console.log(`❌ No match history found for player: ${playerId}`);
@@ -16,17 +16,16 @@ export class PlayerService {
       }
 
       console.log(`📊 Found ${historyData.items.length} recent matches for ${playerId}`);
-      console.log('🔍 Full history response:', JSON.stringify(historyData, null, 2));
       
-      // Check each match for live status
+      // Check each match for live status - prioritize most recent ones
       for (const match of historyData.items) {
         console.log(`🎮 Checking match ${match.match_id} with status: ${match.status}`);
         
-        // Enhanced live status detection based on swagger.json
+        // Enhanced live status detection
         if (FACEIT_CONFIG.LIVE_MATCH_STATUSES.includes(match.status.toUpperCase())) {
           console.log(`✅ Player ${playerId} is LIVE in match ${match.match_id} (status: ${match.status})`);
           
-          // Get additional match details to verify it's truly live
+          // Get detailed match information for live match
           const matchDetails = await this.getMatchDetailsForLiveCheck(match.match_id);
           
           return {
@@ -34,15 +33,10 @@ export class PlayerService {
             matchId: match.match_id,
             competition: match.competition_name || matchDetails?.competition_name || 'Unknown Competition',
             status: match.status,
-            matchDetails: matchDetails
+            matchDetails: matchDetails,
+            liveMatch: match // Include the full match object
           };
         }
-      }
-      
-      // Additional check: look for ongoing matches via player's current games
-      const currentMatch = await this.checkPlayerCurrentMatch(playerId);
-      if (currentMatch.isLive) {
-        return currentMatch;
       }
       
       console.log(`❌ Player ${playerId} is not in any live matches`);
@@ -63,7 +57,8 @@ export class PlayerService {
         console.log(`📋 Match details for ${matchId}:`, {
           status: matchData.status,
           state: matchData.state,
-          competition: matchData.competition_name
+          competition: matchData.competition_name,
+          map: matchData.voting?.map?.pick?.[0] || 'Unknown'
         });
         
         // Verify the match is actually live/ongoing

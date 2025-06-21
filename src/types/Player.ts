@@ -1,3 +1,4 @@
+
 export interface Player {
   player_id: string;
   nickname: string;
@@ -63,4 +64,7 @@ export interface Match {
     score_team2: number;
     rounds_played: number;
   };
+  // New properties for live matches
+  isLiveMatch?: boolean;
+  liveMatchDetails?: any;
 }

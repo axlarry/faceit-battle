@@ -2,7 +2,7 @@
 import { Badge } from "@/components/ui/badge";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Player, Match } from "@/types/Player";
-import { Trophy, Calendar, MapPin, Clock, Target, TrendingUp, TrendingDown, Minus, Zap, Crosshair } from "lucide-react";
+import { Trophy, Calendar, MapPin, Clock, Target, TrendingUp, TrendingDown, Minus, Zap, Crosshair, Radio } from "lucide-react";
 import { 
   formatDate, 
   formatMatchDuration, 
@@ -17,7 +17,7 @@ import { useLcryptApi } from "@/hooks/useLcryptApi";
 import { parseLcryptReport, findMatchEloChange } from "@/utils/lcryptUtils";
 
 interface MatchRowProps {
-  match: Match;
+  match: Match & { isLiveMatch?: boolean; liveMatchDetails?: any };
   player: Player;
   matchesStats: {[key: string]: any};
   onMatchClick: (match: Match) => void;
@@ -37,6 +37,87 @@ export const MatchRow = ({ match, player, matchesStats, onMatchClick, matchIndex
   const lcryptMatches = lcryptData?.report ? parseLcryptReport(lcryptData.report) : [];
   const lcryptEloChange = findMatchEloChange(match, lcryptMatches, matchIndex);
 
+  // Handle live match differently
+  if (match.isLiveMatch) {
+    return (
+      <TableRow 
+        key={match.match_id}
+        className="border-white/10 bg-green-500/10 hover:bg-green-500/20 transition-colors animate-pulse"
+      >
+        {/* Result - Live indicator */}
+        <TableCell>
+          <Badge className="bg-green-500/20 text-green-400 border-green-500/30 border font-semibold animate-pulse">
+            <Radio className="w-3 h-3 mr-1" />
+            LIVE
+          </Badge>
+        </TableCell>
+
+        {/* Map */}
+        <TableCell>
+          <div className="flex items-center gap-2">
+            <MapPin className="w-4 h-4 text-orange-400" />
+            <span className="text-white font-medium">
+              {match.liveMatchDetails?.voting?.map?.pick?.[0] || mapName || 'TBD'}
+            </span>
+          </div>
+        </TableCell>
+
+        {/* Score - Show as in progress */}
+        <TableCell>
+          <span className="text-green-400 font-bold animate-pulse">
+            În Desfășurare
+          </span>
+        </TableCell>
+
+        {/* K/D/A - Not available for live matches */}
+        <TableCell>
+          <span className="text-gray-400">-/-/-</span>
+        </TableCell>
+
+        {/* K/D Ratio */}
+        <TableCell>
+          <span className="text-gray-400">-</span>
+        </TableCell>
+
+        {/* Headshot % */}
+        <TableCell>
+          <span className="text-gray-400">-</span>
+        </TableCell>
+
+        {/* ADR */}
+        <TableCell>
+          <span className="text-gray-400">-</span>
+        </TableCell>
+
+        {/* ELO Change */}
+        <TableCell>
+          <span className="text-gray-400">Pending</span>
+        </TableCell>
+
+        {/* Date */}
+        <TableCell>
+          <div className="flex items-center gap-1">
+            <Calendar className="w-3 h-3 text-green-400" />
+            <span className="text-green-300 text-sm font-medium">
+              Acum
+            </span>
+          </div>
+        </TableCell>
+
+        {/* Duration */}
+        <TableCell>
+          <div className="flex items-center gap-1">
+            <Clock className="w-3 h-3 text-green-400" />
+            <span className="text-green-300 text-sm font-medium animate-pulse">
+              Live
+            </span>
+          </div>
+        </TableCell>
+      </TableRow>
+    );
+  }
+
+  // Regular match row
   return (
     <TableRow 
       key={match.match_id}
