@@ -5,12 +5,14 @@ import { Users, RefreshCw } from "lucide-react";
 
 interface FriendsSectionHeaderProps {
   friendsCount: number;
+  livePlayersCount: number;
   isUpdating: boolean;
   onUpdateAll: () => void;
 }
 
 export const FriendsSectionHeader = React.memo(({ 
   friendsCount, 
+  livePlayersCount,
   isUpdating, 
   onUpdateAll 
 }: FriendsSectionHeaderProps) => {
@@ -22,7 +24,7 @@ export const FriendsSectionHeader = React.memo(({
           <div className="w-8 h-8 bg-[#ff6500] rounded-lg flex items-center justify-center shadow-lg">
             <Users size={16} className="text-white" />
           </div>
-          <span>Prietenii Mei ({friendsCount})</span>
+          <span>Prietenii Mei ({friendsCount}) {livePlayersCount} Players Live</span>
         </h2>
         
         <Button

@@ -60,12 +60,16 @@ export const FriendsSection = ({
   // Check for live matches
   const { liveMatches, isChecking } = useLiveMatchChecker(friends);
 
+  // Calculate live players count
+  const livePlayersCount = Object.values(liveMatches).filter(match => match.isLive).length;
+
   return (
     <div className="space-y-4 px-4 md:px-0">
       <Card className="bg-[#1a1d21] border-[#2a2f36] shadow-xl">
         <div className="p-4 md:p-5">
           <FriendsSectionHeader 
             friendsCount={friends.length}
+            livePlayersCount={livePlayersCount}
             isUpdating={isUpdating || lcryptLoading || isChecking}
             onUpdateAll={updateAllFriends}
           />
