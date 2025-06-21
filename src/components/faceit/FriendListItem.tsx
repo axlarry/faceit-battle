@@ -43,9 +43,6 @@ export const FriendListItem = React.memo(({
     e.stopPropagation();
   };
 
-  // Determină dacă jucătorul nu are date ELO încărcate
-  const hasNoEloData = !friend.lcryptData || !friend.elo;
-
   // Stiluri pentru jucătorii live
   const liveStyles = isLive ? {
     border: 'border-green-400/50',
@@ -125,7 +122,7 @@ export const FriendListItem = React.memo(({
                 </div>
               </div>
 
-              {/* Actions */}
+              {/* Actions - Fixed icon display */}
               <div className="flex gap-1" onClick={handleLinkClick}>
                 <a
                   href={`https://www.faceit.com/en/players/${friend.nickname}`}
@@ -133,7 +130,17 @@ export const FriendListItem = React.memo(({
                   rel="noopener noreferrer"
                   className="bg-transparent border border-[#ff6500] text-[#ff6500] hover:bg-[#ff6500] hover:text-white rounded-lg w-8 h-8 flex items-center justify-center text-xs transition-colors"
                 >
-                  F
+                  <img 
+                    src="/faceit-icons/faceit_icon.png" 
+                    alt="F" 
+                    className="w-4 h-4"
+                    onError={(e) => {
+                      console.log('Faceit icon failed to load, using fallback');
+                      e.currentTarget.style.display = 'none';
+                      e.currentTarget.nextElementSibling.style.display = 'block';
+                    }}
+                  />
+                  <span className="text-xs font-bold hidden">F</span>
                 </a>
                 <a
                   href={steamId64 ? `https://steamcommunity.com/profiles/${steamId64}` : `https://steamcommunity.com/search/users/#text=${friend.nickname}`}
@@ -141,7 +148,17 @@ export const FriendListItem = React.memo(({
                   rel="noopener noreferrer"
                   className="bg-transparent border border-blue-400 text-blue-400 hover:bg-blue-500 hover:border-blue-500 hover:text-white rounded-lg w-8 h-8 flex items-center justify-center text-xs transition-colors"
                 >
-                  S
+                  <img 
+                    src="/faceit-icons/steam_icon.png" 
+                    alt="S" 
+                    className="w-4 h-4"
+                    onError={(e) => {
+                      console.log('Steam icon failed to load, using fallback');
+                      e.currentTarget.style.display = 'none';
+                      e.currentTarget.nextElementSibling.style.display = 'block';
+                    }}
+                  />
+                  <span className="text-xs font-bold hidden">S</span>
                 </a>
               </div>
             </div>

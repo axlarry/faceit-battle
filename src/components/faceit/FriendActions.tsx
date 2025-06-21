@@ -8,19 +8,6 @@ interface FriendActionsProps {
 }
 
 export const FriendActions = ({ nickname, steamId64, onLinkClick }: FriendActionsProps) => {
-  const [faceitIconError, setFaceitIconError] = useState(false);
-  const [steamIconError, setSteamIconError] = useState(false);
-
-  const handleFaceitIconError = () => {
-    console.error('Failed to load Faceit icon from: /faceit-icons/faceit_icon.png');
-    setFaceitIconError(true);
-  };
-
-  const handleSteamIconError = () => {
-    console.error('Failed to load Steam icon from: /faceit-icons/steam_icon.png');
-    setSteamIconError(true);
-  };
-
   return (
     <div className="flex gap-1 mt-2 sm:mt-0" onClick={onLinkClick}>
       <a
@@ -29,17 +16,17 @@ export const FriendActions = ({ nickname, steamId64, onLinkClick }: FriendAction
         rel="noopener noreferrer"
         className="bg-transparent border-2 border-[#ff6500] text-[#ff6500] hover:bg-[#ff6500] hover:text-white rounded-lg w-10 h-10 sm:w-12 sm:h-12 font-bold text-xs flex items-center justify-center transition-all duration-200 hover:scale-105"
       >
-        {!faceitIconError ? (
-          <img 
-            src="/faceit-icons/faceit_icon.png" 
-            alt="Faceit" 
-            className="w-5 h-5 sm:w-6 sm:h-6"
-            onError={handleFaceitIconError}
-            onLoad={() => console.log('✅ Faceit icon loaded successfully from /faceit-icons/faceit_icon.png')}
-          />
-        ) : (
-          <span className="text-xs font-bold">F</span>
-        )}
+        <img 
+          src="/faceit-icons/faceit_icon.png" 
+          alt="F" 
+          className="w-5 h-5 sm:w-6 sm:h-6"
+          onError={(e) => {
+            console.log('✅ Faceit icon fallback activated');
+            e.currentTarget.style.display = 'none';
+            e.currentTarget.nextElementSibling!.style.display = 'block';
+          }}
+        />
+        <span className="text-xs font-bold hidden">F</span>
       </a>
       <a
         href={steamId64 ? `https://steamcommunity.com/profiles/${steamId64}` : `https://steamcommunity.com/search/users/#text=${nickname}`}
@@ -47,17 +34,17 @@ export const FriendActions = ({ nickname, steamId64, onLinkClick }: FriendAction
         rel="noopener noreferrer"
         className="bg-transparent border-2 border-blue-400 text-blue-400 hover:bg-blue-500 hover:border-blue-500 hover:text-white rounded-lg w-10 h-10 sm:w-12 sm:h-12 font-bold text-xs flex items-center justify-center transition-all duration-200 hover:scale-105"
       >
-        {!steamIconError ? (
-          <img 
-            src="/faceit-icons/steam_icon.png" 
-            alt="Steam" 
-            className="w-5 h-5 sm:w-6 sm:h-6"
-            onError={handleSteamIconError}
-            onLoad={() => console.log('✅ Steam icon loaded successfully from /faceit-icons/steam_icon.png')}
-          />
-        ) : (
-          <span className="text-xs font-bold">S</span>
-        )}
+        <img 
+          src="/faceit-icons/steam_icon.png" 
+          alt="S" 
+          className="w-5 h-5 sm:w-6 sm:h-6"
+          onError={(e) => {
+            console.log('✅ Steam icon fallback activated');
+            e.currentTarget.style.display = 'none';
+            e.currentTarget.nextElementSibling!.style.display = 'block';
+          }}
+        />
+        <span className="text-xs font-bold hidden">S</span>
       </a>
     </div>
   );

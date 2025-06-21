@@ -2,7 +2,6 @@
 import { Button } from "@/components/ui/button";
 import { Player } from "@/types/Player";
 import { UserPlus, UserMinus } from "lucide-react";
-import { useState } from "react";
 
 interface PlayerActionsProps {
   player: Player;
@@ -11,19 +10,6 @@ interface PlayerActionsProps {
 }
 
 export const PlayerActions = ({ player, isFriend, onFriendAction }: PlayerActionsProps) => {
-  const [faceitIconError, setFaceitIconError] = useState(false);
-  const [steamIconError, setSteamIconError] = useState(false);
-
-  const handleFaceitIconError = () => {
-    console.error('Failed to load Faceit icon from: /faceit-icons/faceit_icon.png');
-    setFaceitIconError(true);
-  };
-
-  const handleSteamIconError = () => {
-    console.error('Failed to load Steam icon from: /faceit-icons/steam_icon.png');
-    setSteamIconError(true);
-  };
-
   return (
     <div className="flex gap-4 justify-center">
       <Button
@@ -52,17 +38,17 @@ export const PlayerActions = ({ player, isFriend, onFriendAction }: PlayerAction
         className="border-orange-400 text-orange-400 hover:bg-orange-400 hover:text-white w-12 h-12 p-0"
         onClick={() => window.open(`https://www.faceit.com/en/players/${player.nickname}`, '_blank')}
       >
-        {!faceitIconError ? (
-          <img 
-            src="/faceit-icons/faceit_icon.png" 
-            alt="Faceit" 
-            className="w-6 h-6"
-            onError={handleFaceitIconError}
-            onLoad={() => console.log('✅ Faceit icon loaded successfully from /faceit-icons/faceit_icon.png')}
-          />
-        ) : (
-          <span className="text-lg font-bold">F</span>
-        )}
+        <img 
+          src="/faceit-icons/faceit_icon.png" 
+          alt="F" 
+          className="w-6 h-6"
+          onError={(e) => {
+            console.log('✅ Faceit icon fallback activated in PlayerActions');
+            e.currentTarget.style.display = 'none';
+            e.currentTarget.nextElementSibling!.style.display = 'block';
+          }}
+        />
+        <span className="text-lg font-bold hidden">F</span>
       </Button>
 
       <Button
@@ -70,17 +56,17 @@ export const PlayerActions = ({ player, isFriend, onFriendAction }: PlayerAction
         className="border-blue-400 text-blue-400 hover:bg-blue-400 hover:text-white w-12 h-12 p-0"
         onClick={() => window.open(`https://steamcommunity.com/search/users/#text=${player.nickname}`, '_blank')}
       >
-        {!steamIconError ? (
-          <img 
-            src="/faceit-icons/steam_icon.png" 
-            alt="Steam" 
-            className="w-6 h-6"
-            onError={handleSteamIconError}
-            onLoad={() => console.log('✅ Steam icon loaded successfully from /faceit-icons/steam_icon.png')}
-          />
-        ) : (
-          <span className="text-lg font-bold">S</span>
-        )}
+        <img 
+          src="/faceit-icons/steam_icon.png" 
+          alt="S" 
+          className="w-6 h-6"
+          onError={(e) => {
+            console.log('✅ Steam icon fallback activated in PlayerActions');
+            e.currentTarget.style.display = 'none';
+            e.currentTarget.nextElementSibling!.style.display = 'block';
+          }}
+        />
+        <span className="text-lg font-bold hidden">S</span>
       </Button>
     </div>
   );
