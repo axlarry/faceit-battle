@@ -35,7 +35,12 @@ export const useDiscordSDK = () => {
           return;
         }
 
-        const sdk = new DiscordSDK(process.env.VITE_DISCORD_CLIENT_ID || '');
+        const clientId = import.meta.env.VITE_DISCORD_CLIENT_ID || '';
+        if (!clientId) {
+          throw new Error('Discord Client ID not configured');
+        }
+
+        const sdk = new DiscordSDK(clientId);
         
         await sdk.ready();
         console.log('✅ Discord SDK ready');
@@ -47,7 +52,19 @@ export const useDiscordSDK = () => {
           });
           
           if (authResponse) {
-            setAuth(authResponse);
+            // Map the Discord response to our interface
+            const mappedAuth: DiscordAuth = {
+              access_token: authResponse.access_token,
+              user: authResponse.user ? {
+                id: authResponse.user.id,
+                username: authResponse.user.username,
+                discriminator: authResponse.user.discriminator,
+                avatar: authResponse.user.avatar || null,
+                global_name: authResponse.user.global_name || null,
+              } : null
+            };
+            
+            setAuth(mappedAuth);
             console.log('🔐 Discord authentication successful:', authResponse.user?.username);
           }
         } catch (authError) {
