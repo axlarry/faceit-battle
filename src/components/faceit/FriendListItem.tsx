@@ -61,13 +61,6 @@ export const FriendListItem = React.memo(({
         isFlashing ? 'animate-pulse bg-[#ff6500]/20 border-[#ff6500]' : ''
       } ${hasNoEloData ? 'blur-sm opacity-70' : ''} ${liveStyles.animation}`}
     >
-      {/* Live Match Indicator */}
-      {isLive && (
-        <div className="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded-full font-medium animate-pulse">
-          Live On Match
-        </div>
-      )}
-
       <div className="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
         <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto min-w-0">
           <FriendAvatar 
@@ -77,12 +70,22 @@ export const FriendListItem = React.memo(({
           />
           
           <div className="flex flex-col min-w-0">
-            <FriendInfo
-              nickname={friend.nickname}
-              level={friend.level}
-              elo={friend.elo}
-              lcryptData={friend.lcryptData}
-            />
+            <div className="flex items-center gap-2 flex-wrap">
+              <FriendInfo
+                nickname={friend.nickname}
+                level={friend.level}
+                elo={friend.elo}
+                lcryptData={friend.lcryptData}
+              />
+              
+              {/* Live Playing Indicator */}
+              {isLive && (
+                <span className="text-green-500 text-sm font-medium animate-pulse">
+                  Is Playing Faceit
+                </span>
+              )}
+            </div>
+            
             {isLive && liveCompetition && (
               <div className="text-xs text-green-400 mt-1 truncate">
                 {liveCompetition}
