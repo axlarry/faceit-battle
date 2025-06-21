@@ -62,23 +62,45 @@ export const useFaceitApi = () => {
 
   const checkPlayerLiveMatch = async (playerId: string) => {
     try {
-      // Încearcă să obțină informații despre jucător
-      const data = await makeApiCall(`/players/${playerId}`, false);
+      console.log(`🔍 Checking live match for player: ${playerId}`);
       
-      // Dacă nu avem date, returnăm offline
-      if (!data) {
+      // Verificăm meciurile recente ale jucătorului (ultimele 3 meciuri)
+      const historyData = await makeApiCall(`/players/${playerId}/history?game=cs2&limit=3`, false);
+      
+      if (!historyData || !historyData.items || historyData.items.length === 0) {
+        console.log(`❌ No match history found for player: ${playerId}`);
         return { isLive: false };
       }
+
+      console.log(`📊 Found ${historyData.items.length} recent matches for ${playerId}`);
       
-      // Verificăm dacă jucătorul este activ în CS2
-      if (data && data.games && data.games.cs2) {
-        // Pentru moment, returnăm doar false deoarece API-ul nu oferă informații directe despre meciurile live
-        return { isLive: false };
+      // Verificăm dacă vreun meci este în progres
+      for (const match of historyData.items) {
+        console.log(`🎮 Checking match ${match.match_id} with status: ${match.status}`);
+        
+        // Verificăm statusurile care indică că meciul este în progres
+        if (match.status === 'ONGOING' || 
+            match.status === 'IN_PROGRESS' || 
+            match.status === 'LIVE' ||
+            match.status === 'VOTING' ||
+            match.status === 'CAPTAIN_PICK' ||
+            match.status === 'READY') {
+          
+          console.log(`✅ Player ${playerId} is LIVE in match ${match.match_id} (status: ${match.status})`);
+          
+          return {
+            isLive: true,
+            matchId: match.match_id,
+            competition: match.competition_name || 'Unknown Competition'
+          };
+        }
       }
       
+      console.log(`❌ Player ${playerId} is not in any live matches`);
       return { isLive: false };
+      
     } catch (error) {
-      // Nu mai logăm fiecare eroare individual
+      console.warn(`⚠️ Error checking live match for player ${playerId}:`, error);
       return { isLive: false };
     }
   };
