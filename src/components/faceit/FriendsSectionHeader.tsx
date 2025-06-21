@@ -2,6 +2,7 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Users, RefreshCw } from "lucide-react";
+import { LivePlayersIndicator } from "./LivePlayersIndicator";
 
 interface FriendsSectionHeaderProps {
   friendsCount: number;
@@ -20,12 +21,15 @@ export const FriendsSectionHeader = React.memo(({
     <div className="flex flex-col gap-3 mb-4">
       {/* Header Row */}
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-white flex items-center gap-2">
-          <div className="w-8 h-8 bg-[#ff6500] rounded-lg flex items-center justify-center shadow-lg">
-            <Users size={16} className="text-white" />
-          </div>
-          <span>Prietenii Mei ({friendsCount}) {livePlayersCount} Players Live</span>
-        </h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            <div className="w-8 h-8 bg-[#ff6500] rounded-lg flex items-center justify-center shadow-lg">
+              <Users size={16} className="text-white" />
+            </div>
+            <span>Prietenii Mei ({friendsCount})</span>
+          </h2>
+          <LivePlayersIndicator livePlayersCount={livePlayersCount} />
+        </div>
         
         <Button
           onClick={onUpdateAll}
