@@ -23,7 +23,8 @@ export const FriendActions = ({ nickname, steamId64, onLinkClick }: FriendAction
           onError={(e) => {
             console.log('✅ Faceit icon fallback activated');
             e.currentTarget.style.display = 'none';
-            e.currentTarget.nextElementSibling!.style.display = 'block';
+            const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+            if (fallback) fallback.style.display = 'block';
           }}
         />
         <span className="text-xs font-bold hidden">F</span>
@@ -41,7 +42,8 @@ export const FriendActions = ({ nickname, steamId64, onLinkClick }: FriendAction
           onError={(e) => {
             console.log('✅ Steam icon fallback activated');
             e.currentTarget.style.display = 'none';
-            e.currentTarget.nextElementSibling!.style.display = 'block';
+            const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+            if (fallback) fallback.style.display = 'block';
           }}
         />
         <span className="text-xs font-bold hidden">S</span>

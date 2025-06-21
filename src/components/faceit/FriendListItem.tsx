@@ -137,7 +137,8 @@ export const FriendListItem = React.memo(({
                     onError={(e) => {
                       console.log('Faceit icon failed to load, using fallback');
                       e.currentTarget.style.display = 'none';
-                      e.currentTarget.nextElementSibling.style.display = 'block';
+                      const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                      if (fallback) fallback.style.display = 'block';
                     }}
                   />
                   <span className="text-xs font-bold hidden">F</span>
@@ -155,7 +156,8 @@ export const FriendListItem = React.memo(({
                     onError={(e) => {
                       console.log('Steam icon failed to load, using fallback');
                       e.currentTarget.style.display = 'none';
-                      e.currentTarget.nextElementSibling.style.display = 'block';
+                      const fallback = e.currentTarget.nextElementSibling as HTMLElement;
+                      if (fallback) fallback.style.display = 'block';
                     }}
                   />
                   <span className="text-xs font-bold hidden">S</span>
