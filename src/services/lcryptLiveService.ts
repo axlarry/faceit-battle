@@ -5,7 +5,7 @@ export class LcryptLiveService {
       console.log(`🔍 Checking Lcrypt live status for: ${nickname}`);
       
       // Make request to our Supabase edge function that calls Lcrypt
-      const response = await fetch('/functions/v1/get-lcrypt-elo', {
+      const response = await fetch('/api/functions/v1/get-lcrypt-elo', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
