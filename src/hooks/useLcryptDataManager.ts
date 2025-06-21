@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Player } from '@/types/Player';
 import { fetchLcryptData } from '@/services/lcryptLiveService';
+import { lcryptLiveService } from '@/services/lcryptLiveService';
 
 interface UseLcryptDataManagerProps {
   friends: Player[];
@@ -10,6 +11,16 @@ interface UseLcryptDataManagerProps {
 
 interface FriendWithLcrypt extends Player {
   lcryptData?: any;
+  isLive?: boolean;
+  liveMatchDetails?: any;
+  liveCompetition?: string;
+}
+
+interface LiveMatchInfo {
+  isLive: boolean;
+  matchId?: string;
+  competition?: string;
+  matchDetails?: any;
 }
 
 export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataManagerProps) => {
@@ -17,6 +28,7 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
   const [isLoading, setIsLoading] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
   const [loadingFriends, setLoadingFriends] = useState<Set<string>>(new Set());
+  const [liveMatches, setLiveMatches] = useState<Record<string, LiveMatchInfo>>({});
 
   const updateFriendLcryptData = useCallback(async (friend: Player) => {
     if (!enabled) return friend;
@@ -25,16 +37,30 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
     setLoadingFriends(prev => new Set(prev).add(friend.nickname));
 
     try {
-      console.log(`Fetching Lcrypt data for ${friend.nickname}...`);
-      const lcryptData = await fetchLcryptData(friend.nickname);
+      console.log(`Fetching Lcrypt data and live status for ${friend.nickname}...`);
+      
+      // Încarcă datele Lcrypt și verifică statusul LIVE în paralel
+      const [lcryptData, liveInfo] = await Promise.all([
+        fetchLcryptData(friend.nickname),
+        lcryptLiveService.checkPlayerLiveFromLcrypt(friend.nickname)
+      ]);
       
       const updatedFriend: FriendWithLcrypt = {
         ...friend,
         lcryptData,
-        elo: lcryptData?.elo || friend.elo || 0
+        elo: lcryptData?.elo || friend.elo || 0,
+        isLive: liveInfo.isLive,
+        liveMatchDetails: liveInfo.matchDetails,
+        liveCompetition: liveInfo.competition
       };
 
-      console.log(`✅ Successfully updated ${friend.nickname} with ELO: ${updatedFriend.elo}`);
+      // Actualizează și statusul LIVE în state-ul separat
+      setLiveMatches(prev => ({
+        ...prev,
+        [friend.player_id]: liveInfo
+      }));
+
+      console.log(`✅ Successfully updated ${friend.nickname} with ELO: ${updatedFriend.elo} ${liveInfo.isLive ? '(LIVE)' : ''}`);
       
       // Actualizează prietenul în lista principală imediat după finalizare
       setFriendsWithLcrypt(prevFriends => 
@@ -62,6 +88,12 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
         )
       );
       
+      // Actualizează și statusul LIVE ca false în caz de eroare
+      setLiveMatches(prev => ({
+        ...prev,
+        [friend.player_id]: { isLive: false }
+      }));
+      
       // Elimină prietenul din setul de încărcare chiar și în caz de eroare
       setLoadingFriends(prev => {
         const newSet = new Set(prev);
@@ -81,7 +113,7 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
 
     setIsLoading(true);
     setLoadingProgress(0);
-    console.log(`🔄 Starting to load Lcrypt data for ${friends.length} friends...`);
+    console.log(`🔄 Starting to load Lcrypt data and live status for ${friends.length} friends...`);
     
     // Inițializează lista cu toți prietenii cu lcryptData undefined pentru a declașa loading-ul individual
     setFriendsWithLcrypt(friends.map(f => ({ ...f, lcryptData: undefined })));
@@ -125,7 +157,7 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
 
     setIsLoading(false);
     setLoadingProgress(100);
-    console.log(`✅ Completed loading Lcrypt data for all friends`);
+    console.log(`✅ Completed loading Lcrypt data and live status for all friends`);
   }, [friends, enabled, updateFriendLcryptData]);
 
   useEffect(() => {
@@ -137,6 +169,7 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
     isLoading,
     loadingProgress,
     loadingFriends,
+    liveMatches,
     reloadLcryptData: loadLcryptDataForAllFriends
   };
 };

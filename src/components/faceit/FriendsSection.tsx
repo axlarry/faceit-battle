@@ -6,7 +6,6 @@ import { useFriendsAutoUpdate } from "@/hooks/useFriendsAutoUpdate";
 import { useLcryptDataManager } from "@/hooks/useLcryptDataManager";
 import { usePendingFriendActions } from "@/hooks/usePendingFriendActions";
 import { useFlashingPlayer } from "@/hooks/useFlashingPlayer";
-import { useLiveMatchChecker } from "@/hooks/useLiveMatchChecker";
 import { FriendsSectionHeader } from "./FriendsSectionHeader";
 import { FriendSearchForm } from "./FriendSearchForm";
 import { EmptyFriendsState } from "./EmptyFriendsState";
@@ -30,8 +29,8 @@ export const FriendsSection = ({
   onUpdateFriend,
   onReloadFriends
 }: FriendsSectionProps) => {
-  // Hook optimizat pentru datele Lcrypt
-  const { friendsWithLcrypt, isLoading: lcryptLoading, loadingProgress, loadingFriends } = useLcryptDataManager({
+  // Hook optimizat pentru datele Lcrypt și statusul LIVE
+  const { friendsWithLcrypt, isLoading: lcryptLoading, loadingProgress, loadingFriends, liveMatches } = useLcryptDataManager({
     friends,
     enabled: true
   });
@@ -57,10 +56,7 @@ export const FriendsSection = ({
   // Handle flashing player state
   const { flashingPlayer, handlePlayerClick } = useFlashingPlayer(onShowPlayerDetails);
 
-  // Check for live matches
-  const { liveMatches, isChecking } = useLiveMatchChecker(friends);
-
-  // Calculate live players count
+  // Calculate live players count from integrated data
   const livePlayersCount = Object.values(liveMatches).filter(match => match.isLive).length;
 
   return (
@@ -70,7 +66,7 @@ export const FriendsSection = ({
           <FriendsSectionHeader 
             friendsCount={friends.length}
             livePlayersCount={livePlayersCount}
-            isUpdating={isUpdating || lcryptLoading || isChecking}
+            isUpdating={isUpdating || lcryptLoading}
             onUpdateAll={updateAllFriends}
           />
 
