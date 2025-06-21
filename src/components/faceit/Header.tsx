@@ -1,52 +1,28 @@
-
 import { useState } from "react";
-
 export const Header = () => {
   const [faceitIconError, setFaceitIconError] = useState(false);
   const [faviconError, setFaviconError] = useState(false);
-
   const handleFaceitIconError = () => {
     console.error('Failed to load Faceit icon from: /faceit-icons/faceit_icon.png');
     setFaceitIconError(true);
   };
-
   const handleFaviconError = () => {
     console.error('Failed to load favicon from: /favicon.ico');
     setFaviconError(true);
   };
-
-  return (
-    <div className="relative bg-[#1a1d21] border-b border-[#2a2f36]">
+  return <div className="relative bg-[#1a1d21] border-b border-[#2a2f36]">
       <div className="absolute inset-0 bg-gradient-to-r from-[#ff6500]/10 via-transparent to-[#ff6500]/10"></div>
       <div className="relative z-10 container mx-auto px-2 sm:px-4 py-3 sm:py-4 md:py-6 lg:py-8 max-w-7xl">
         <div className="text-center">
           <div className="flex items-center justify-center gap-2 sm:gap-3 md:gap-4 mb-2 sm:mb-3 md:mb-4">
             <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 lg:w-16 lg:h-16 bg-[#ff6500] rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg">
-              {!faviconError ? (
-                <img 
-                  src="/favicon.ico" 
-                  alt="Site Icon" 
-                  className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 lg:w-12 lg:h-12"
-                  onError={handleFaviconError}
-                  onLoad={() => console.log('✅ Favicon loaded successfully from /favicon.ico')}
-                />
-              ) : (
-                <div className="text-white w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 lg:w-8 lg:h-8 flex items-center justify-center text-xs sm:text-sm md:text-base lg:text-lg font-bold">
+              {!faviconError ? <img src="/favicon.ico" alt="Site Icon" onError={handleFaviconError} onLoad={() => console.log('✅ Favicon loaded successfully from /favicon.ico')} className="w-16 h-16 sm:w-8 sm:h-8 md:w-10 md:h-10 lg:w-12 lg:h-12" /> : <div className="text-white w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 lg:w-8 lg:h-8 flex items-center justify-center text-xs sm:text-sm md:text-base lg:text-lg font-bold">
                   F
-                </div>
-              )}
+                </div>}
             </div>
             <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-[#ff6500] flex items-center gap-2 sm:gap-3 md:gap-4">
               FACEIT
-              {!faceitIconError ? (
-                <img 
-                  src="/faceit-icons/faceit_icon.png" 
-                  alt="Faceit" 
-                  className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 lg:w-12 lg:h-12 xl:w-14 xl:h-14"
-                  onError={handleFaceitIconError}
-                  onLoad={() => console.log('✅ Faceit icon loaded successfully from /faceit-icons/faceit_icon.png')}
-                />
-              ) : null}
+              {!faceitIconError ? <img src="/faceit-icons/faceit_icon.png" alt="Faceit" className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 lg:w-12 lg:h-12 xl:w-14 xl:h-14" onError={handleFaceitIconError} onLoad={() => console.log('✅ Faceit icon loaded successfully from /faceit-icons/faceit_icon.png')} /> : null}
             </h1>
           </div>
           <p className="text-sm sm:text-base md:text-lg lg:text-xl text-[#b3b3b3] font-medium">
@@ -54,6 +30,5 @@ export const Header = () => {
           </p>
         </div>
       </div>
-    </div>
-  );
+    </div>;
 };
