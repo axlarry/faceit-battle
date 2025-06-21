@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { DiscordActivityStatus } from '@/components/discord/DiscordActivityStatus';
+
 export const Header = () => {
   const [faceitIconError, setFaceitIconError] = useState(false);
   const [faviconError, setFaviconError] = useState(false);
@@ -30,5 +32,6 @@ export const Header = () => {
           </p>
         </div>
       </div>
+      <DiscordActivityStatus />
     </div>;
 };
