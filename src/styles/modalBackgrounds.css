@@ -1,0 +1,216 @@
+
+/* Modern Modal Background Designs */
+
+/* Geometric Gradient Background */
+.modal-bg-geometric {
+  background: linear-gradient(135deg, #1a1d21 0%, #2a2f36 50%, #1a1d21 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.modal-bg-geometric::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: 
+    radial-gradient(circle at 25% 25%, rgba(255, 101, 0, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 75% 75%, rgba(255, 101, 0, 0.05) 0%, transparent 50%);
+  animation: rotate 20s linear infinite;
+  z-index: -1;
+}
+
+.modal-bg-geometric::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    linear-gradient(45deg, transparent 30%, rgba(255, 101, 0, 0.03) 50%, transparent 70%),
+    linear-gradient(-45deg, transparent 30%, rgba(255, 255, 255, 0.02) 50%, transparent 70%);
+  z-index: -1;
+}
+
+/* Glass Modern Background */
+.modal-bg-glass {
+  background: rgba(26, 29, 33, 0.95);
+  backdrop-filter: blur(20px);
+  position: relative;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modal-bg-glass::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: 
+    radial-gradient(circle at 20% 20%, rgba(255, 101, 0, 0.15) 0%, transparent 40%),
+    radial-gradient(circle at 80% 80%, rgba(255, 101, 0, 0.08) 0%, transparent 40%);
+  z-index: -1;
+  animation: pulse 4s ease-in-out infinite alternate;
+}
+
+/* Tech Hexagonal Background */
+.modal-bg-tech {
+  background: #1a1d21;
+  position: relative;
+  overflow: hidden;
+}
+
+.modal-bg-tech::before {
+  content: '';
+  position: absolute;
+  top: -10px;
+  left: -10px;
+  right: -10px;
+  bottom: -10px;
+  background-image: 
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(255, 101, 0, 0.03) 2px,
+      rgba(255, 101, 0, 0.03) 4px
+    ),
+    repeating-linear-gradient(
+      90deg,
+      transparent,
+      transparent 2px,
+      rgba(255, 101, 0, 0.03) 2px,
+      rgba(255, 101, 0, 0.03) 4px
+    );
+  z-index: -1;
+}
+
+.modal-bg-tech::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100px;
+  height: 100px;
+  background: 
+    radial-gradient(
+      polygon,
+      rgba(255, 101, 0, 0.1) 0%,
+      transparent 70%
+    );
+  transform: translate(-50%, -50%);
+  z-index: -1;
+  animation: techPulse 3s ease-in-out infinite;
+}
+
+/* Animated Circuit Background */
+.modal-bg-circuit {
+  background: linear-gradient(135deg, #1a1d21 0%, #242833 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.modal-bg-circuit::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: 
+    linear-gradient(90deg, transparent 50%, rgba(255, 101, 0, 0.1) 50%, rgba(255, 101, 0, 0.1) 52%, transparent 52%),
+    linear-gradient(0deg, transparent 50%, rgba(255, 101, 0, 0.1) 50%, rgba(255, 101, 0, 0.1) 52%, transparent 52%);
+  background-size: 20px 20px;
+  animation: circuitMove 8s linear infinite;
+  z-index: -1;
+}
+
+/* Neon Glow Background */
+.modal-bg-neon {
+  background: radial-gradient(ellipse at center, #1a1d21 0%, #0f1114 70%);
+  position: relative;
+  box-shadow: 
+    inset 0 0 50px rgba(255, 101, 0, 0.1),
+    0 0 100px rgba(255, 101, 0, 0.05);
+}
+
+.modal-bg-neon::before {
+  content: '';
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  bottom: 10px;
+  border: 1px solid rgba(255, 101, 0, 0.3);
+  border-radius: inherit;
+  z-index: -1;
+  animation: neonGlow 2s ease-in-out infinite alternate;
+}
+
+/* Animations */
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes pulse {
+  0% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+@keyframes techPulse {
+  0%, 100% { 
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.1;
+  }
+  50% { 
+    transform: translate(-50%, -50%) scale(1.2);
+    opacity: 0.2;
+  }
+}
+
+@keyframes circuitMove {
+  0% { background-position: 0 0; }
+  100% { background-position: 20px 20px; }
+}
+
+@keyframes neonGlow {
+  0% { 
+    box-shadow: 
+      inset 0 0 20px rgba(255, 101, 0, 0.2),
+      0 0 20px rgba(255, 101, 0, 0.1);
+  }
+  100% { 
+    box-shadow: 
+      inset 0 0 30px rgba(255, 101, 0, 0.4),
+      0 0 40px rgba(255, 101, 0, 0.2);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .modal-bg-geometric::before,
+  .modal-bg-glass::before,
+  .modal-bg-tech::before,
+  .modal-bg-circuit::before,
+  .modal-bg-neon::before {
+    animation-duration: 15s;
+  }
+}
+
+/* Additional utility classes */
+.modal-content-overlay {
+  position: relative;
+  z-index: 10;
+  background: rgba(26, 29, 33, 0.1);
+  backdrop-filter: blur(1px);
+}
+
+.modal-border-glow {
+  border: 1px solid rgba(255, 101, 0, 0.2);
+  box-shadow: 0 0 20px rgba(255, 101, 0, 0.1);
+}

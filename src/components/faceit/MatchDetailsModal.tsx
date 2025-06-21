@@ -1,4 +1,3 @@
-
 import {
   Dialog,
   DialogContent,
@@ -18,6 +17,7 @@ import { MatchHeader } from "./MatchHeader";
 import { MatchInfo } from "./MatchInfo";
 import { TeamPlayersSection } from "./TeamPlayersSection";
 import { MatchServerInfo } from "./MatchServerInfo";
+import "../styles/modalBackgrounds.css";
 
 interface MatchDetailsModalProps {
   match: Match | null;
@@ -88,14 +88,14 @@ export const MatchDetailsModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-slate-900 border border-slate-700 text-white max-w-7xl max-h-[95vh] overflow-y-auto">
-        <DialogHeader className="border-b border-slate-700 pb-4">
+      <DialogContent className="modal-bg-tech modal-border-glow text-white max-w-7xl max-h-[95vh] overflow-y-auto">
+        <DialogHeader className="modal-content-overlay border-b border-slate-700 pb-4 rounded-t-lg">
           <DialogTitle className="text-2xl font-bold text-center text-orange-400">
             Match Details
           </DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-6 p-4">
+        <div className="space-y-6 p-4 modal-content-overlay rounded-b-lg">
           {/* Match Header - Team vs Team */}
           <MatchHeader 
             team1Name={team1Name}

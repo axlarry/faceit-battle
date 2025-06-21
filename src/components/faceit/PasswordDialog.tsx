@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
+import "../styles/modalBackgrounds.css";
 
 interface PasswordDialogProps {
   isOpen: boolean;
@@ -48,12 +49,12 @@ export const PasswordDialog = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="bg-[#1a1d21] border-[#2a2f36] text-white shadow-2xl max-w-sm md:max-w-md mx-4">
+      <DialogContent className="modal-bg-glass modal-border-glow text-white shadow-2xl max-w-sm md:max-w-md mx-4">
         <DialogHeader>
           <DialogTitle className="text-lg md:text-xl font-bold text-center text-white">{title}</DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-4 md:space-y-6">
+        <div className="space-y-4 md:space-y-6 modal-content-overlay p-4 rounded-lg">
           <p className="text-[#b3b3b3] text-center text-sm md:text-base">{description}</p>
           
           <Input

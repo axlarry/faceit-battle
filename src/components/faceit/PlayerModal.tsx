@@ -15,6 +15,7 @@ import { PlayerStatsCards } from "./PlayerStatsCards";
 import { MatchesTable } from "./MatchesTable";
 import { Button } from "@/components/ui/button";
 import { UserPlus, UserMinus } from "lucide-react";
+import "../../styles/modalBackgrounds.css";
 
 interface PlayerModalProps {
   player: Player | null;
@@ -23,7 +24,7 @@ interface PlayerModalProps {
   onAddFriend: (player: Player) => void;
   onRemoveFriend: (playerId: string) => void;
   isFriend: boolean;
-  liveMatchInfo?: any; // Pass live match info from parent
+  liveMatchInfo?: any;
 }
 
 export const PlayerModal = ({ 
@@ -151,8 +152,8 @@ export const PlayerModal = ({
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="bg-gradient-to-br from-slate-900 to-slate-800 border border-white/20 text-white w-[95vw] max-w-7xl h-[90vh] flex flex-col p-0 overflow-hidden">
-          <DialogHeader className="px-4 sm:px-6 py-4 border-b border-white/10 flex-shrink-0">
+        <DialogContent className="modal-bg-geometric modal-border-glow text-white w-[95vw] max-w-7xl h-[90vh] flex flex-col p-0 overflow-hidden">
+          <DialogHeader className="modal-content-overlay px-4 sm:px-6 py-4 border-b border-white/10 flex-shrink-0">
             <DialogTitle className="text-xl sm:text-2xl font-bold text-center">
               Profil Jucător - Detalii Complete
             </DialogTitle>
@@ -161,7 +162,7 @@ export const PlayerModal = ({
             </DialogDescription>
           </DialogHeader>
           
-          <div className="flex-1 overflow-y-auto px-4 sm:px-6 pb-6" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+          <div className="flex-1 overflow-y-auto px-4 sm:px-6 pb-6 modal-content-overlay" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
             <div className="space-y-4 sm:space-y-6 py-4">
               <PlayerHeader player={player} />
               <PlayerStatsCards player={player} />
