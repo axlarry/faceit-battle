@@ -1,13 +1,18 @@
 
-import { Trophy } from "lucide-react";
 import { useState } from "react";
 
 export const Header = () => {
   const [faceitIconError, setFaceitIconError] = useState(false);
+  const [faviconError, setFaviconError] = useState(false);
 
   const handleFaceitIconError = () => {
     console.error('Failed to load Faceit icon from: /faceit-icons/faceit_icon.png');
     setFaceitIconError(true);
+  };
+
+  const handleFaviconError = () => {
+    console.error('Failed to load favicon from: /favicon.ico');
+    setFaviconError(true);
   };
 
   return (
@@ -17,7 +22,19 @@ export const Header = () => {
         <div className="text-center">
           <div className="flex items-center justify-center gap-2 sm:gap-3 md:gap-4 mb-2 sm:mb-3 md:mb-4">
             <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 lg:w-16 lg:h-16 bg-[#ff6500] rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg">
-              <Trophy className="text-white w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 lg:w-8 lg:h-8" />
+              {!faviconError ? (
+                <img 
+                  src="/favicon.ico" 
+                  alt="Site Icon" 
+                  className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 lg:w-8 lg:h-8"
+                  onError={handleFaviconError}
+                  onLoad={() => console.log('✅ Favicon loaded successfully from /favicon.ico')}
+                />
+              ) : (
+                <div className="text-white w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 lg:w-8 lg:h-8 flex items-center justify-center text-xs sm:text-sm md:text-base lg:text-lg font-bold">
+                  F
+                </div>
+              )}
             </div>
             <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl xl:text-6xl font-bold text-[#ff6500] flex items-center gap-2 sm:gap-3 md:gap-4">
               FACEIT
