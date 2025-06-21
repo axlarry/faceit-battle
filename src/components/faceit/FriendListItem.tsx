@@ -45,24 +45,27 @@ export const FriendListItem = React.memo(({
   // Determină dacă jucătorul nu are date ELO încărcate
   const hasNoEloData = !friend.lcryptData || !friend.elo;
 
-  // Stiluri pentru jucătorii live - fără animație, doar culoare diferită
+  // Stiluri pentru jucătorii live
   const liveStyles = isLive ? {
-    border: 'border-green-500',
-    background: 'bg-green-500/10'
+    border: 'border-green-400/50',
+    background: 'from-green-900/20 via-gray-800 to-gray-900',
+    glow: 'shadow-green-500/20'
   } : {
-    border: 'border-[#3a4048]',
-    background: 'bg-[#2a2f36]'
+    border: 'border-gray-600/30',
+    background: 'from-gray-800 via-gray-900 to-gray-800',
+    glow: 'shadow-gray-900/50'
   };
 
   return (
     <div
       onClick={handleClick}
-      className={`${liveStyles.background} rounded-lg p-2 sm:p-3 border-2 ${liveStyles.border} hover:border-[#ff6500]/50 transition-all duration-300 shadow-lg cursor-pointer transform hover:scale-[1.01] relative ${
-        isFlashing ? 'animate-pulse bg-[#ff6500]/20 border-[#ff6500]' : ''
+      className={`bg-gradient-to-br ${liveStyles.background} rounded-xl p-3 md:p-4 border-2 ${liveStyles.border} hover:border-orange-500/50 transition-all duration-300 shadow-lg ${liveStyles.glow} cursor-pointer transform hover:scale-[1.02] relative ${
+        isFlashing ? 'animate-pulse bg-gradient-to-br from-orange-500/20 via-orange-600/10 to-orange-500/20 border-orange-500' : ''
       } ${hasNoEloData ? 'blur-sm opacity-70' : ''}`}
     >
-      <div className="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
-        <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto min-w-0">
+      <div className="flex flex-col space-y-3 lg:space-y-0 lg:flex-row lg:items-center lg:justify-between lg:gap-4">
+        {/* Mobile Layout - Stacked */}
+        <div className="flex items-center gap-3 w-full lg:w-auto min-w-0">
           <FriendAvatar 
             avatar={friend.avatar}
             nickname={friend.nickname}
@@ -79,38 +82,30 @@ export const FriendListItem = React.memo(({
               />
             </div>
             
-            {/* Live Match Details - centrat și fără animație */}
+            {/* Live Match Details - Mobile Optimized */}
             {isLive && liveMatchDetails && (
-              <div className="mt-2 space-y-1 flex flex-col items-center text-center">
-                <div className="flex items-center justify-center gap-2 text-sm">
-                  <span className="bg-green-500 text-white px-2 py-1 rounded text-xs font-bold">
+              <div className="mt-2 space-y-2">
+                <div className="flex items-center justify-center gap-2 text-xs md:text-sm">
+                  <span className="bg-green-500 text-white px-2 py-1 rounded-lg text-xs font-bold animate-pulse">
                     {liveMatchDetails.status || 'LIVE'}
                   </span>
-                  <span className="text-green-400 font-medium">
-                    {liveMatchDetails.map || 'Unknown Map'}
-                  </span>
-                  <span className="text-gray-300 text-xs">
-                    ({liveMatchDetails.server || 'Unknown Server'})
+                  <span className="text-green-400 font-medium truncate">
+                    {liveMatchDetails.map || 'Hartă Necunoscută'}
                   </span>
                 </div>
                 
-                <div className="flex items-center justify-center gap-3 text-sm">
+                <div className="flex items-center justify-center gap-2 text-xs">
                   {liveMatchDetails.score && (
-                    <span className="text-white font-bold">
-                      Score: {liveMatchDetails.score}
+                    <span className="text-white font-bold bg-gray-700/50 px-2 py-1 rounded">
+                      {liveMatchDetails.score}
                     </span>
                   )}
                   {liveMatchDetails.result && (
-                    <span className={`font-medium capitalize ${
-                      liveMatchDetails.result === 'winning' ? 'text-green-400' : 
-                      liveMatchDetails.result === 'losing' ? 'text-red-400' : 'text-yellow-400'
+                    <span className={`font-medium capitalize px-2 py-1 rounded ${
+                      liveMatchDetails.result === 'winning' ? 'text-green-400 bg-green-500/20' : 
+                      liveMatchDetails.result === 'losing' ? 'text-red-400 bg-red-500/20' : 'text-yellow-400 bg-yellow-500/20'
                     }`}>
                       {liveMatchDetails.result}
-                    </span>
-                  )}
-                  {liveMatchDetails.duration && (
-                    <span className="text-gray-400 text-xs">
-                      {liveMatchDetails.duration}
                     </span>
                   )}
                 </div>
@@ -119,19 +114,24 @@ export const FriendListItem = React.memo(({
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-sm w-full sm:w-auto justify-between sm:justify-end">
-          <FriendStats
-            wins={friend.wins}
-            winRate={friend.winRate}
-            hsRate={friend.hsRate}
-            kdRatio={friend.kdRatio}
-          />
+        {/* Stats and Actions - Mobile Optimized */}
+        <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-3 w-full lg:w-auto">
+          <div className="grid grid-cols-2 lg:flex lg:gap-3 gap-2 text-xs md:text-sm">
+            <FriendStats
+              wins={friend.wins}
+              winRate={friend.winRate}
+              hsRate={friend.hsRate}
+              kdRatio={friend.kdRatio}
+            />
+          </div>
           
-          <FriendActions
-            nickname={friend.nickname}
-            steamId64={steamId64}
-            onLinkClick={handleLinkClick}
-          />
+          <div className="flex justify-center lg:justify-end">
+            <FriendActions
+              nickname={friend.nickname}
+              steamId64={steamId64}
+              onLinkClick={handleLinkClick}
+            />
+          </div>
         </div>
       </div>
     </div>

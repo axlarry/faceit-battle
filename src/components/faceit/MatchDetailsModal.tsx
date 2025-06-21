@@ -88,14 +88,14 @@ export const MatchDetailsModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="modal-bg-tech modal-border-glow text-white max-w-7xl max-h-[95vh] overflow-y-auto">
-        <DialogHeader className="modal-content-overlay border-b border-slate-700 pb-4 rounded-t-lg">
-          <DialogTitle className="text-2xl font-bold text-center text-orange-400">
-            Match Details
+      <DialogContent className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 border-2 border-orange-500/30 text-white w-[95vw] max-w-6xl h-[90vh] max-h-[90vh] overflow-hidden shadow-2xl shadow-orange-500/20 rounded-2xl">
+        <DialogHeader className="bg-gradient-to-r from-gray-800/80 to-gray-700/80 backdrop-blur-sm border-b border-orange-500/20 pb-4 pt-6 px-6 rounded-t-2xl">
+          <DialogTitle className="text-xl md:text-2xl font-bold text-center bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">
+            Detalii Meci
           </DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-6 p-4 modal-content-overlay rounded-b-lg">
+        <div className="flex-1 overflow-y-auto px-4 md:px-6 pb-6 space-y-4 md:space-y-6 scrollbar-hide">
           {/* Match Header - Team vs Team */}
           <MatchHeader 
             team1Name={team1Name}
@@ -114,7 +114,7 @@ export const MatchDetailsModal = ({
           />
 
           {/* Players Section */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-6">
             {/* Team 1 Players */}
             {team1Players.length > 0 && (
               <TeamPlayersSection 

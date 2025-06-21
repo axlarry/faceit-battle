@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import {
   Dialog,
@@ -47,37 +48,43 @@ export const PasswordDialog = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="modal-bg-glass modal-border-glow text-white shadow-2xl max-w-sm md:max-w-md mx-4">
-        <DialogHeader>
-          <DialogTitle className="text-lg md:text-xl font-bold text-center text-white">{title}</DialogTitle>
+      <DialogContent className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 border-2 border-orange-500/30 text-white shadow-2xl shadow-orange-500/20 w-[90vw] max-w-md mx-auto rounded-2xl">
+        <DialogHeader className="text-center pb-2">
+          <DialogTitle className="text-lg md:text-xl font-bold bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">
+            {title}
+          </DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-4 md:space-y-6 modal-content-overlay p-4 rounded-lg">
-          <p className="text-[#b3b3b3] text-center text-sm md:text-base">{description}</p>
+        <div className="space-y-6 p-4">
+          <p className="text-gray-300 text-center text-sm md:text-base leading-relaxed">
+            {description}
+          </p>
           
-          <Input
-            type="password"
-            placeholder="Introdu parola..."
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleConfirm()}
-            className="bg-[#2a2f36] border-[#3a4048] text-white placeholder:text-[#9f9f9f] focus:border-[#ff6500] h-12"
-          />
-          
-          <div className="flex gap-3 justify-end">
-            <Button
-              variant="outline"
-              onClick={handleClose}
-              className="bg-transparent border-[#3a4048] text-[#b3b3b3] hover:bg-[#2a2f36] hover:text-white h-10 md:h-12 px-4 md:px-6"
-            >
-              Anulează
-            </Button>
-            <Button
-              onClick={handleConfirm}
-              className="bg-[#ff6500] hover:bg-[#e55a00] text-white h-10 md:h-12 px-4 md:px-6 font-bold"
-            >
-              Confirmă
-            </Button>
+          <div className="space-y-4">
+            <Input
+              type="password"
+              placeholder="Introdu parola..."
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onKeyPress={(e) => e.key === 'Enter' && handleConfirm()}
+              className="bg-gray-800/50 border-2 border-gray-600/50 text-white placeholder:text-gray-400 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 h-12 rounded-xl transition-all duration-200"
+            />
+            
+            <div className="flex gap-3 pt-2">
+              <Button
+                variant="outline"
+                onClick={handleClose}
+                className="flex-1 bg-gray-800/50 border-2 border-gray-600/50 text-gray-300 hover:bg-gray-700/50 hover:text-white hover:border-gray-500 h-12 rounded-xl font-medium transition-all duration-200"
+              >
+                Anulează
+              </Button>
+              <Button
+                onClick={handleConfirm}
+                className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white h-12 rounded-xl font-bold shadow-lg shadow-orange-500/25 transition-all duration-200 transform hover:scale-105"
+              >
+                Confirmă
+              </Button>
+            </div>
           </div>
         </div>
       </DialogContent>

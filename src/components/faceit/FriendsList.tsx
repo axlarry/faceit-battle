@@ -38,7 +38,7 @@ export const FriendsList = React.memo(({
   }, [friends]);
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3 px-2 md:px-0">
       {sortedFriends.map((friend, index) => {
         const liveInfo = liveMatches[friend.player_id];
         return (

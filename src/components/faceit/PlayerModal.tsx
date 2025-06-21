@@ -1,3 +1,4 @@
+
 import {
   Dialog,
   DialogContent,
@@ -150,17 +151,17 @@ export const PlayerModal = ({
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="modal-bg-geometric modal-border-glow text-white w-[95vw] max-w-7xl h-[90vh] flex flex-col p-0 overflow-hidden">
-          <DialogHeader className="modal-content-overlay px-4 sm:px-6 py-4 border-b border-white/10 flex-shrink-0">
-            <DialogTitle className="text-xl sm:text-2xl font-bold text-center">
+        <DialogContent className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 border-2 border-orange-500/30 text-white w-[95vw] max-w-7xl h-[90vh] flex flex-col p-0 overflow-hidden shadow-2xl shadow-orange-500/20 rounded-2xl">
+          <DialogHeader className="bg-gradient-to-r from-gray-800/80 to-gray-700/80 backdrop-blur-sm px-4 sm:px-6 py-4 border-b border-orange-500/20 flex-shrink-0 rounded-t-2xl">
+            <DialogTitle className="text-lg sm:text-xl md:text-2xl font-bold text-center bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">
               Profil Jucător - Detalii Complete
             </DialogTitle>
-            <DialogDescription className="text-gray-400 text-center text-sm sm:text-base">
+            <DialogDescription className="text-gray-400 text-center text-sm sm:text-base mt-2">
               Informații detaliate despre jucător și istoricul meciurilor recente
             </DialogDescription>
           </DialogHeader>
           
-          <div className="flex-1 overflow-y-auto px-4 sm:px-6 pb-6 modal-content-overlay" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+          <div className="flex-1 overflow-y-auto px-3 sm:px-4 md:px-6 pb-6 scrollbar-hide">
             <div className="space-y-4 sm:space-y-6 py-4">
               <PlayerHeader player={player} />
               <PlayerStatsCards player={player} />
@@ -175,11 +176,11 @@ export const PlayerModal = ({
               <div className="flex justify-center pt-4">
                 <Button
                   onClick={handleFriendAction}
-                  className={`px-6 py-3 font-medium text-base ${
+                  className={`px-4 sm:px-6 py-3 font-medium text-sm sm:text-base w-full sm:w-auto ${
                     isFriend
                       ? 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700'
                       : 'bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600'
-                  } text-white border-0`}
+                  } text-white border-0 rounded-xl shadow-lg transition-all duration-200 transform hover:scale-105`}
                 >
                   {isFriend ? (
                     <>
