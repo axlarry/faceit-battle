@@ -19,7 +19,7 @@ export const LivePlayersIndicator = React.memo(({ livePlayersCount }: LivePlayer
       }}
     >
       <Users size={14} className="text-green-500" />
-      <span>{livePlayersCount} Players Live</span>
+      <span>{livePlayersCount} LIVE</span>
     </div>
   );
 });
