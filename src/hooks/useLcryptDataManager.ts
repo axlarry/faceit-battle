@@ -124,10 +124,10 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
       return;
     }
 
-    // Verifică dacă au trecut cel puțin 3 minute de la ultimul update pentru a reduce stresul pe API
+    // Verifică dacă au trecut cel puțin 2 minute de la ultimul update pentru a reduce stresul pe API
     const now = Date.now();
-    if (lastUpdateTime > 0 && (now - lastUpdateTime) < 180000) { // 3 minute = 180000ms
-      console.log(`⏱️ Skipping Lcrypt update, only ${Math.round((now - lastUpdateTime) / 1000)}s since last update. Waiting for 3 minutes between updates.`);
+    if (lastUpdateTime > 0 && (now - lastUpdateTime) < 120000) { // 2 minute = 120000ms
+      console.log(`⏱️ Skipping Lcrypt update, only ${Math.round((now - lastUpdateTime) / 1000)}s since last update. Waiting for 2 minutes between updates.`);
       return;
     }
 
@@ -172,7 +172,7 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
       
       // Pauză mai mare între batch-uri pentru a nu supraîncărca serverul Lcrypt
       if (i + batchSize < friends.length) {
-        await new Promise(resolve => setTimeout(resolve, 500)); // Mărit la 500ms
+        await new Promise(resolve => setTimeout(resolve, 800)); // Mărit la 800ms
       }
     }
 
@@ -181,18 +181,18 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
     console.log(`✅ Completed loading Lcrypt data and live status for all friends`);
   }, [friends, enabled, updateFriendLcryptData, lastUpdateTime]);
 
-  // Auto-refresh la intervale mai mari pentru a nu stresa API-ul
+  // Auto-refresh la intervale mai mici
   useEffect(() => {
     if (!enabled || friends.length === 0) return;
 
     // Primul load imediat
     loadLcryptDataForAllFriends();
 
-    // Auto-refresh la fiecare 10 minute (în loc de 5) pentru a reduce stresul pe API
+    // Auto-refresh la fiecare 5 minute
     const interval = setInterval(() => {
-      console.log('🔄 Auto-refreshing Lcrypt data (every 10 minutes)...');
+      console.log('🔄 Auto-refreshing Lcrypt data (every 5 minutes)...');
       loadLcryptDataForAllFriends();
-    }, 600000); // 10 minute = 600000ms
+    }, 300000); // 5 minute = 300000ms
 
     return () => clearInterval(interval);
   }, [friends, enabled]);
