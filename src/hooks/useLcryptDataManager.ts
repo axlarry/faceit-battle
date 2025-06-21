@@ -1,8 +1,8 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { Player } from '@/types/Player';
 import { fetchLcryptData } from '@/services/lcryptLiveService';
 import { lcryptLiveService } from '@/services/lcryptLiveService';
+import { playerService } from '@/services/playerService';
 
 interface UseLcryptDataManagerProps {
   friends: Player[];
@@ -14,6 +14,7 @@ interface FriendWithLcrypt extends Player {
   isLive?: boolean;
   liveMatchDetails?: any;
   liveCompetition?: string;
+  cover_image?: string;
 }
 
 interface LiveMatchInfo {
@@ -50,12 +51,13 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
     setLoadingFriends(prev => new Set(prev).add(friend.nickname));
 
     try {
-      console.log(`Fetching Lcrypt data and live status for ${friend.nickname}...`);
+      console.log(`Fetching Lcrypt data, live status and cover image for ${friend.nickname}...`);
       
-      // Încarcă datele Lcrypt și verifică statusul LIVE în paralel
-      const [lcryptData, liveInfo] = await Promise.all([
+      // Încarcă datele Lcrypt, verifică statusul LIVE și cover image în paralel
+      const [lcryptData, liveInfo, coverImage] = await Promise.all([
         fetchLcryptData(friend.nickname),
-        lcryptLiveService.checkPlayerLiveFromLcrypt(friend.nickname)
+        lcryptLiveService.checkPlayerLiveFromLcrypt(friend.nickname),
+        playerService.getPlayerCoverImage(friend.nickname)
       ]);
       
       const updatedFriend: FriendWithLcrypt = {
@@ -64,7 +66,8 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
         elo: lcryptData?.elo || friend.elo || 0,
         isLive: liveInfo.isLive,
         liveMatchDetails: liveInfo.isLive && 'matchDetails' in liveInfo ? liveInfo.matchDetails : undefined,
-        liveCompetition: liveInfo.isLive && 'competition' in liveInfo ? liveInfo.competition : undefined
+        liveCompetition: liveInfo.isLive && 'competition' in liveInfo ? liveInfo.competition : undefined,
+        cover_image: coverImage || friend.cover_image
       };
 
       // Actualizează și statusul LIVE în state-ul separat
@@ -73,7 +76,7 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
         [friend.player_id]: liveInfo
       }));
 
-      console.log(`✅ Successfully updated ${friend.nickname} with ELO: ${updatedFriend.elo} ${liveInfo.isLive ? '(LIVE)' : ''}`);
+      console.log(`✅ Successfully updated ${friend.nickname} with ELO: ${updatedFriend.elo} ${liveInfo.isLive ? '(LIVE)' : ''} ${coverImage ? '(Cover Image)' : ''}`);
       
       // Actualizează prietenul în lista principală imediat după finalizare
       setFriendsWithLcrypt(prevFriends => 
@@ -91,7 +94,7 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
 
       return updatedFriend;
     } catch (error) {
-      console.error(`❌ Failed to fetch Lcrypt data for ${friend.nickname}:`, error);
+      console.error(`❌ Failed to fetch data for ${friend.nickname}:`, error);
       
       // Actualizează cu date null în caz de eroare
       const failedFriend: FriendWithLcrypt = { ...friend, lcryptData: null };
@@ -134,7 +137,7 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
     setIsLoading(true);
     setLoadingProgress(0);
     setLastUpdateTime(now);
-    console.log(`🔄 Starting to load Lcrypt data and live status for ${friends.length} friends...`);
+    console.log(`🔄 Starting to load Lcrypt data, live status and cover images for ${friends.length} friends...`);
     
     // Inițializează lista cu toți prietenii cu lcryptData undefined pentru a declașa loading-ul individual
     setFriendsWithLcrypt(friends.map(f => ({ ...f, lcryptData: undefined })));
@@ -178,7 +181,7 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
 
     setIsLoading(false);
     setLoadingProgress(100);
-    console.log(`✅ Completed loading Lcrypt data and live status for all friends`);
+    console.log(`✅ Completed loading Lcrypt data, live status and cover images for all friends`);
   }, [friends, enabled, updateFriendLcryptData, lastUpdateTime]);
 
   // Auto-refresh la intervale mai mici

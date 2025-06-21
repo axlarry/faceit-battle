@@ -41,6 +41,26 @@ export class PlayerService {
     }
   }
 
+  async getPlayerCoverImage(nickname: string) {
+    try {
+      console.log(`🖼️ Fetching cover image for player: ${nickname}`);
+      const { faceitApiClient } = await import('./faceitApiClient');
+      
+      const playerData = await faceitApiClient.makeApiCall(`/players?nickname=${nickname}`, false);
+      
+      if (playerData && playerData.cover_image) {
+        console.log(`✅ Found cover image for ${nickname}: ${playerData.cover_image}`);
+        return playerData.cover_image;
+      } else {
+        console.log(`❌ No cover image found for ${nickname}`);
+        return null;
+      }
+    } catch (error) {
+      console.warn(`⚠️ Error fetching cover image for ${nickname}:`, error);
+      return null;
+    }
+  }
+
   async getPlayerStats(playerId: string) {
     return playerStatsService.getPlayerStats(playerId);
   }
