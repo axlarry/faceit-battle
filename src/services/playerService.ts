@@ -1,21 +1,42 @@
 import { faceitApiClient } from './faceitApiClient';
 import { FACEIT_CONFIG } from '@/config/faceitConfig';
 import { toast } from '@/hooks/use-toast';
+import { lcryptLiveService } from './lcryptLiveService';
 
 export class PlayerService {
   async checkPlayerLiveMatch(playerId: string) {
     try {
       console.log(`🔍 Checking live match for player: ${playerId}`);
       
-      // Method 1: Check player's current status directly
+      // First, get player data to get nickname for Lcrypt check
+      const playerData = await faceitApiClient.makeApiCall(`/players/${playerId}`, false);
+      const nickname = playerData?.nickname;
+
+      // Method 1: Check Lcrypt API first (most reliable for live status)
+      if (nickname) {
+        const lcryptLiveInfo = await lcryptLiveService.checkPlayerLiveFromLcrypt(nickname);
+        if (lcryptLiveInfo.isLive) {
+          console.log(`✅ Player ${nickname} is LIVE according to Lcrypt`);
+          return lcryptLiveInfo;
+        }
+      }
+      
+      // Method 2: Check if player has a currently active match using Faceit API
+      const currentLiveMatch = await this.checkCurrentLiveMatch(playerId);
+      if (currentLiveMatch.isLive) {
+        console.log(`✅ Player ${playerId} is LIVE (method 2 - active match search)`);
+        return currentLiveMatch;
+      }
+      
+      // Method 3: Check player's current status directly
       const playerStatus = await this.checkPlayerCurrentStatus(playerId);
       if (playerStatus.isLive) {
-        console.log(`✅ Player ${playerId} is LIVE (method 1 - player status)`);
+        console.log(`✅ Player ${playerId} is LIVE (method 3 - player status)`);
         return playerStatus;
       }
       
-      // Method 2: Check match history for very recent matches that might be ongoing
-      const historyData = await faceitApiClient.makeApiCall(`/players/${playerId}/history?game=cs2&limit=5`, false);
+      // Method 4: Check match history for very recent matches that might be ongoing
+      const historyData = await faceitApiClient.makeApiCall(`/players/${playerId}/history?game=cs2&limit=20`, false);
       
       if (historyData && historyData.items && historyData.items.length > 0) {
         console.log(`📊 Found ${historyData.items.length} recent matches for ${playerId}`);
@@ -27,24 +48,39 @@ export class PlayerService {
           // Get detailed match information to check real-time status
           const liveMatchInfo = await this.checkSpecificMatchLiveStatus(match.match_id, playerId);
           if (liveMatchInfo.isLive) {
-            console.log(`✅ Player ${playerId} is LIVE in match ${match.match_id} (method 2 - match details)`);
+            console.log(`✅ Player ${playerId} is LIVE in match ${match.match_id} (method 4 - match details)`);
             return liveMatchInfo;
           }
         }
       }
       
-      // Method 3: Try to search for any ongoing matches the player might be in
-      const ongoingMatchInfo = await this.searchPlayerInOngoingMatches(playerId);
-      if (ongoingMatchInfo.isLive) {
-        console.log(`✅ Player ${playerId} is LIVE (method 3 - ongoing matches search)`);
-        return ongoingMatchInfo;
-      }
-      
-      console.log(`❌ Player ${playerId} is not in any live matches (checked all methods)`);
+      console.log(`❌ Player ${playerId} is not in any live matches`);
       return { isLive: false };
       
     } catch (error) {
       console.warn(`⚠️ Error checking live match for player ${playerId}:`, error);
+      return { isLive: false };
+    }
+  }
+
+  private async checkCurrentLiveMatch(playerId: string) {
+    try {
+      console.log(`🔍 Searching for current live match for player: ${playerId}`);
+      
+      // Try to search for ongoing matches by checking if player is currently in a match
+      // We'll use a different approach - check for matches with ONGOING, VOTING, etc statuses
+      const ongoingStatuses = ['ONGOING', 'VOTING', 'CAPTAIN_PICK', 'READY', 'CONFIGURING', 'PREPARING'];
+      
+      // Since we can't directly search for ongoing matches by player, 
+      // we'll try to construct potential match IDs or use alternative methods
+      
+      // This is a placeholder for now - in a real implementation, we'd need 
+      // access to a different API endpoint that shows current matches
+      console.log(`ℹ️ Direct live match search not fully implemented yet for player: ${playerId}`);
+      
+      return { isLive: false };
+    } catch (error) {
+      console.warn(`⚠️ Error searching current live match:`, error);
       return { isLive: false };
     }
   }
@@ -79,10 +115,6 @@ export class PlayerService {
         if (playerData.games && playerData.games.cs2) {
           const cs2Data = playerData.games.cs2;
           console.log(`🎮 CS2 specific data:`, cs2Data);
-          
-          if (cs2Data.faceit_elo && cs2Data.skill_level) {
-            // Additional checks for CS2 specific status
-          }
         }
       }
       
@@ -143,21 +175,6 @@ export class PlayerService {
       return { isLive: false };
     } catch (error) {
       console.warn(`⚠️ Error checking specific match live status:`, error);
-      return { isLive: false };
-    }
-  }
-
-  private async searchPlayerInOngoingMatches(playerId: string) {
-    try {
-      console.log(`🔍 Searching for ongoing matches with player: ${playerId}`);
-      
-      // This is a fallback method - we could try different approaches
-      // For now, we'll return false but log the attempt
-      console.log(`ℹ️ Ongoing matches search not implemented yet for player: ${playerId}`);
-      
-      return { isLive: false };
-    } catch (error) {
-      console.warn(`⚠️ Error searching ongoing matches:`, error);
       return { isLive: false };
     }
   }
