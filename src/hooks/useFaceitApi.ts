@@ -63,32 +63,21 @@ export const useFaceitApi = () => {
   const checkPlayerLiveMatch = async (playerId: string) => {
     try {
       console.log(`Checking live match for player: ${playerId}`);
+      
+      // Încearcă să obțină informații despre jucător
       const data = await makeApiCall(`/players/${playerId}`, false);
       
-      // Verificăm dacă jucătorul este în meci live
-      if (data && data.games && data.games.cs2 && data.games.cs2.game_player_id) {
-        // Încercăm să obținem informații despre meciul curent
-        try {
-          const matchData = await makeApiCall(`/players/${playerId}/history?game=cs2&limit=1`, false);
-          if (matchData && matchData.items && matchData.items.length > 0) {
-            const lastMatch = matchData.items[0];
-            // Verificăm dacă meciul este în desfășurare (status: 'ONGOING' sau similar)
-            if (lastMatch.status === 'ONGOING' || lastMatch.status === 'LIVE') {
-              return {
-                isLive: true,
-                matchId: lastMatch.match_id,
-                competition: lastMatch.competition_name
-              };
-            }
-          }
-        } catch (matchError) {
-          console.error('Error fetching match history:', matchError);
-        }
+      // Verificăm dacă jucătorul este activ în CS2
+      if (data && data.games && data.games.cs2) {
+        // Pentru moment, returnăm doar false deoarece API-ul nu oferă informații directe despre meciurile live
+        // În viitor, această logică poate fi extinsă când API-ul va fi mai stabil
+        return { isLive: false };
       }
       
       return { isLive: false };
     } catch (error) {
-      console.error('Error checking live match:', error);
+      // Nu mai logăm eroarea pentru fiecare jucător individual pentru a reduce spam-ul în consolă
+      console.warn(`Could not check live match for player ${playerId} - API may be temporarily unavailable`);
       return { isLive: false };
     }
   };
