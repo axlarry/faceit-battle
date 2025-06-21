@@ -70,12 +70,21 @@ export const FriendListItem = React.memo(({
   const playerStyles = getPlayerStyles();
   const isPlayerDataLoading = friend.lcryptData === undefined || isLoadingElo;
 
+  // Create background style with cover image
+  const backgroundStyle = friend.cover_image ? {
+    backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.8)), url(${friend.cover_image})`,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center',
+    backgroundRepeat: 'no-repeat'
+  } : {};
+
   return (
     <div
       onClick={handleClick}
-      className={`relative bg-gradient-to-br ${playerStyles.background} rounded-xl p-3 border-2 ${playerStyles.border} ${playerStyles.ring} hover:border-orange-500/50 transition-all duration-500 ${playerStyles.glow} cursor-pointer ${playerStyles.transform} hover:scale-[1.02] ${
+      className={`relative rounded-xl p-3 border-2 ${playerStyles.border} ${playerStyles.ring} hover:border-orange-500/50 transition-all duration-500 ${playerStyles.glow} cursor-pointer ${playerStyles.transform} hover:scale-[1.02] ${
         isFlashing ? 'animate-pulse bg-gradient-to-br from-orange-500/20 via-orange-600/10 to-orange-500/20 border-orange-500' : ''
-      }`}
+      } ${!friend.cover_image ? `bg-gradient-to-br ${playerStyles.background}` : ''}`}
+      style={friend.cover_image ? backgroundStyle : {}}
     >
       {/* Loading Overlay pentru întregul player până la finalizarea datelor */}
       {isPlayerDataLoading && (
@@ -94,8 +103,13 @@ export const FriendListItem = React.memo(({
         </div>
       )}
 
+      {/* Background overlay to ensure text readability when cover image is present */}
+      {friend.cover_image && (
+        <div className="absolute inset-0 bg-black/30 rounded-xl"></div>
+      )}
+
       {/* Main Content */}
-      <div className="flex items-center gap-3 relative z-5">
+      <div className="flex items-center gap-3 relative z-10">
         {/* Avatar and Rank */}
         <PlayerAvatar 
           avatar={friend.avatar}
@@ -121,7 +135,7 @@ export const FriendListItem = React.memo(({
       />
 
       {/* Stats Row - Compact Layout */}
-      <div className="flex items-center justify-between gap-2 mt-1 relative z-5">
+      <div className="flex items-center justify-between gap-2 mt-1 relative z-10">
         <PlayerStatsCompact
           wins={friend.wins || 0}
           winRate={friend.winRate || 0}
