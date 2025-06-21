@@ -1,3 +1,4 @@
+
 import {
   Dialog,
   DialogContent,
@@ -17,7 +18,6 @@ import { MatchHeader } from "./MatchHeader";
 import { MatchInfo } from "./MatchInfo";
 import { TeamPlayersSection } from "./TeamPlayersSection";
 import { MatchServerInfo } from "./MatchServerInfo";
-import "../styles/modalBackgrounds.css";
 
 interface MatchDetailsModalProps {
   match: Match | null;
