@@ -6,6 +6,7 @@ import { FriendInfo } from './FriendInfo';
 import { FriendStats } from './FriendStats';
 import { FriendActions } from './FriendActions';
 import { useSteamIdConverter } from './SteamIdConverter';
+import { LoaderCircle } from 'lucide-react';
 
 interface FriendWithLcrypt extends Player {
   lcryptData?: any;
@@ -59,20 +60,41 @@ export const FriendListItem = React.memo(({
   return (
     <div
       onClick={handleClick}
-      className={`bg-gradient-to-br ${liveStyles.background} rounded-xl p-3 md:p-4 border-2 ${liveStyles.border} hover:border-orange-500/50 transition-all duration-300 shadow-lg ${liveStyles.glow} cursor-pointer transform hover:scale-[1.02] relative ${
+      className={`bg-gradient-to-br ${liveStyles.background} rounded-xl p-3 border-2 ${liveStyles.border} hover:border-orange-500/50 transition-all duration-300 shadow-lg ${liveStyles.glow} cursor-pointer transform hover:scale-[1.02] relative ${
         isFlashing ? 'animate-pulse bg-gradient-to-br from-orange-500/20 via-orange-600/10 to-orange-500/20 border-orange-500' : ''
-      } ${hasNoEloData ? 'blur-sm opacity-70' : ''}`}
+      }`}
     >
-      <div className="flex flex-col space-y-3 lg:space-y-0 lg:flex-row lg:items-center lg:justify-between lg:gap-4">
-        {/* Mobile Layout - Stacked */}
-        <div className="flex items-center gap-3 w-full lg:w-auto min-w-0">
-          <FriendAvatar 
-            avatar={friend.avatar}
-            nickname={friend.nickname}
-            index={index}
+      {/* Loading Overlay pentru ELO */}
+      {isLoadingElo && (
+        <div className="absolute inset-0 bg-gray-900/80 rounded-xl flex items-center justify-center z-10">
+          <div className="flex flex-col items-center gap-2">
+            <LoaderCircle className="w-8 h-8 text-orange-400 animate-spin" />
+            <span className="text-xs text-orange-400 font-medium">Se încarcă ELO...</span>
+          </div>
+        </div>
+      )}
+
+      {/* Main Content */}
+      <div className="flex items-center gap-3">
+        {/* Avatar and Rank */}
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="text-lg font-bold text-[#ff6500] min-w-[2rem] text-center">
+            #{index + 1}
+          </div>
+          <img
+            src={friend.avatar}
+            alt={friend.nickname}
+            className="w-12 h-12 rounded-lg border-2 border-[#ff6500] shadow-lg flex-shrink-0"
           />
-          
-          <div className="flex flex-col min-w-0 flex-1">
+        </div>
+
+        {/* Player Info - Mobile Optimized */}
+        <div className="flex-1 min-w-0">
+          <div className="flex flex-col gap-1">
+            {/* Nickname */}
+            <h3 className="text-base font-bold text-white truncate">{friend.nickname}</h3>
+            
+            {/* ELO and Level Row */}
             <div className="flex items-center gap-2 flex-wrap">
               <FriendInfo
                 nickname={friend.nickname}
@@ -81,12 +103,54 @@ export const FriendListItem = React.memo(({
                 lcryptData={friend.lcryptData}
               />
             </div>
-            
+
+            {/* Stats Row - Compact Mobile Layout */}
+            <div className="flex items-center justify-between gap-2 mt-1">
+              <div className="flex gap-3 text-xs">
+                <div className="text-center">
+                  <div className="text-white font-bold">{friend.wins}</div>
+                  <div className="text-gray-400">W</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-white font-bold">{friend.winRate}%</div>
+                  <div className="text-gray-400">WR</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-white font-bold">{friend.hsRate}%</div>
+                  <div className="text-gray-400">HS</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-white font-bold">{friend.kdRatio}</div>
+                  <div className="text-gray-400">K/D</div>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-1" onClick={handleLinkClick}>
+                <a
+                  href={`https://www.faceit.com/en/players/${friend.nickname}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-transparent border border-[#ff6500] text-[#ff6500] hover:bg-[#ff6500] hover:text-white rounded-lg w-8 h-8 flex items-center justify-center text-xs transition-colors"
+                >
+                  F
+                </a>
+                <a
+                  href={steamId64 ? `https://steamcommunity.com/profiles/${steamId64}` : `https://steamcommunity.com/search/users/#text=${friend.nickname}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="bg-transparent border border-blue-400 text-blue-400 hover:bg-blue-500 hover:border-blue-500 hover:text-white rounded-lg w-8 h-8 flex items-center justify-center text-xs transition-colors"
+                >
+                  S
+                </a>
+              </div>
+            </div>
+
             {/* Live Match Details - Mobile Optimized */}
             {isLive && liveMatchDetails && (
-              <div className="mt-2 space-y-2">
-                <div className="flex items-center justify-center gap-2 text-xs md:text-sm">
-                  <span className="bg-green-500 text-white px-2 py-1 rounded-lg text-xs font-bold animate-pulse">
+              <div className="mt-2 p-2 bg-green-900/20 rounded-lg border border-green-500/30">
+                <div className="flex items-center justify-center gap-2 text-xs">
+                  <span className="bg-green-500 text-white px-2 py-1 rounded text-xs font-bold animate-pulse">
                     {liveMatchDetails.status || 'LIVE'}
                   </span>
                   <span className="text-green-400 font-medium truncate">
@@ -94,43 +158,25 @@ export const FriendListItem = React.memo(({
                   </span>
                 </div>
                 
-                <div className="flex items-center justify-center gap-2 text-xs">
-                  {liveMatchDetails.score && (
-                    <span className="text-white font-bold bg-gray-700/50 px-2 py-1 rounded">
-                      {liveMatchDetails.score}
-                    </span>
-                  )}
-                  {liveMatchDetails.result && (
-                    <span className={`font-medium capitalize px-2 py-1 rounded ${
-                      liveMatchDetails.result === 'winning' ? 'text-green-400 bg-green-500/20' : 
-                      liveMatchDetails.result === 'losing' ? 'text-red-400 bg-red-500/20' : 'text-yellow-400 bg-yellow-500/20'
-                    }`}>
-                      {liveMatchDetails.result}
-                    </span>
-                  )}
-                </div>
+                {(liveMatchDetails.score || liveMatchDetails.result) && (
+                  <div className="flex items-center justify-center gap-2 text-xs mt-1">
+                    {liveMatchDetails.score && (
+                      <span className="text-white font-bold bg-gray-700/50 px-2 py-1 rounded">
+                        {liveMatchDetails.score}
+                      </span>
+                    )}
+                    {liveMatchDetails.result && (
+                      <span className={`font-medium capitalize px-2 py-1 rounded ${
+                        liveMatchDetails.result === 'winning' ? 'text-green-400 bg-green-500/20' : 
+                        liveMatchDetails.result === 'losing' ? 'text-red-400 bg-red-500/20' : 'text-yellow-400 bg-yellow-500/20'
+                      }`}>
+                        {liveMatchDetails.result}
+                      </span>
+                    )}
+                  </div>
+                )}
               </div>
             )}
-          </div>
-        </div>
-
-        {/* Stats and Actions - Mobile Optimized */}
-        <div className="flex flex-col lg:flex-row items-stretch lg:items-center gap-3 w-full lg:w-auto">
-          <div className="grid grid-cols-2 lg:flex lg:gap-3 gap-2 text-xs md:text-sm">
-            <FriendStats
-              wins={friend.wins}
-              winRate={friend.winRate}
-              hsRate={friend.hsRate}
-              kdRatio={friend.kdRatio}
-            />
-          </div>
-          
-          <div className="flex justify-center lg:justify-end">
-            <FriendActions
-              nickname={friend.nickname}
-              steamId64={steamId64}
-              onLinkClick={handleLinkClick}
-            />
           </div>
         </div>
       </div>
