@@ -25,10 +25,12 @@ export class LcryptLiveService {
       if (data.current && data.current.present && data.current.status === 'LIVE') {
         console.log(`✅ ${nickname} is LIVE according to Lcrypt`);
         
-        // Try to extract match information from Lcrypt data
+        // Create match ID from current timestamp since Lcrypt doesn't provide one
+        const matchId = `live-${Date.now()}`;
+        
         const liveMatchInfo = {
           isLive: true,
-          matchId: this.extractMatchIdFromLcrypt(data),
+          matchId: matchId,
           competition: data.current.what || 'Live Match',
           status: 'LIVE',
           state: 'ONGOING',
@@ -38,10 +40,12 @@ export class LcryptLiveService {
             score: data.current.score,
             duration: data.current.duration,
             round: data.current.round,
-            elo_change: data.current.elo
+            elo_change: data.current.elo,
+            result: data.current.result,
+            chance: data.current.chance
           },
           liveMatch: {
-            match_id: this.extractMatchIdFromLcrypt(data),
+            match_id: matchId,
             competition_name: data.current.what || 'Live Match',
             status: 'LIVE',
             started_at: Date.now() / 1000 - this.parseMinutesToSeconds(data.current.duration),
@@ -51,7 +55,8 @@ export class LcryptLiveService {
               map: {
                 pick: [data.current.map]
               }
-            }
+            },
+            lcryptData: data.current
           }
         };
 
@@ -63,13 +68,6 @@ export class LcryptLiveService {
       console.warn(`⚠️ Error checking Lcrypt live status for ${nickname}:`, error);
       return { isLive: false };
     }
-  }
-
-  private extractMatchIdFromLcrypt(data: any): string {
-    // Since Lcrypt doesn't provide match ID directly, we'll generate a placeholder
-    // In a real scenario, we might need to parse it from the playing string or use another method
-    const timestamp = Date.now();
-    return `live-${timestamp}`;
   }
 
   private parseMinutesToSeconds(duration: string): number {

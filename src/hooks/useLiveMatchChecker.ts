@@ -26,7 +26,7 @@ export const useLiveMatchChecker = (friends: Player[]) => {
     const now = Date.now();
     const timeSinceLastCheck = now - lastCheckTime;
     
-    // Check less frequently to avoid rate limiting (minimum 2 minutes)
+    // Check every 2 minutes to avoid rate limiting
     if (timeSinceLastCheck < 120000) {
       console.log(`⏱️ Skipping live check, only ${Math.round(timeSinceLastCheck / 1000)}s since last check`);
       return;
@@ -34,7 +34,7 @@ export const useLiveMatchChecker = (friends: Player[]) => {
     
     setIsChecking(true);
     setLastCheckTime(now);
-    console.log(`🔍 Starting enhanced live matches check for ${friends.length} friends...`);
+    console.log(`🔍 Starting Lcrypt live matches check for ${friends.length} friends...`);
     
     try {
       const newLiveMatches: Record<string, LiveMatchInfo> = { ...liveMatches };
@@ -42,25 +42,25 @@ export const useLiveMatchChecker = (friends: Player[]) => {
       
       for (const friend of friends) {
         try {
-          console.log(`🎯 Enhanced checking live status for: ${friend.nickname} (${friend.player_id})`);
+          console.log(`🎯 Checking live status via Lcrypt for: ${friend.nickname} (${friend.player_id})`);
           const liveInfo = await checkPlayerLiveMatch(friend.player_id);
           
           newLiveMatches[friend.player_id] = liveInfo;
           processedCount++;
           
           if (liveInfo.isLive) {
-            console.log(`🟢 LIVE PLAYER DETECTED: ${friend.nickname} in ${liveInfo.competition} (${liveInfo.status}${liveInfo.state ? ` / ${liveInfo.state}` : ''}) - Match ID: ${liveInfo.matchId}`);
+            console.log(`🟢 LIVE PLAYER DETECTED: ${friend.nickname} in ${liveInfo.competition} (${liveInfo.status}) - Lcrypt Data Available`);
           } else {
-            console.log(`⚪ ${friend.nickname} is not live (enhanced check)`);
+            console.log(`⚪ ${friend.nickname} is not live (Lcrypt check)`);
           }
           
-          // Longer delay between checks to respect rate limits
+          // Delay between checks to respect rate limits
           if (processedCount < friends.length) {
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            await new Promise(resolve => setTimeout(resolve, 1000));
           }
           
         } catch (error) {
-          console.warn(`⚠️ Error in enhanced check for ${friend.nickname}:`, error);
+          console.warn(`⚠️ Error in live check for ${friend.nickname}:`, error);
           newLiveMatches[friend.player_id] = liveMatches[friend.player_id] || { isLive: false };
         }
       }
@@ -68,10 +68,10 @@ export const useLiveMatchChecker = (friends: Player[]) => {
       setLiveMatches(newLiveMatches);
       
       const liveCount = Object.values(newLiveMatches).filter(match => match.isLive).length;
-      console.log(`✅ Enhanced live matches check completed: ${liveCount}/${friends.length} friends are live`);
+      console.log(`✅ Lcrypt live matches check completed: ${liveCount}/${friends.length} friends are live`);
       
     } catch (error) {
-      console.warn('⚠️ Enhanced live matches check failed:', error);
+      console.warn('⚠️ Live matches check failed:', error);
     } finally {
       setIsChecking(false);
     }
@@ -84,10 +84,10 @@ export const useLiveMatchChecker = (friends: Player[]) => {
         checkAllFriendsLiveMatches();
       }, 3000);
       
-      // Check every 5 minutes for live matches
+      // Check every 3 minutes for live matches (reduced frequency)
       intervalRef.current = setInterval(() => {
         checkAllFriendsLiveMatches();
-      }, 300000);
+      }, 180000);
 
       return () => {
         clearTimeout(initialTimeout);
