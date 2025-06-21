@@ -1,7 +1,8 @@
 
-import { faceitApiClient } from './faceitApiClient';
-import { toast } from '@/hooks/use-toast';
 import { lcryptLiveService } from './lcryptLiveService';
+import { playerStatsService } from './playerStatsService';
+import { playerMatchesService } from './playerMatchesService';
+import { playerSearchService } from './playerSearchService';
 
 export class PlayerService {
   async checkPlayerLiveMatch(playerId: string) {
@@ -9,7 +10,7 @@ export class PlayerService {
       console.log(`🔍 Checking live match for player: ${playerId}`);
       
       // Get player data to get nickname for Lcrypt check
-      const playerData = await faceitApiClient.makeApiCall(`/players/${playerId}`, false);
+      const playerData = await this.getPlayerBasicData(playerId);
       const nickname = playerData?.nickname;
 
       if (nickname) {
@@ -30,52 +31,26 @@ export class PlayerService {
     }
   }
 
-  async getPlayerStats(playerId: string) {
+  private async getPlayerBasicData(playerId: string) {
     try {
-      const data = await faceitApiClient.makeApiCall(`/players/${playerId}/stats/cs2`, false);
-      console.log('Player stats response:', data);
-      return data;
+      const { faceitApiClient } = await import('./faceitApiClient');
+      return await faceitApiClient.makeApiCall(`/players/${playerId}`, false);
     } catch (error) {
-      console.error('Error fetching player stats:', error);
-      toast({
-        title: "Eroare la încărcarea statisticilor",
-        description: "Nu s-au putut încărca statisticile jucătorului.",
-        variant: "destructive",
-      });
+      console.warn(`Error fetching basic player data for ${playerId}:`, error);
       return null;
     }
   }
 
+  async getPlayerStats(playerId: string) {
+    return playerStatsService.getPlayerStats(playerId);
+  }
+
   async getPlayerMatches(playerId: string, limit: number = 10) {
-    try {
-      console.log(`Fetching matches for player: ${playerId}`);
-      const data = await faceitApiClient.makeApiCall(`/players/${playerId}/history?game=cs2&limit=${limit}`, false);
-      console.log('Player matches response:', data);
-      return data.items || [];
-    } catch (error) {
-      console.error('Error fetching player matches:', error);
-      toast({
-        title: "Eroare la încărcarea meciurilor",
-        description: "Nu s-au putut încărca meciurile jucătorului.",
-        variant: "destructive",
-      });
-      return [];
-    }
+    return playerMatchesService.getPlayerMatches(playerId, limit);
   }
 
   async searchPlayer(nickname: string) {
-    try {
-      const data = await faceitApiClient.makeApiCall(`/search/players?nickname=${encodeURIComponent(nickname)}&game=cs2`, false);
-      return data.items || [];
-    } catch (error) {
-      console.error('Error searching player:', error);
-      toast({
-        title: "Eroare la căutarea jucătorului",
-        description: "Nu s-a putut găsi jucătorul specificat.",
-        variant: "destructive",
-      });
-      return [];
-    }
+    return playerSearchService.searchPlayer(nickname);
   }
 }
 
