@@ -12,12 +12,12 @@ interface UseLcryptDataManagerProps {
   enabled?: boolean;
 }
 
-// Cache pentru datele Lcrypt (15 minute pentru a reduce API calls)
-const CACHE_DURATION = 15 * 60 * 1000;
+// Cache optimizat pentru datele Lcrypt (20 minute pentru a reduce stress pe API)
+const CACHE_DURATION = 20 * 60 * 1000;
 const dataCache = new Map<string, { data: any; timestamp: number }>();
 
-// Rate limiting optimizat - 600ms între request-uri
-const RATE_LIMIT_DELAY = 600;
+// Rate limiting mai relaxat pentru a reduce stress pe API - 1 secunde între request-uri
+const RATE_LIMIT_DELAY = 1000;
 let lastRequestTime = 0;
 
 const rateLimitedDelay = async () => {
@@ -44,7 +44,7 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
     // Verifică cache-ul
     const cached = dataCache.get(nickname);
     if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
-      console.log(`Using cached data for ${nickname}`);
+      console.log(`📦 Using cached data for ${nickname}`);
       return cached.data;
     }
 
@@ -52,7 +52,7 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
     await rateLimitedDelay();
 
     try {
-      console.log(`Fetching ELO data for: ${nickname}`);
+      console.log(`🔍 Fetching ELO data for: ${nickname}`);
       
       const { data: result, error: supabaseError } = await supabase.functions.invoke('get-lcrypt-elo', {
         body: { nickname }
@@ -68,9 +68,9 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
         return null;
       }
 
-      // Salvează în cache
+      // Salvează în cache cu timestamp
       dataCache.set(nickname, { data: result, timestamp: Date.now() });
-      console.log('Cached data for', nickname);
+      console.log(`💾 Cached data for ${nickname}`);
       
       return result;
     } catch (error) {
@@ -99,14 +99,14 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
     setLoadingFriends(new Set());
 
     try {
-      console.log('Loading lcrypt data for friends:', friends.map(f => f.nickname));
+      console.log('📊 Loading lcrypt data for friends:', friends.map(f => f.nickname));
       
       // Inițializează lista cu prietenii fără date lcrypt
       const initialFriends = friends.map(friend => ({ ...friend, lcryptData: null }));
       setFriendsWithLcrypt(initialFriends);
 
-      // Procesare concurentă pentru viteza optimă - maxim 3 request-uri simultan
-      const BATCH_SIZE = 3;
+      // Procesare secvențială pentru a reduce stress pe API - doar 2 request-uri simultan
+      const BATCH_SIZE = 2;
       const updatedFriends = [...initialFriends];
       
       for (let i = 0; i < friends.length; i += BATCH_SIZE) {
@@ -153,13 +153,13 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
         setLoadingProgress((completedCount / friends.length) * 100);
         setFriendsWithLcrypt([...updatedFriends]);
         
-        // Pauză scurtă între batch-uri pentru a nu supraîncărca API-ul
+        // Pauză mai lungă între batch-uri pentru a reduce stress pe API
         if (i + BATCH_SIZE < friends.length) {
-          await new Promise(resolve => setTimeout(resolve, 200));
+          await new Promise(resolve => setTimeout(resolve, 500));
         }
       }
       
-      console.log('All friends with lcrypt data loaded:', updatedFriends.length);
+      console.log('✅ All friends with lcrypt data loaded:', updatedFriends.length);
     } catch (error) {
       if (error instanceof Error && error.name !== 'AbortError') {
         console.error('Error loading lcrypt data:', error);
@@ -198,7 +198,7 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
 
   const clearCache = useCallback(() => {
     dataCache.clear();
-    console.log('Lcrypt cache cleared');
+    console.log('🗑️ Lcrypt cache cleared');
   }, []);
 
   useEffect(() => {

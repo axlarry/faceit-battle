@@ -39,14 +39,17 @@ export const MatchRow = ({ match, player, matchesStats, onMatchClick, matchIndex
 
   // Handle live match differently
   if (match.isLiveMatch) {
+    const liveScore = match.liveMatchDetails?.score || 'În Desfășurare';
+    const liveElo = match.liveMatchDetails?.elo || match.liveMatchDetails?.elo_change;
+    
     return (
       <TableRow 
         key={match.match_id}
-        className="border-white/10 bg-green-500/10 hover:bg-green-500/20 transition-colors animate-pulse"
+        className="border-white/10 bg-green-500/10 hover:bg-green-500/20 transition-colors"
       >
         {/* Result - Live indicator */}
         <TableCell>
-          <Badge className="bg-green-500/20 text-green-400 border-green-500/30 border font-semibold animate-pulse">
+          <Badge className="bg-green-500/20 text-green-400 border-green-500/30 border font-semibold">
             <Radio className="w-3 h-3 mr-1" />
             LIVE
           </Badge>
@@ -62,10 +65,10 @@ export const MatchRow = ({ match, player, matchesStats, onMatchClick, matchIndex
           </div>
         </TableCell>
 
-        {/* Score - Show as in progress */}
+        {/* Score - Show live score if available */}
         <TableCell>
-          <span className="text-green-400 font-bold animate-pulse">
-            În Desfășurare
+          <span className="text-green-400 font-bold">
+            {liveScore}
           </span>
         </TableCell>
 
@@ -89,9 +92,15 @@ export const MatchRow = ({ match, player, matchesStats, onMatchClick, matchIndex
           <span className="text-gray-400">-</span>
         </TableCell>
 
-        {/* ELO Change */}
+        {/* ELO Change - Show live ELO if available */}
         <TableCell>
-          <span className="text-gray-400">Pending</span>
+          {liveElo ? (
+            <span className="text-yellow-400 font-bold">
+              {liveElo}
+            </span>
+          ) : (
+            <span className="text-gray-400">Pending</span>
+          )}
         </TableCell>
 
         {/* Date */}
@@ -108,7 +117,7 @@ export const MatchRow = ({ match, player, matchesStats, onMatchClick, matchIndex
         <TableCell>
           <div className="flex items-center gap-1">
             <Clock className="w-3 h-3 text-green-400" />
-            <span className="text-green-300 text-sm font-medium animate-pulse">
+            <span className="text-green-300 text-sm font-medium">
               Live
             </span>
           </div>

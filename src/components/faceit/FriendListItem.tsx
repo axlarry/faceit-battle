@@ -45,14 +45,12 @@ export const FriendListItem = React.memo(({
   // Determină dacă jucătorul nu are date ELO încărcate
   const hasNoEloData = !friend.lcryptData || !friend.elo;
 
-  // Stiluri pentru jucătorii live cu animație mai lentă
+  // Stiluri pentru jucătorii live - fără animație, doar culoare diferită
   const liveStyles = isLive ? {
     border: 'border-green-500',
-    animation: 'animate-[pulse_1.5s_cubic-bezier(0.4,0,0.6,1)_infinite]', // Aceeași viteză ca ELO today
     background: 'bg-green-500/10'
   } : {
     border: 'border-[#3a4048]',
-    animation: '',
     background: 'bg-[#2a2f36]'
   };
 
@@ -61,7 +59,7 @@ export const FriendListItem = React.memo(({
       onClick={handleClick}
       className={`${liveStyles.background} rounded-lg p-2 sm:p-3 border-2 ${liveStyles.border} hover:border-[#ff6500]/50 transition-all duration-300 shadow-lg cursor-pointer transform hover:scale-[1.01] relative ${
         isFlashing ? 'animate-pulse bg-[#ff6500]/20 border-[#ff6500]' : ''
-      } ${hasNoEloData ? 'blur-sm opacity-70' : ''} ${liveStyles.animation}`}
+      } ${hasNoEloData ? 'blur-sm opacity-70' : ''}`}
     >
       <div className="flex flex-col space-y-3 sm:space-y-0 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
         <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto min-w-0">
@@ -81,7 +79,7 @@ export const FriendListItem = React.memo(({
               />
             </div>
             
-            {/* Live Match Details - centrat și fără Europe 5v5 Queue */}
+            {/* Live Match Details - centrat și fără animație */}
             {isLive && liveMatchDetails && (
               <div className="mt-2 space-y-1 flex flex-col items-center text-center">
                 <div className="flex items-center justify-center gap-2 text-sm">

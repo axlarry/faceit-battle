@@ -26,15 +26,15 @@ export const useLiveMatchChecker = (friends: Player[]) => {
     const now = Date.now();
     const timeSinceLastCheck = now - lastCheckTime;
     
-    // Check every 2 minutes to avoid rate limiting
-    if (timeSinceLastCheck < 120000) {
+    // Check every 4 minutes to reduce API stress
+    if (timeSinceLastCheck < 240000) {
       console.log(`⏱️ Skipping live check, only ${Math.round(timeSinceLastCheck / 1000)}s since last check`);
       return;
     }
     
     setIsChecking(true);
     setLastCheckTime(now);
-    console.log(`🔍 Starting Lcrypt live matches check for ${friends.length} friends...`);
+    console.log(`🔍 Starting optimized Lcrypt live matches check for ${friends.length} friends...`);
     
     try {
       const newLiveMatches: Record<string, LiveMatchInfo> = { ...liveMatches };
@@ -54,9 +54,9 @@ export const useLiveMatchChecker = (friends: Player[]) => {
             console.log(`⚪ ${friend.nickname} is not live (Lcrypt check)`);
           }
           
-          // Delay between checks to respect rate limits
+          // Longer delay between checks to reduce API stress
           if (processedCount < friends.length) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await new Promise(resolve => setTimeout(resolve, 1500));
           }
           
         } catch (error) {
@@ -68,7 +68,7 @@ export const useLiveMatchChecker = (friends: Player[]) => {
       setLiveMatches(newLiveMatches);
       
       const liveCount = Object.values(newLiveMatches).filter(match => match.isLive).length;
-      console.log(`✅ Lcrypt live matches check completed: ${liveCount}/${friends.length} friends are live`);
+      console.log(`✅ Optimized Lcrypt live matches check completed: ${liveCount}/${friends.length} friends are live`);
       
     } catch (error) {
       console.warn('⚠️ Live matches check failed:', error);
@@ -79,15 +79,15 @@ export const useLiveMatchChecker = (friends: Player[]) => {
 
   useEffect(() => {
     if (friends.length > 0) {
-      // Initial check after 3 seconds
+      // Initial check after 5 seconds
       const initialTimeout = setTimeout(() => {
         checkAllFriendsLiveMatches();
-      }, 3000);
+      }, 5000);
       
-      // Check every 3 minutes for live matches (reduced frequency)
+      // Check every 5 minutes for live matches (reduced frequency to stress API less)
       intervalRef.current = setInterval(() => {
         checkAllFriendsLiveMatches();
-      }, 180000);
+      }, 300000);
 
       return () => {
         clearTimeout(initialTimeout);
