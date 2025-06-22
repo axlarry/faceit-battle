@@ -26,12 +26,14 @@ export const useDiscordSDK = () => {
       try {
         console.log('🎮 Initializing Discord SDK...');
         
-        // Verificare mai robustă pentru mediul Discord
+        // Verificare îmbunătățită pentru mediul Discord
         const isDiscordEnvironment = 
           window.location.href.includes('discord.com') || 
           window.parent !== window ||
           document.referrer.includes('discord.com') ||
           window.location.hostname.includes('discord.com') ||
+          window.location.search.includes('frame_id') ||
+          window.location.search.includes('instance_id') ||
           // Verificare pentru iframe Discord
           (window.frameElement && window.frameElement.getAttribute('src')?.includes('discord.com')) ||
           // Verificare pentru user agent Discord
@@ -41,8 +43,11 @@ export const useDiscordSDK = () => {
           isDiscordEnvironment,
           hostname: window.location.hostname,
           referrer: document.referrer,
+          search: window.location.search,
           userAgent: navigator.userAgent,
-          isIframe: window.parent !== window
+          isIframe: window.parent !== window,
+          hasFrameId: window.location.search.includes('frame_id'),
+          hasInstanceId: window.location.search.includes('instance_id')
         });
 
         setIsInDiscord(isDiscordEnvironment);
@@ -61,6 +66,7 @@ export const useDiscordSDK = () => {
           throw new Error('Discord Client ID not configured properly');
         }
 
+        console.log('🔧 Initializing Discord SDK with Client ID:', clientId);
         const sdk = new DiscordSDK(clientId);
         
         await sdk.ready();
