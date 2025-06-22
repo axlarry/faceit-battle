@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Player, Match } from "@/types/Player";
-import { Trophy, Calendar, Clock, Target, TrendingUp, TrendingDown, Minus, Zap, Crosshair, Radio, Download } from "lucide-react";
+import { Trophy, Calendar, Clock, Target, TrendingUp, TrendingDown, Minus, Zap, Crosshair, Radio, Download, Map } from "lucide-react";
 import { 
   formatDate, 
   formatMatchDuration, 
@@ -16,6 +16,7 @@ import { getPlayerStatsFromMatch, getKDA } from "@/utils/playerDataUtils";
 import { getKDRatio, getHeadshotPercentage, getADR } from "@/utils/statsUtils";
 import { useLcryptApi } from "@/hooks/useLcryptApi";
 import { parseLcryptReport, findMatchEloChange } from "@/utils/lcryptUtils";
+import { useState } from "react";
 
 interface MatchRowProps {
   match: Match & { isLiveMatch?: boolean; liveMatchDetails?: any };
@@ -33,20 +34,79 @@ export const MatchRow = ({ match, player, matchesStats, onMatchClick, matchIndex
   const matchScore = getMatchScore(match, matchesStats, player);
   const kda = getKDA(playerStats);
   const { data: lcryptData } = useLcryptApi(player.nickname);
+  const [imageLoadErrors, setImageLoadErrors] = useState<Set<string>>(new Set());
 
   // Parse lcrypt report and find ELO change for this match
   const lcryptMatches = lcryptData?.report ? parseLcryptReport(lcryptData.report) : [];
   const lcryptEloChange = findMatchEloChange(match, lcryptMatches, matchIndex);
 
-  // Function to get map image URL from Faceit
+  // Function to get map image URL from Faceit with multiple fallback options
   const getMapImageUrl = (mapName: string) => {
     if (!mapName || mapName === 'Unknown') return null;
     
-    // Convert map name to lowercase and replace spaces with underscores
-    const normalizedMapName = mapName.toLowerCase().replace(/\s+/g, '_');
+    // Clean and normalize the map name
+    const cleanMapName = mapName.toLowerCase().trim();
+    
+    // Common map name mappings for Faceit
+    const mapMappings: { [key: string]: string } = {
+      'de_dust2': 'de_dust2',
+      'dust2': 'de_dust2',
+      'de_mirage': 'de_mirage',
+      'mirage': 'de_mirage',
+      'de_inferno': 'de_inferno',
+      'inferno': 'de_inferno',
+      'de_cache': 'de_cache',
+      'cache': 'de_cache',
+      'de_overpass': 'de_overpass',
+      'overpass': 'de_overpass',
+      'de_cobblestone': 'de_cbble',
+      'cobblestone': 'de_cbble',
+      'de_cbble': 'de_cbble',
+      'de_train': 'de_train',
+      'train': 'de_train',
+      'de_nuke': 'de_nuke',
+      'nuke': 'de_nuke',
+      'de_vertigo': 'de_vertigo',
+      'vertigo': 'de_vertigo',
+      'de_ancient': 'de_ancient',
+      'ancient': 'de_ancient',
+      'de_anubis': 'de_anubis',
+      'anubis': 'de_anubis'
+    };
+    
+    const normalizedMapName = mapMappings[cleanMapName] || cleanMapName;
     
     // Faceit map images URL pattern
     return `https://assets.faceit-cdn.net/third_party/games/ce652bd2-2015-4c2c-8e5d-8338ce6723d9/assets/votables/maps/${normalizedMapName}.jpg`;
+  };
+
+  const handleImageError = (mapName: string) => {
+    console.log(`Failed to load image for map: ${mapName}`);
+    setImageLoadErrors(prev => new Set([...prev, mapName]));
+  };
+
+  const renderMapDisplay = (mapName: string) => {
+    const imageUrl = getMapImageUrl(mapName);
+    const hasError = imageLoadErrors.has(mapName);
+    
+    return (
+      <div className="flex items-center gap-2">
+        <div className="w-10 h-7 rounded overflow-hidden bg-gray-800 flex items-center justify-center border border-gray-700">
+          {imageUrl && !hasError ? (
+            <img 
+              src={imageUrl} 
+              alt={mapName}
+              className="w-full h-full object-cover"
+              onError={() => handleImageError(mapName)}
+              onLoad={() => console.log(`Successfully loaded image for: ${mapName}`)}
+            />
+          ) : (
+            <Map className="w-4 h-4 text-orange-400" />
+          )}
+        </div>
+        <span className="text-white font-medium">{mapName}</span>
+      </div>
+    );
   };
 
   const handleDownloadDemo = (e: React.MouseEvent) => {
@@ -80,32 +140,7 @@ export const MatchRow = ({ match, player, matchesStats, onMatchClick, matchIndex
 
         {/* Map */}
         <TableCell>
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-6 rounded overflow-hidden bg-gray-800 flex items-center justify-center">
-              {getMapImageUrl(liveMapName) ? (
-                <img 
-                  src={getMapImageUrl(liveMapName)} 
-                  alt={liveMapName}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    // Fallback to text if image fails to load
-                    e.currentTarget.style.display = 'none';
-                    const nextElement = e.currentTarget.nextElementSibling as HTMLElement;
-                    if (nextElement) {
-                      nextElement.style.display = 'block';
-                    }
-                  }}
-                />
-              ) : null}
-              <span 
-                className="text-xs text-orange-400 font-bold"
-                style={{ display: getMapImageUrl(liveMapName) ? 'none' : 'block' }}
-              >
-                {liveMapName.substring(0, 3).toUpperCase()}
-              </span>
-            </div>
-            <span className="text-white font-medium">{liveMapName}</span>
-          </div>
+          {renderMapDisplay(liveMapName)}
         </TableCell>
 
         {/* Score - Show live score if available */}
@@ -200,32 +235,7 @@ export const MatchRow = ({ match, player, matchesStats, onMatchClick, matchIndex
 
       {/* Map */}
       <TableCell>
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-6 rounded overflow-hidden bg-gray-800 flex items-center justify-center">
-            {getMapImageUrl(mapName) ? (
-              <img 
-                src={getMapImageUrl(mapName)} 
-                alt={mapName}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  // Fallback to text if image fails to load
-                  e.currentTarget.style.display = 'none';
-                  const nextElement = e.currentTarget.nextElementSibling as HTMLElement;
-                  if (nextElement) {
-                    nextElement.style.display = 'block';
-                  }
-                }}
-              />
-            ) : null}
-            <span 
-              className="text-xs text-orange-400 font-bold"
-              style={{ display: getMapImageUrl(mapName) ? 'none' : 'block' }}
-            >
-              {mapName.substring(0, 3).toUpperCase()}
-            </span>
-          </div>
-          <span className="text-white font-medium">{mapName}</span>
-        </div>
+        {renderMapDisplay(mapName)}
       </TableCell>
 
       {/* Score */}
