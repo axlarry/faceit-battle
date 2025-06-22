@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Player, Match } from "@/types/Player";
-import { Trophy, Calendar, Map, Clock, Target, TrendingUp, TrendingDown, Minus, Zap, Crosshair, Radio, Download } from "lucide-react";
+import { Trophy, Calendar, Clock, Target, TrendingUp, TrendingDown, Minus, Zap, Crosshair, Radio, Download } from "lucide-react";
 import { 
   formatDate, 
   formatMatchDuration, 
@@ -38,6 +38,17 @@ export const MatchRow = ({ match, player, matchesStats, onMatchClick, matchIndex
   const lcryptMatches = lcryptData?.report ? parseLcryptReport(lcryptData.report) : [];
   const lcryptEloChange = findMatchEloChange(match, lcryptMatches, matchIndex);
 
+  // Function to get map image URL from Faceit
+  const getMapImageUrl = (mapName: string) => {
+    if (!mapName || mapName === 'Unknown') return null;
+    
+    // Convert map name to lowercase and replace spaces with underscores
+    const normalizedMapName = mapName.toLowerCase().replace(/\s+/g, '_');
+    
+    // Faceit map images URL pattern
+    return `https://assets.faceit-cdn.net/third_party/games/ce652bd2-2015-4c2c-8e5d-8338ce6723d9/assets/votables/maps/${normalizedMapName}.jpg`;
+  };
+
   const handleDownloadDemo = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent row click
     
@@ -52,6 +63,7 @@ export const MatchRow = ({ match, player, matchesStats, onMatchClick, matchIndex
   if (match.isLiveMatch) {
     const liveScore = match.liveMatchDetails?.score || 'În Desfășurare';
     const liveElo = match.liveMatchDetails?.elo || match.liveMatchDetails?.elo_change;
+    const liveMapName = match.liveMatchDetails?.voting?.map?.pick?.[0] || mapName || 'TBD';
     
     return (
       <TableRow 
@@ -69,10 +81,27 @@ export const MatchRow = ({ match, player, matchesStats, onMatchClick, matchIndex
         {/* Map */}
         <TableCell>
           <div className="flex items-center gap-2">
-            <Map className="w-4 h-4 text-orange-400" />
-            <span className="text-white font-medium">
-              {match.liveMatchDetails?.voting?.map?.pick?.[0] || mapName || 'TBD'}
-            </span>
+            <div className="w-8 h-6 rounded overflow-hidden bg-gray-800 flex items-center justify-center">
+              {getMapImageUrl(liveMapName) ? (
+                <img 
+                  src={getMapImageUrl(liveMapName)} 
+                  alt={liveMapName}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    // Fallback to text if image fails to load
+                    e.currentTarget.style.display = 'none';
+                    e.currentTarget.nextElementSibling!.style.display = 'block';
+                  }}
+                />
+              ) : null}
+              <span 
+                className="text-xs text-orange-400 font-bold"
+                style={{ display: getMapImageUrl(liveMapName) ? 'none' : 'block' }}
+              >
+                {liveMapName.substring(0, 3).toUpperCase()}
+              </span>
+            </div>
+            <span className="text-white font-medium">{liveMapName}</span>
           </div>
         </TableCell>
 
@@ -169,7 +198,26 @@ export const MatchRow = ({ match, player, matchesStats, onMatchClick, matchIndex
       {/* Map */}
       <TableCell>
         <div className="flex items-center gap-2">
-          <Map className="w-4 h-4 text-orange-400" />
+          <div className="w-8 h-6 rounded overflow-hidden bg-gray-800 flex items-center justify-center">
+            {getMapImageUrl(mapName) ? (
+              <img 
+                src={getMapImageUrl(mapName)} 
+                alt={mapName}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  // Fallback to text if image fails to load
+                  e.currentTarget.style.display = 'none';
+                  e.currentTarget.nextElementSibling!.style.display = 'block';
+                }}
+              />
+            ) : null}
+            <span 
+              className="text-xs text-orange-400 font-bold"
+              style={{ display: getMapImageUrl(mapName) ? 'none' : 'block' }}
+            >
+              {mapName.substring(0, 3).toUpperCase()}
+            </span>
+          </div>
           <span className="text-white font-medium">{mapName}</span>
         </div>
       </TableCell>
