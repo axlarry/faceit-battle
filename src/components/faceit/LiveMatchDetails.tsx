@@ -22,7 +22,7 @@ export const LiveMatchDetails = ({ isLive, liveMatchDetails }: LiveMatchDetailsP
   };
 
   return (
-    <div className="mt-1 p-2 bg-gradient-to-r from-green-900/20 via-emerald-900/15 to-green-900/20 rounded-md border border-green-500/30 backdrop-blur-sm">
+    <div className="mt-1 p-2 bg-gradient-to-r from-green-900/20 via-emerald-900/15 to-green-900/20 rounded-md backdrop-blur-sm">
       <div className="flex items-center justify-between gap-2 text-xs">
         <div className="flex items-center gap-1.5">
           <MapPin className="w-3 h-3 text-green-400 flex-shrink-0" />
