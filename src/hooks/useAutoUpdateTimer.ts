@@ -1,48 +1,63 @@
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useCallback } from 'react';
 
 interface UseAutoUpdateTimerProps {
   enabled: boolean;
   itemCount: number;
   updateFunction: () => Promise<void>;
-  intervalMs?: number;
+  intervalMs: number;
 }
 
-export const useAutoUpdateTimer = ({ 
-  enabled, 
-  itemCount, 
-  updateFunction, 
-  intervalMs = 300000 // 5 minutes default
+export const useAutoUpdateTimer = ({
+  enabled,
+  itemCount,
+  updateFunction,
+  intervalMs
 }: UseAutoUpdateTimerProps) => {
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const isRunningRef = useRef(false);
 
-  useEffect(() => {
-    if (!enabled || itemCount === 0) {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-      return;
+  const clearTimer = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
     }
+  }, []);
 
-    // Set up interval
-    intervalRef.current = setInterval(updateFunction, intervalMs);
+  const startTimer = useCallback(() => {
+    clearTimer();
     
-    // Clean up on unmount or dependency change
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    };
-  }, [enabled, itemCount, updateFunction, intervalMs]);
+    if (!enabled || itemCount === 0) return;
 
-  // Clean up on unmount
+    // Optimize interval based on number of items
+    const optimizedInterval = Math.max(intervalMs, itemCount * 30000); // Min 30s per item
+
+    intervalRef.current = setInterval(async () => {
+      if (isRunningRef.current) return;
+      
+      isRunningRef.current = true;
+      try {
+        console.log(`🔄 Auto-update triggered for ${itemCount} items`);
+        await updateFunction();
+      } catch (error) {
+        console.error('❌ Auto-update failed:', error);
+      } finally {
+        isRunningRef.current = false;
+      }
+    }, optimizedInterval);
+
+    console.log(`⏰ Auto-update timer started with ${optimizedInterval}ms interval for ${itemCount} items`);
+  }, [enabled, itemCount, updateFunction, intervalMs, clearTimer]);
+
+  useEffect(() => {
+    startTimer();
+    return clearTimer;
+  }, [startTimer, clearTimer]);
+
   useEffect(() => {
     return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
+      clearTimer();
+      isRunningRef.current = false;
     };
-  }, []);
+  }, [clearTimer]);
 };

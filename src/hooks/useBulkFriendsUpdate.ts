@@ -1,8 +1,8 @@
 
-import { useRef } from 'react';
+import { useState, useCallback } from 'react';
 import { Player } from '@/types/Player';
-import { toast } from '@/hooks/use-toast';
-import { usePlayerDataUpdater } from '@/hooks/usePlayerDataUpdater';
+import { useFaceitApi } from '@/hooks/useFaceitApi';
+import { playerService } from '@/services/playerService';
 
 interface UseBulkFriendsUpdateProps {
   friends: Player[];
@@ -12,71 +12,73 @@ interface UseBulkFriendsUpdateProps {
 
 export const useBulkFriendsUpdate = ({ 
   friends, 
-  updateFriend, 
+  updateFriend,
   reloadFriends 
 }: UseBulkFriendsUpdateProps) => {
-  const isUpdatingRef = useRef(false);
-  const { updatePlayerData } = usePlayerDataUpdater();
+  const [isUpdating, setIsUpdating] = useState(false);
+  const { getPlayerStats } = useFaceitApi();
 
-  const updateAllFriends = async () => {
-    if (isUpdatingRef.current || friends.length === 0) return;
+  const updateAllFriends = useCallback(async () => {
+    if (isUpdating || friends.length === 0) return;
     
-    isUpdatingRef.current = true;
-    console.log('Starting auto-update for', friends.length, 'friends...');
+    setIsUpdating(true);
+    console.log(`🔄 Starting bulk update for ${friends.length} friends`);
     
     try {
-      let updatedCount = 0;
+      // Process friends in smaller batches for better performance
+      const batchSize = 3; // Reduced from 5 for better API handling
+      const batches = [];
       
-      for (const friend of friends) {
-        const updatedPlayer = await updatePlayerData(friend);
-        if (updatedPlayer) {
-          console.log(`Saving updated data for ${updatedPlayer.nickname} to Supabase...`);
+      for (let i = 0; i < friends.length; i += batchSize) {
+        batches.push(friends.slice(i, i + batchSize));
+      }
+
+      for (const batch of batches) {
+        const updatePromises = batch.map(async (friend) => {
           try {
-            await updateFriend(updatedPlayer);
-            console.log(`Successfully updated and saved ${updatedPlayer.nickname} to database`);
-            updatedCount++;
+            console.log(`📊 Updating friend: ${friend.nickname}`);
+            
+            // Get fresh stats and live status
+            const [statsData, liveStatus] = await Promise.all([
+              getPlayerStats(friend.player_id),
+              playerService.checkPlayerLiveMatch(friend.player_id)
+            ]);
+
+            if (statsData) {
+              const updatedFriend: Player = {
+                ...friend,
+                level: statsData.games?.cs2?.skill_level || friend.level,
+                elo: statsData.games?.cs2?.faceit_elo || friend.elo,
+                isLive: liveStatus.isLive || false,
+                liveMatchDetails: liveStatus.isLive ? liveStatus.matchDetails : undefined
+              };
+
+              updateFriend(updatedFriend);
+              console.log(`✅ Updated ${friend.nickname}: ELO ${updatedFriend.elo}, Level ${updatedFriend.level}, Live: ${updatedFriend.isLive}`);
+            }
           } catch (error) {
-            console.error(`Failed to save ${updatedPlayer.nickname} to database:`, error);
+            console.warn(`❌ Failed to update friend ${friend.nickname}:`, error);
           }
+        });
+
+        await Promise.allSettled(updatePromises);
+        
+        // Add delay between batches to respect rate limits
+        if (batches.indexOf(batch) < batches.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
         }
-        
-        // Add a small delay between requests to avoid rate limiting
-        await new Promise(resolve => setTimeout(resolve, 500));
       }
-      
-      if (updatedCount > 0) {
-        // Force reload from database to ensure UI shows latest data
-        console.log('Reloading all friends from database to sync UI...');
-        await reloadFriends();
-        
-        toast({
-          title: "Date actualizate",
-          description: `Datele pentru ${updatedCount} prieteni au fost actualizate și salvate în Supabase.`,
-        });
-        console.log(`Successfully updated ${updatedCount}/${friends.length} friends and synced with database`);
-      } else {
-        console.log('No friends were updated - all API requests failed');
-        toast({
-          title: "Eroare la actualizare",
-          description: "Nu s-au putut actualiza datele prietenilor. Verifică conexiunea la API.",
-          variant: "destructive",
-        });
-      }
-      
+
+      console.log(`✅ Bulk update completed for all friends`);
     } catch (error) {
-      console.error('Error during auto-update:', error);
-      toast({
-        title: "Eroare la actualizare",
-        description: "Nu s-au putut actualiza toate datele prietenilor.",
-        variant: "destructive",
-      });
+      console.error('❌ Error during bulk friends update:', error);
     } finally {
-      isUpdatingRef.current = false;
+      setIsUpdating(false);
     }
-  };
+  }, [friends, updateFriend, getPlayerStats, isUpdating]);
 
   return {
-    isUpdating: isUpdatingRef.current,
+    isUpdating,
     updateAllFriends
   };
 };

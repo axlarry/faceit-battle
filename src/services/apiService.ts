@@ -6,15 +6,15 @@ interface RetryOptions {
 }
 
 const DEFAULT_RETRY_OPTIONS: RetryOptions = {
-  maxRetries: 1, // Reduced from 3 to 1
-  baseDelay: 3000, // Increased from 2000ms to 3000ms
-  maxDelay: 15000 // Increased from 10000ms to 15000ms
+  maxRetries: 1,
+  baseDelay: 2000, // Reduced from 3000ms for better performance
+  maxDelay: 10000 // Reduced from 15000ms
 };
 
 export class ApiService {
   private static instance: ApiService;
   private requestQueue: Map<string, Promise<any>> = new Map();
-  private rateLimitDelay: number = 0; // Track rate limiting
+  private rateLimitDelay: number = 0;
 
   static getInstance(): ApiService {
     if (!ApiService.instance) {
@@ -31,24 +31,21 @@ export class ApiService {
     
     let lastError: Error;
     
-    // Apply rate limit delay if needed
     if (this.rateLimitDelay > 0) {
       await new Promise(resolve => setTimeout(resolve, this.rateLimitDelay));
-      this.rateLimitDelay = Math.max(0, this.rateLimitDelay - 1000); // Reduce delay over time
+      this.rateLimitDelay = Math.max(0, this.rateLimitDelay - 1000);
     }
     
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
         const result = await requestFn();
-        // Reset rate limit delay on success
         this.rateLimitDelay = 0;
         return result;
       } catch (error) {
         lastError = error as Error;
         
-        // Check if it's a rate limit error
         if (lastError.message.includes('Rate limited') || lastError.message.includes('429')) {
-          this.rateLimitDelay = Math.min(this.rateLimitDelay + 5000, 30000); // Increase delay up to 30s
+          this.rateLimitDelay = Math.min(this.rateLimitDelay + 3000, 15000); // Optimized rate limiting
         }
         
         if (attempt === maxRetries) {
@@ -56,9 +53,8 @@ export class ApiService {
           throw lastError;
         }
         
-        // Exponential backoff cu delay mai mare
         const delay = Math.min(
-          baseDelay * Math.pow(2, attempt) + Math.random() * 3000,
+          baseDelay * Math.pow(1.5, attempt) + Math.random() * 1000, // Reduced exponential backoff
           maxDelay
         );
         
@@ -71,9 +67,7 @@ export class ApiService {
   }
 
   async dedupedRequest<T>(key: string, requestFn: () => Promise<T>): Promise<T> {
-    // Deduplicarea request-urilor identice
     if (this.requestQueue.has(key)) {
-      console.log(`Deduplicating request for key: ${key}`);
       return this.requestQueue.get(key)!;
     }
 
