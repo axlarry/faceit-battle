@@ -1,10 +1,10 @@
 
 export const DISCORD_CONFIG = {
-  CLIENT_ID: '1386122028167331902', // Înlocuiește cu ID-ul real
-  REDIRECT_URI: import.meta.env.VITE_DISCORD_REDIRECT_URI || '',
+  CLIENT_ID: '1386122028847331902', // ID-ul corect din screenshot
+  REDIRECT_URI: 'https://faceit-toolz.lovable.app/',
   SCOPES: ['identify', 'guilds'],
   
-  // Activity assets - acestea vor trebui încărcate în Discord Developer Portal
+  // Activity assets - acestea trebuie să corespundă cu numele din Discord Developer Portal
   ASSETS: {
     LARGE_IMAGE: 'faceit_logo', // 512x512 PNG
     LIVE_ICON: 'live_icon',     // 256x256 PNG  
@@ -15,14 +15,14 @@ export const DISCORD_CONFIG = {
   isDevelopment: import.meta.env.DEV,
   
   // URL-uri pentru Discord Activity
-  ACTIVITY_URL: import.meta.env.VITE_DISCORD_ACTIVITY_URL || 'https://your-app.lovable.app'
+  ACTIVITY_URL: 'https://faceit-toolz.lovable.app'
 };
 
 // Validare configurare
 export const validateDiscordConfig = () => {
   const missingVars = [];
   
-  if (!DISCORD_CONFIG.CLIENT_ID) {
+  if (!DISCORD_CONFIG.CLIENT_ID || DISCORD_CONFIG.CLIENT_ID === 'your_discord_client_id_here') {
     missingVars.push('DISCORD_CLIENT_ID');
   }
   
