@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Player, Match } from "@/types/Player";
-import { Trophy, Calendar, MapPin, Clock, Target, TrendingUp, TrendingDown, Minus, Zap, Crosshair, Radio, Download } from "lucide-react";
+import { Trophy, Calendar, Map, Clock, Target, TrendingUp, TrendingDown, Minus, Zap, Crosshair, Radio, Download } from "lucide-react";
 import { 
   formatDate, 
   formatMatchDuration, 
@@ -69,7 +69,7 @@ export const MatchRow = ({ match, player, matchesStats, onMatchClick, matchIndex
         {/* Map */}
         <TableCell>
           <div className="flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-orange-400" />
+            <Map className="w-4 h-4 text-orange-400" />
             <span className="text-white font-medium">
               {match.liveMatchDetails?.voting?.map?.pick?.[0] || mapName || 'TBD'}
             </span>
@@ -169,7 +169,7 @@ export const MatchRow = ({ match, player, matchesStats, onMatchClick, matchIndex
       {/* Map */}
       <TableCell>
         <div className="flex items-center gap-2">
-          <MapPin className="w-4 h-4 text-orange-400" />
+          <Map className="w-4 h-4 text-orange-400" />
           <span className="text-white font-medium">{mapName}</span>
         </div>
       </TableCell>
