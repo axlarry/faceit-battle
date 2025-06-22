@@ -1,5 +1,5 @@
-
 import { apiService } from './apiService';
+import { supabase } from '@/integrations/supabase/client';
 
 // Discord environment detection
 const isDiscordEnvironment = () => {
@@ -25,28 +25,22 @@ export class FaceitApiClient {
       return this.getMockData(endpoint);
     }
     
-    // Pentru medii non-Discord, încercăm API-ul real
-    const requestKey = `faceit-edge-${endpoint}-${useLeaderboardApi ? 'leaderboard' : 'friends'}`;
+    // Pentru medii non-Discord, folosim Supabase Edge Function
+    console.log(`🚀 Making API call via Supabase proxy: ${endpoint}`);
     
-    return apiService.dedupedRequest(requestKey, async () => {
-      return apiService.retryRequest(async () => {
-        // Încercăm Edge Functions doar în medii non-Discord
-        return await this.makeDirectApiCall(endpoint, useLeaderboardApi);
-      }, { maxRetries: 1, baseDelay: 1000 });
+    const { data, error } = await supabase.functions.invoke('faceit-proxy', {
+      body: { 
+        endpoint,
+        useLeaderboardApi 
+      }
     });
-  }
 
-  private async makeDirectApiCall(endpoint: string, useLeaderboardApi: boolean) {
-    try {
-      console.log(`🚀 Making direct API call for: ${endpoint}`);
-      
-      // Mock response pentru demonstrație - în realitate aici ar fi logica pentru API real
-      return this.getMockData(endpoint);
-
-    } catch (error) {
-      console.error('❌ Direct API call failed:', error);
-      throw error;
+    if (error) {
+      console.error('❌ Faceit proxy error:', error);
+      throw new Error(`API Error: ${error.message}`);
     }
+
+    return data;
   }
 
   private getMockData(endpoint: string) {

@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -9,6 +8,7 @@ import { Search, User, Trophy, Sword, Crosshair, BarChart2 } from "lucide-react"
 import { toast } from "@/hooks/use-toast";
 import { PasswordDialog } from "./PasswordDialog";
 import { useFaceitApi } from "@/hooks/useFaceitApi";
+import { steamIdService } from "@/services/steamIdService";
 
 interface FaceitToolProps {
   onShowPlayerDetails: (player: Player) => void;
@@ -35,60 +35,6 @@ export const FaceitTool = ({ onShowPlayerDetails, onAddFriend }: FaceitToolProps
 
   const { makeApiCall } = useFaceitApi();
 
-  const isValidSteamID64 = (input: string): boolean => {
-    return /^\d{17}$/.test(input);
-  };
-
-  const extractSteamVanity = (input: string): string => {
-    input = input.trim();
-
-    // Dacă este URL de tip steamcommunity.com/profiles/STEAMID64
-    if (input.includes('steamcommunity.com/profiles/')) {
-      const match = input.match(/steamcommunity\.com\/profiles\/(\d+)/);
-      if (match && match[1]) {
-        return match[1]; // Returnăm direct SteamID64
-      }
-    }
-
-    // Dacă este URL de tip steamcommunity.com/id/username
-    if (input.includes('steamcommunity.com/id/')) {
-      const match = input.match(/steamcommunity\.com\/id\/([^\/]+)/);
-      return match ? match[1] : input;
-    }
-
-    return input;
-  };
-
-  const getSteamID64 = async (input: string) => {
-    try {
-      input = input.trim();
-
-      // În Discord, returnăm un mock SteamID64
-      if (isDiscordEnvironment()) {
-        console.log('🎮 Discord environment - using mock SteamID64');
-        return '76561198000000000';
-      }
-
-      // Verificăm dacă inputul este deja un SteamID64 valid (17 cifre)
-      if (/^\d{17}$/.test(input)) {
-        return input;
-      }
-
-      // Extragem vanity name sau SteamID64 din URL (dacă e cazul)
-      const extracted = extractSteamVanity(input);
-
-      // Dacă după extracție avem un SteamID64 valid, îl returnăm direct
-      if (/^\d{17}$/.test(extracted)) {
-        return extracted;
-      }
-
-      // În medii non-Discord, returnăm mock data pentru demonstrație
-      return '76561198000000001';
-    } catch (error) {
-      throw new Error('Eroare la obținerea SteamID - funcționalitate limitată în Discord');
-    }
-  };
-
   const getUserFriendlyErrorMessage = (error: any): string => {
     if (isDiscordEnvironment()) {
       return 'Căutarea funcționează în modul demonstrativ în Discord. Încearcă să cauți orice nume pentru a vedea un exemplu.';
@@ -96,7 +42,6 @@ export const FaceitTool = ({ onShowPlayerDetails, onAddFriend }: FaceitToolProps
 
     const errorMessage = error instanceof Error ? error.message : String(error);
     
-    // Verificăm dacă eroarea conține "API Error:"
     if (errorMessage.includes('API Error:')) {
       if (errorMessage.includes('not found') || errorMessage.includes('404')) {
         return 'Jucătorul nu a fost găsit pe FACEIT. Verifică dacă numele sau ID-ul sunt corecte.';
@@ -130,13 +75,21 @@ export const FaceitTool = ({ onShowPlayerDetails, onAddFriend }: FaceitToolProps
       let playerInfo;
 
       if (searchType === 'steam') {
-        // Folosim SteamID64 direct dacă este valid
-        if (isValidSteamID64(searchTerm)) {
+        // Verificăm dacă inputul este deja un SteamID64 valid
+        if (steamIdService.isValidSteamID64(searchTerm)) {
           playerInfo = await makeApiCall(`/players?game=cs2&game_player_id=${searchTerm}`);
         } else {
-          // Altfel încercăm să obținem SteamID64 din vanity URL sau profile URL
-          const steamID64 = await getSteamID64(searchTerm);
-          playerInfo = await makeApiCall(`/players?game=cs2&game_player_id=${steamID64}`);
+          // Extragem vanity name din URL sau folosim direct
+          const extracted = steamIdService.extractSteamVanity(searchTerm);
+          
+          // Dacă după extracție avem un SteamID64 valid, îl folosim direct
+          if (steamIdService.isValidSteamID64(extracted)) {
+            playerInfo = await makeApiCall(`/players?game=cs2&game_player_id=${extracted}`);
+          } else {
+            // Altfel convertim vanity URL la SteamID64
+            const steamID64 = await steamIdService.getSteamID64(extracted);
+            playerInfo = await makeApiCall(`/players?game=cs2&game_player_id=${steamID64}`);
+          }
         }
       } else {
         // Căutare după nickname FACEIT
