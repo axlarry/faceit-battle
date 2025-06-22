@@ -1,7 +1,7 @@
 
 import { apiService } from './apiService';
-import { discordProxyService } from './discordProxyService';
 import { FACEIT_CONFIG } from '@/config/faceitConfig';
+import { supabase } from '@/integrations/supabase/client';
 
 export class FaceitApiClient {
   private isInDiscord(): boolean {
@@ -20,39 +20,72 @@ export class FaceitApiClient {
     
     return apiService.dedupedRequest(requestKey, async () => {
       return apiService.retryRequest(async () => {
-        const fullUrl = `${FACEIT_CONFIG.API_BASE}${endpoint}`;
-        console.log(`🌐 Making API call to: ${fullUrl}`);
-        
         const isDiscordContext = this.isInDiscord();
         console.log(`🔧 Environment: ${isDiscordContext ? 'Discord iframe' : 'standalone'}`);
         
-        const apiKey = useLeaderboardApi ? 
-          FACEIT_CONFIG.API_KEYS.LEADERBOARD : 
-          FACEIT_CONFIG.API_KEYS.FRIENDS_AND_TOOL;
-        
-        if (!apiKey) {
-          throw new Error('API key not available');
-        }
-
-        const headers = {
-          'Authorization': `Bearer ${apiKey}`,
-          'Content-Type': 'application/json'
-        };
-
         if (isDiscordContext) {
-          console.log('🎮 Using Discord proxy service');
-          return await discordProxyService.makeDiscordApiCall(fullUrl, headers);
+          console.log('🎮 Using Supabase Edge Function for Discord');
+          return await this.makeEdgeFunctionCall(endpoint, useLeaderboardApi);
         }
 
         // Direct API call for non-Discord environments
-        return await this.makeDirectApiCall(fullUrl, headers);
+        return await this.makeDirectApiCall(endpoint, useLeaderboardApi);
       }, { maxRetries: 2, baseDelay: 2000 });
     });
   }
 
-  private async makeDirectApiCall(url: string, headers: Record<string, string>) {
+  private async makeEdgeFunctionCall(endpoint: string, useLeaderboardApi: boolean) {
     try {
-      const response = await fetch(url, {
+      console.log(`🌐 Making Edge Function call for: ${endpoint}`);
+      
+      const { data, error } = await supabase.functions.invoke('faceit-proxy', {
+        body: {
+          endpoint,
+          useLeaderboardApi
+        }
+      });
+
+      if (error) {
+        console.error('❌ Edge Function error:', error);
+        throw new Error(error.message || 'Edge Function call failed');
+      }
+
+      if (data?.error) {
+        console.warn('⚠️ API Error from Edge Function:', data.error);
+        if (data.error === 'Not found') {
+          return null;
+        }
+        throw new Error(`API Error: ${data.error}`);
+      }
+
+      console.log('✅ Edge Function call successful');
+      return data;
+
+    } catch (error) {
+      console.error('❌ Edge Function call failed:', error);
+      throw error;
+    }
+  }
+
+  private async makeDirectApiCall(endpoint: string, useLeaderboardApi: boolean) {
+    try {
+      const fullUrl = `${FACEIT_CONFIG.API_BASE}${endpoint}`;
+      console.log(`🌐 Making direct API call to: ${fullUrl}`);
+      
+      const apiKey = useLeaderboardApi ? 
+        FACEIT_CONFIG.API_KEYS.LEADERBOARD : 
+        FACEIT_CONFIG.API_KEYS.FRIENDS_AND_TOOL;
+      
+      if (!apiKey) {
+        throw new Error('API key not available');
+      }
+
+      const headers = {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      };
+
+      const response = await fetch(fullUrl, {
         method: 'GET',
         headers,
         mode: 'cors',

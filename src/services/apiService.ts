@@ -1,3 +1,4 @@
+
 interface RetryOptions {
   maxRetries: number;
   baseDelay: number;
@@ -5,8 +6,8 @@ interface RetryOptions {
 }
 
 const DEFAULT_RETRY_OPTIONS: RetryOptions = {
-  maxRetries: 3, // Increased for Discord proxy attempts
-  baseDelay: 1500, // Reduced for better UX
+  maxRetries: 3,
+  baseDelay: 1500,
   maxDelay: 8000
 };
 
@@ -23,10 +24,14 @@ export class ApiService {
       window.location.href.includes('discord.com') ||
       document.referrer.includes('discord.com') ||
       window.location.hostname.includes('discord.com') ||
-      navigator.userAgent.includes('Discord');
+      navigator.userAgent.includes('Discord') ||
+      window.location.search.includes('frame_id') ||
+      window.location.search.includes('instance_id');
     
     if (this.isDiscordEnvironment) {
-      console.log('🎮 API Service initialized in Discord environment');
+      console.log('🎮 API Service initialized in Discord environment - using Edge Functions');
+    } else {
+      console.log('🌐 API Service initialized in standalone environment - using direct calls');
     }
   }
 
@@ -74,10 +79,8 @@ export class ApiService {
           throw lastError;
         }
         
-        // Shorter delays for Discord environment
-        const delay = this.isDiscordEnvironment 
-          ? Math.min(baseDelay * (attempt + 1) * 0.7, 4000)  // 70% of normal delay for Discord
-          : Math.min(baseDelay * Math.pow(1.5, attempt) + Math.random() * 1000, maxDelay);
+        // Exponential backoff with jitter
+        const delay = Math.min(baseDelay * Math.pow(1.5, attempt) + Math.random() * 1000, maxDelay);
         
         console.log(`⏳ Retrying in ${delay}ms...`);
         await new Promise(resolve => setTimeout(resolve, delay));
