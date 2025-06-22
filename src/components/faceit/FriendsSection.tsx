@@ -4,7 +4,6 @@ import { Card } from "@/components/ui/card";
 import { Player } from "@/types/Player";
 import { useFriendsAutoUpdate } from "@/hooks/useFriendsAutoUpdate";
 import { useLcryptDataManager } from "@/hooks/useLcryptDataManager";
-import { useLiveMatchChecker } from '@/hooks/useLiveMatchChecker';
 import { usePendingFriendActions } from "@/hooks/usePendingFriendActions";
 import { useFlashingPlayer } from "@/hooks/useFlashingPlayer";
 import { FriendsSectionHeader } from "./FriendsSectionHeader";
@@ -30,16 +29,13 @@ export const FriendsSection = ({
   onUpdateFriend,
   onReloadFriends
 }: FriendsSectionProps) => {
-  // Hook optimizat pentru datele Lcrypt
-  const { friendsWithLcrypt, isLoading: lcryptLoading, loadingProgress, loadingFriends } = useLcryptDataManager({
+  // Hook optimizat pentru datele Lcrypt și statusul LIVE
+  const { friendsWithLcrypt, isLoading: lcryptLoading, loadingProgress, loadingFriends, liveMatches } = useLcryptDataManager({
     friends,
     enabled: true
   });
 
-  // Separate hook for live match checking with new timing
-  const { liveMatches, isChecking: isCheckingLive } = useLiveMatchChecker(friends);
-
-  // Auto-update friends data every 15 minutes
+  // Auto-update friends data every 5 minutes
   const { isUpdating, updateAllFriends } = useFriendsAutoUpdate({
     friends,
     updateFriend: onUpdateFriend || (() => {}),
@@ -60,7 +56,7 @@ export const FriendsSection = ({
   // Handle flashing player state
   const { flashingPlayer, handlePlayerClick } = useFlashingPlayer(onShowPlayerDetails);
 
-  // Calculate live players count from live matches data
+  // Calculate live players count from integrated data
   const livePlayersCount = Object.values(liveMatches).filter(match => match.isLive).length;
 
   return (
@@ -70,7 +66,7 @@ export const FriendsSection = ({
           <FriendsSectionHeader 
             friendsCount={friends.length}
             livePlayersCount={livePlayersCount}
-            isUpdating={isUpdating || lcryptLoading || isCheckingLive}
+            isUpdating={isUpdating || lcryptLoading}
             onUpdateAll={updateAllFriends}
           />
 

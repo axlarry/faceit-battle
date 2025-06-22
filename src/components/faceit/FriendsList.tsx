@@ -41,7 +41,6 @@ export const FriendsList = React.memo(({
     <div className="space-y-2 px-1">
       {sortedFriends.map((friend, index) => {
         const liveInfo = liveMatches[friend.player_id];
-        
         return (
           <FriendListItem
             key={friend.player_id}
