@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { DiscordProvider } from "@/contexts/DiscordContext";
 import { DiscordErrorBoundary } from "@/components/discord/DiscordErrorBoundary";
 import { useEffect } from "react";
+import { setupDiscordErrorHandling } from "@/config/discord/errorHandling";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 
@@ -20,21 +21,26 @@ const queryClient = new QueryClient({
           error.message.includes('CSP') || 
           error.message.includes('blocked') ||
           error.message.includes('NetworkError') ||
-          error.message.includes('Failed to fetch')
+          error.message.includes('Failed to fetch') ||
+          error.message.includes('violates the following Content Security Policy')
         )) {
           console.log('🔒 Not retrying CSP-blocked request:', error.message);
           return false;
         }
-        return failureCount < 2; // Reduce retry attempts in Discord
+        return failureCount < 1; // Reduce retry attempts in Discord
       },
-      staleTime: 30000, // Cache data longer in Discord to reduce network requests
+      staleTime: 60000, // Cache data longer in Discord to reduce network requests
       refetchOnWindowFocus: false, // Disable refetch on focus in Discord iframe
+      refetchOnReconnect: false, // Disable refetch on reconnect in Discord
     },
   },
 });
 
 const App = () => {
   useEffect(() => {
+    // Initialize Discord error handling immediately
+    setupDiscordErrorHandling();
+
     // Enhanced Discord environment detection and styling
     const isInDiscord = 
       window.parent !== window ||
@@ -64,15 +70,21 @@ const App = () => {
       document.body.style.setProperty('color', 'white', 'important');
       document.body.style.setProperty('margin', '0', 'important');
       document.body.style.setProperty('padding', '0', 'important');
+      document.body.style.setProperty('overflow', 'hidden', 'important');
+      document.body.style.setProperty('height', '100vh', 'important');
 
-      // Additional error handling for Discord
+      // Suppress Discord-specific errors that don't affect functionality
       const handleDiscordError = (error: any) => {
         if (error?.message && (
           error.message.includes('CSP') || 
           error.message.includes('blocked') ||
-          error.message.includes('Content Security Policy')
+          error.message.includes('Content Security Policy') ||
+          error.message.includes('Invalid Origin') ||
+          error.message.includes('cross-origin frame') ||
+          error.message.includes('SecurityError') ||
+          error.message.includes('RPCError')
         )) {
-          console.warn('🔒 Discord CSP error handled in App:', error.message);
+          console.warn('🔒 Discord error suppressed in App:', error.message);
           return true;
         }
         return false;

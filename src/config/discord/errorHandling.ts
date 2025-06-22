@@ -31,10 +31,17 @@ export const setupDiscordErrorHandling = () => {
 
   // Handle network errors for blocked requests
   window.addEventListener('error', (e) => {
-    if (e.message && (e.message.includes('CSP') || 
-                     e.message.includes('Content Security Policy') ||
-                     e.message.includes('blocked'))) {
-      console.warn('🔒 CSP-related error handled:', e.message);
+    // Suppress Discord-specific errors
+    if (e.message && (
+      e.message.includes('CSP') || 
+      e.message.includes('Content Security Policy') ||
+      e.message.includes('blocked') ||
+      e.message.includes('Cannot read properties of null') ||
+      e.filename?.includes('inpage.js') ||
+      e.filename?.includes('all-frames.js') ||
+      e.filename?.includes('web.99ba76722fe9e845.js')
+    )) {
+      console.warn('🔒 Discord-related error suppressed:', e.message);
       e.preventDefault();
       return false;
     }
@@ -42,16 +49,39 @@ export const setupDiscordErrorHandling = () => {
 
   // Handle unhandled promise rejections from blocked network requests
   window.addEventListener('unhandledrejection', (e) => {
-    if (e.reason && e.reason.message && 
-        (e.reason.message.includes('CSP') || 
-         e.reason.message.includes('Content Security Policy') ||
-         e.reason.message.includes('blocked') ||
-         e.reason.message.includes('NetworkError') ||
-         e.reason.message.includes('Failed to fetch'))) {
-      console.warn('🔒 CSP-related promise rejection handled:', e.reason.message);
+    if (e.reason && (
+      (e.reason.message && (
+        e.reason.message.includes('CSP') || 
+        e.reason.message.includes('Content Security Policy') ||
+        e.reason.message.includes('blocked') ||
+        e.reason.message.includes('NetworkError') ||
+        e.reason.message.includes('Failed to fetch') ||
+        e.reason.message.includes('Invalid Origin') ||
+        e.reason.message.includes('cross-origin frame')
+      )) ||
+      e.reason.name === 'SecurityError' ||
+      e.reason.name === 'RPCError' ||
+      e.reason.name === 'NotAllowedError'
+    )) {
+      console.warn('🔒 Discord-related promise rejection suppressed:', e.reason);
       e.preventDefault();
     }
   });
+
+  // Suppress Discord iframe and RPC errors
+  const originalConsoleError = console.error;
+  console.error = (...args) => {
+    const message = args.join(' ');
+    if (message.includes('RPCError') || 
+        message.includes('Invalid Origin') ||
+        message.includes('cross-origin frame') ||
+        message.includes('SecurityError') ||
+        message.includes('NotAllowedError')) {
+      // Suppress these Discord-specific errors
+      return;
+    }
+    originalConsoleError.apply(console, args);
+  };
 
   console.log('✅ Discord error handling setup complete');
 };
