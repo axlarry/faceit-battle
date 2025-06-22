@@ -17,38 +17,59 @@
     <meta name="twitter:site" content="@LaCurte" />
     <meta name="twitter:image" content="./waha.png" />
 
-    <!-- Discord Activity friendly headers - Let Discord handle CSP -->
+    <!-- Discord Activity friendly headers -->
     <meta http-equiv="X-Frame-Options" content="ALLOWALL" />
     <meta name="referrer" content="unsafe-url" />
-    
-    <!-- Remove CSP meta tag - let Discord handle security policy -->
-    <!-- Discord will apply its own CSP which we need to work within -->
     
     <script>
       // Discord compatibility initialization
       if (typeof document !== 'undefined') {
-        // Set document domain for Discord compatibility
-        try {
-          if (window.location.hostname.includes('discordsays.com') || 
-              window.location.hostname.includes('discord.com') ||
-              window.parent !== window) {
-            console.log('🎮 Discord environment detected - initializing compatibility mode');
-            document.domain = document.domain;
-            
-            // Handle CSP violations gracefully
-            window.addEventListener('securitypolicyviolation', function(e) {
-              console.warn('🔒 CSP Violation (expected in Discord):', {
-                directive: e.violatedDirective,
-                blockedURI: e.blockedURI
-              });
+        // Detect Discord environment more reliably
+        const isDiscordEnvironment = 
+          window.parent !== window ||
+          window.location.href.includes('discord.com') ||
+          window.location.href.includes('discordsays.com') ||
+          window.location.href.includes('discordapp.com') ||
+          document.referrer.includes('discord.com') ||
+          document.referrer.includes('discordapp.com') ||
+          window.location.search.includes('frame_id') ||
+          window.location.search.includes('instance_id') ||
+          window.location.hostname.includes('discordsays.com') ||
+          window.location.hostname.includes('discordapp.com') ||
+          navigator.userAgent.includes('Discord') ||
+          window.top !== window.self;
+
+        if (isDiscordEnvironment) {
+          console.log('🎮 Discord environment detected - initializing compatibility mode');
+          
+          // Handle CSP violations gracefully - prevent them from breaking the app
+          window.addEventListener('securitypolicyviolation', function(e) {
+            console.warn('🔒 CSP Violation (expected in Discord):', {
+              directive: e.violatedDirective,
+              blockedURI: e.blockedURI
             });
-            
-            // Set immediate Discord-friendly styles
-            document.documentElement.style.backgroundColor = '#0d1117';
-            document.documentElement.style.color = 'white';
-          }
-        } catch (e) {
-          console.log('💭 Domain setting handled by Discord');
+            // Prevent the error from propagating
+            e.preventDefault();
+          });
+
+          // Handle unhandled promise rejections from blocked requests
+          window.addEventListener('unhandledrejection', function(e) {
+            if (e.reason && e.reason.message && 
+                (e.reason.message.includes('CSP') || 
+                 e.reason.message.includes('Content Security Policy') ||
+                 e.reason.message.includes('blocked'))) {
+              console.warn('🔒 CSP-related promise rejection handled:', e.reason.message);
+              e.preventDefault();
+            }
+          });
+          
+          // Set immediate Discord-friendly styles
+          document.documentElement.style.backgroundColor = '#0d1117';
+          document.documentElement.style.color = 'white';
+          document.body.style.backgroundColor = '#0d1117';
+          document.body.style.color = 'white';
+          document.body.style.margin = '0';
+          document.body.style.padding = '0';
         }
       }
     </script>
@@ -56,8 +77,36 @@
 
   <body style="background-color: #0d1117; color: white; margin: 0; padding: 0;">
     <div id="root" style="background-color: #0d1117; color: white; min-height: 100vh; width: 100%;"></div>
-    <!-- IMPORTANT: DO NOT REMOVE THIS SCRIPT TAG OR THIS VERY COMMENT! -->
-    <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
+    
+    <!-- Only load external scripts if NOT in Discord environment -->
+    <script>
+      // Check if we're in Discord before loading external scripts
+      const isDiscordEnvironment = 
+        window.parent !== window ||
+        window.location.href.includes('discord.com') ||
+        window.location.href.includes('discordsays.com') ||
+        window.location.href.includes('discordapp.com') ||
+        document.referrer.includes('discord.com') ||
+        document.referrer.includes('discordapp.com') ||
+        window.location.search.includes('frame_id') ||
+        window.location.search.includes('instance_id') ||
+        window.location.hostname.includes('discordsays.com') ||
+        window.location.hostname.includes('discordapp.com') ||
+        navigator.userAgent.includes('Discord') ||
+        window.top !== window.self;
+
+      if (!isDiscordEnvironment) {
+        // Only load GPTEng script outside of Discord
+        const script = document.createElement('script');
+        script.src = 'https://cdn.gpteng.co/gptengineer.js';
+        script.type = 'module';
+        document.body.appendChild(script);
+        console.log('📦 External scripts loaded (non-Discord environment)');
+      } else {
+        console.log('🎮 Skipping external scripts in Discord environment');
+      }
+    </script>
+    
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

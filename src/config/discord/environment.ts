@@ -32,14 +32,31 @@ export const validateDiscordConfig = () => {
     window.top !== window.self ||
     window.location.search.includes('v=') ||
     window.location.search.includes('channel_id=') ||
-    window.location.search.includes('guild_id=');
+    window.location.search.includes('guild_id=') ||
+    // Additional Discord URL patterns
+    window.location.hostname.includes('.discordsays.com') ||
+    window.location.hostname.includes('.discordapp.com') ||
+    // Check for Discord iframe attributes
+    (window.frameElement && (
+      window.frameElement.getAttribute('src')?.includes('discord') ||
+      window.frameElement.getAttribute('data-discord') !== null
+    ));
   
   if (isInDiscord) {
     console.log('✅ Discord Activity environment detected - Working within CSP constraints');
     console.log('🎮 Activity URL:', DISCORD_CONFIG.ACTIVITY_URL);
+    console.log('🔍 Environment details:', {
+      hostname: window.location.hostname,
+      search: window.location.search,
+      referrer: document.referrer,
+      userAgent: navigator.userAgent.includes('Discord') ? 'Discord' : 'Other',
+      isIframe: window.parent !== window
+    });
     
     // Initialize Discord-compatible mode
     initDiscordCompatibleMode();
+  } else {
+    console.log('🌐 Running in standard web environment');
   }
   
   return true;
@@ -58,7 +75,7 @@ const initDiscordCompatibleMode = () => {
     rootElement.style.setProperty('color', 'white', 'important');
   }
   
-  // Force proper iframe sizing
+  // Force proper iframe sizing and Discord theme
   document.body.style.setProperty('background-color', '#0d1117', 'important');
   document.documentElement.style.setProperty('background-color', '#0d1117', 'important');
   document.body.style.setProperty('margin', '0', 'important');
@@ -70,4 +87,6 @@ const initDiscordCompatibleMode = () => {
 
   // Add Discord-compatible error handling using ES6 import
   setupDiscordErrorHandling();
+
+  console.log('✅ Discord-compatible mode initialized successfully');
 };

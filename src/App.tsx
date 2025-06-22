@@ -13,36 +13,83 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // Handle network errors gracefully in Discord
-      retry: (failureCount, error) => {
-        // Don't retry CSP-blocked requests
-        if (error.message.includes('CSP') || error.message.includes('blocked')) {
+      // Enhanced error handling for Discord CSP constraints
+      retry: (failureCount, error: any) => {
+        // Don't retry CSP-blocked requests or network errors in Discord
+        if (error?.message && (
+          error.message.includes('CSP') || 
+          error.message.includes('blocked') ||
+          error.message.includes('NetworkError') ||
+          error.message.includes('Failed to fetch')
+        )) {
+          console.log('🔒 Not retrying CSP-blocked request:', error.message);
           return false;
         }
-        return failureCount < 3;
+        return failureCount < 2; // Reduce retry attempts in Discord
       },
+      staleTime: 30000, // Cache data longer in Discord to reduce network requests
+      refetchOnWindowFocus: false, // Disable refetch on focus in Discord iframe
     },
   },
 });
 
 const App = () => {
   useEffect(() => {
-    // Force Discord-specific styling on mount
+    // Enhanced Discord environment detection and styling
     const isInDiscord = 
       window.parent !== window ||
       window.location.href.includes('discord.com') ||
+      window.location.href.includes('discordsays.com') ||
+      window.location.href.includes('discordapp.com') ||
       document.referrer.includes('discord.com') ||
+      document.referrer.includes('discordapp.com') ||
       window.location.search.includes('frame_id') ||
       window.location.search.includes('instance_id') ||
       window.location.hostname === 'faceit-toolz.lovable.app' ||
+      window.location.hostname.includes('discordsays.com') ||
+      window.location.hostname.includes('discordapp.com') ||
       navigator.userAgent.includes('Discord') ||
-      window.top !== window.self;
+      window.top !== window.self ||
+      window.location.search.includes('v=') ||
+      window.location.search.includes('channel_id=') ||
+      window.location.search.includes('guild_id=');
 
     if (isInDiscord) {
       console.log('🎮 Discord environment detected in App component');
+      console.log('🎨 Applying Discord-specific styling');
+      
+      // Apply Discord theme immediately
       document.body.style.setProperty('background-color', '#0d1117', 'important');
       document.documentElement.style.setProperty('background-color', '#0d1117', 'important');
       document.body.style.setProperty('color', 'white', 'important');
+      document.body.style.setProperty('margin', '0', 'important');
+      document.body.style.setProperty('padding', '0', 'important');
+
+      // Additional error handling for Discord
+      const handleDiscordError = (error: any) => {
+        if (error?.message && (
+          error.message.includes('CSP') || 
+          error.message.includes('blocked') ||
+          error.message.includes('Content Security Policy')
+        )) {
+          console.warn('🔒 Discord CSP error handled in App:', error.message);
+          return true;
+        }
+        return false;
+      };
+
+      // Add global error handler
+      window.addEventListener('error', (e) => {
+        if (handleDiscordError(e.error)) {
+          e.preventDefault();
+        }
+      });
+
+      window.addEventListener('unhandledrejection', (e) => {
+        if (handleDiscordError(e.reason)) {
+          e.preventDefault();
+        }
+      });
     }
   }, []);
 
