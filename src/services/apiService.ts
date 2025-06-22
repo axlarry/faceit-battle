@@ -1,4 +1,3 @@
-
 interface RetryOptions {
   maxRetries: number;
   baseDelay: number;
@@ -6,9 +5,9 @@ interface RetryOptions {
 }
 
 const DEFAULT_RETRY_OPTIONS: RetryOptions = {
-  maxRetries: 2, // Increased for Discord iframe
-  baseDelay: 2000, // Reduced delay for better UX
-  maxDelay: 10000
+  maxRetries: 3, // Increased for Discord proxy attempts
+  baseDelay: 1500, // Reduced for better UX
+  maxDelay: 8000
 };
 
 export class ApiService {
@@ -22,7 +21,9 @@ export class ApiService {
     this.isDiscordEnvironment = 
       window.parent !== window || 
       window.location.href.includes('discord.com') ||
-      document.referrer.includes('discord.com');
+      document.referrer.includes('discord.com') ||
+      window.location.hostname.includes('discord.com') ||
+      navigator.userAgent.includes('Discord');
     
     if (this.isDiscordEnvironment) {
       console.log('🎮 API Service initialized in Discord environment');
@@ -68,32 +69,15 @@ export class ApiService {
           console.log(`⏰ Rate limited, increasing delay to: ${this.rateLimitDelay}ms`);
         }
         
-        // Special handling for Discord iframe errors
-        if (this.isDiscordEnvironment && (
-          lastError.message.includes('CORS') || 
-          lastError.message.includes('Network') ||
-          lastError.message.includes('Failed to fetch')
-        )) {
-          console.log('🎮 Discord iframe network issue, adjusting retry strategy');
-          // Shorter delays in Discord to avoid timeouts
-          const discordDelay = Math.min(baseDelay * (attempt + 1), 5000);
-          if (attempt < maxRetries) {
-            console.log(`🔄 Discord retry ${attempt + 1} after ${discordDelay}ms`);
-            await new Promise(resolve => setTimeout(resolve, discordDelay));
-            continue;
-          }
-        }
-        
         if (attempt === maxRetries) {
           console.warn(`❌ Request failed after ${maxRetries + 1} attempts in ${this.isDiscordEnvironment ? 'Discord' : 'standalone'} environment`);
           throw lastError;
         }
         
-        // Exponential backoff with jitter
-        const delay = Math.min(
-          baseDelay * Math.pow(1.5, attempt) + Math.random() * 1000,
-          maxDelay
-        );
+        // Shorter delays for Discord environment
+        const delay = this.isDiscordEnvironment 
+          ? Math.min(baseDelay * (attempt + 1) * 0.7, 4000)  // 70% of normal delay for Discord
+          : Math.min(baseDelay * Math.pow(1.5, attempt) + Math.random() * 1000, maxDelay);
         
         console.log(`⏳ Retrying in ${delay}ms...`);
         await new Promise(resolve => setTimeout(resolve, delay));
