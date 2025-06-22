@@ -18,7 +18,6 @@ interface FriendListItemProps {
   index: number;
   isFlashing: boolean;
   isLoadingElo: boolean;
-  isLoadingLive?: boolean;
   isLive?: boolean;
   liveCompetition?: string;
   liveMatchDetails?: any;
@@ -30,7 +29,6 @@ export const FriendListItem = React.memo(({
   index, 
   isFlashing, 
   isLoadingElo,
-  isLoadingLive = false,
   isLive = false,
   liveCompetition,
   liveMatchDetails,
@@ -101,16 +99,6 @@ export const FriendListItem = React.memo(({
               <span className="text-xs text-orange-400 font-medium block">Se încarcă...</span>
               <span className="text-xs text-gray-400">{friend.nickname}</span>
             </div>
-          </div>
-        </div>
-      )}
-
-      {/* Live Loading Overlay - smaller overlay just for live status */}
-      {isLoadingLive && !isPlayerDataLoading && (
-        <div className="absolute top-2 right-2 bg-blue-500/20 border border-blue-500/30 rounded-full px-2 py-1 z-20 backdrop-blur-sm">
-          <div className="flex items-center gap-1">
-            <div className="w-3 h-3 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
-            <span className="text-blue-300 text-xs font-medium">Verifică LIVE...</span>
           </div>
         </div>
       )}

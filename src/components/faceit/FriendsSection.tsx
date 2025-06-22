@@ -37,7 +37,7 @@ export const FriendsSection = ({
   });
 
   // Separate hook for live match checking with new timing
-  const { liveMatches, isChecking: isCheckingLive, loadingPlayers: loadingLivePlayers } = useLiveMatchChecker(friends);
+  const { liveMatches, isChecking: isCheckingLive } = useLiveMatchChecker(friends);
 
   // Auto-update friends data every 15 minutes
   const { isUpdating, updateAllFriends } = useFriendsAutoUpdate({
@@ -84,7 +84,6 @@ export const FriendsSection = ({
               flashingPlayer={flashingPlayer}
               loadingFriends={loadingFriends}
               liveMatches={liveMatches}
-              loadingLivePlayers={loadingLivePlayers}
               onPlayerClick={handlePlayerClick}
             />
           )}
