@@ -17,12 +17,11 @@
     <meta name="twitter:site" content="@LaCurte" />
     <meta name="twitter:image" content="./waha.png" />
 
-    <!-- Discord Activity friendly headers -->
+    <!-- Discord Activity friendly headers - VERY PERMISSIVE -->
     <meta http-equiv="X-Frame-Options" content="ALLOWALL" />
     <meta name="referrer" content="no-referrer-when-downgrade" />
     
-    <!-- Very permissive CSP for Discord Activities -->
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data: blob:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.gpteng.co https://static.cloudflareinsights.com https: data: blob:; connect-src 'self' https://*.supabase.co https://rwizxoeyatdtggrpnpmq.supabase.co https: wss: data: blob:; style-src 'self' 'unsafe-inline' https: data: blob:; img-src 'self' data: https: blob:; font-src 'self' data: https: blob:; frame-src 'self' https: data: blob:; frame-ancestors 'self' https://*.discord.com https://discord.com https://*.discordsays.com https://discordapp.com https://*.discordapp.com; object-src 'none'; base-uri 'self';">
+    <!-- Remove restrictive CSP completely for Discord compatibility -->
   </head>
 
   <body>

@@ -17,32 +17,14 @@ export const DISCORD_CONFIG = {
   // URL-uri pentru Discord Activity - FOARTE IMPORTANT!
   ACTIVITY_URL: 'https://faceit-toolz.lovable.app',
   
-  // Configurație specifică pentru Discord iframe - Updated for Activities
+  // Configurație specifică pentru Discord iframe - NO CSP RESTRICTIONS
   IFRAME_CONFIG: {
     // Headers necesare pentru Discord Activities
     ALLOWED_ORIGINS: [
-      'https://discord.com',
-      'https://canary.discord.com',
-      'https://ptb.discord.com',
-      'https://*.discordsays.com',
-      'https://1386122028167331902.discordsays.com',
-      // Discord Activity specific origins
-      'https://discordapp.com',
-      'https://*.discordapp.com'
+      '*' // Allow all origins for Discord compatibility
     ],
-    // CSP pentru Discord Activities - More permissive for Activities
-    CONTENT_SECURITY_POLICY: `
-      default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data: blob:;
-      script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.gpteng.co https://static.cloudflareinsights.com https: data: blob:;
-      connect-src 'self' https://*.supabase.co https://rwizxoeyatdtggrpnpmq.supabase.co https: wss: data: blob:;
-      style-src 'self' 'unsafe-inline' https: data: blob:;
-      img-src 'self' data: https: blob:;
-      font-src 'self' data: https: blob:;
-      frame-src 'self' https: data: blob:;
-      frame-ancestors 'self' https://*.discord.com https://discord.com https://*.discordsays.com https://discordapp.com https://*.discordapp.com;
-      object-src 'none';
-      base-uri 'self';
-    `.replace(/\s+/g, ' ').trim(),
+    // No CSP restrictions for Discord Activities
+    CONTENT_SECURITY_POLICY: null,
   }
 };
 
@@ -80,8 +62,12 @@ export const validateDiscordConfig = () => {
     window.location.search.includes('guild_id=');
   
   if (isInDiscord) {
-    console.log('✅ Discord Activity environment detected');
+    console.log('✅ Discord Activity environment detected - NO CSP RESTRICTIONS');
     console.log('🎮 Activity URL:', DISCORD_CONFIG.ACTIVITY_URL);
+    
+    // Remove any existing CSP meta tags that might interfere
+    const existingCSP = document.querySelectorAll('meta[http-equiv="Content-Security-Policy"]');
+    existingCSP.forEach(meta => meta.remove());
     
     // More aggressive styling for Discord Activities
     const rootElement = document.getElementById('root');
@@ -100,36 +86,34 @@ export const validateDiscordConfig = () => {
     document.body.style.setProperty('height', '100vh', 'important');
     document.body.style.setProperty('overflow', 'auto', 'important');
 
-    // Add Discord Activity specific meta tags
-    addDiscordActivityMeta();
+    // Set permissive headers for Discord
+    setDiscordHeaders();
   }
   
   return true;
 };
 
-// Add Discord Activity specific meta tags
-const addDiscordActivityMeta = () => {
-  console.log('🔧 Adding Discord Activity meta tags');
+// Set permissive headers for Discord compatibility
+const setDiscordHeaders = () => {
+  console.log('🔧 Setting permissive headers for Discord');
   
-  // Remove existing CSP and add Activity-friendly one
-  const existingCSP = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
-  if (existingCSP) {
-    existingCSP.remove();
-  }
+  // Remove any restrictive CSP
+  const existingCSP = document.querySelectorAll('meta[http-equiv="Content-Security-Policy"]');
+  existingCSP.forEach(meta => {
+    console.log('🗑️ Removing restrictive CSP:', meta.getAttribute('content'));
+    meta.remove();
+  });
 
-  // Add Activity-friendly CSP
-  const cspMeta = document.createElement('meta');
-  cspMeta.setAttribute('http-equiv', 'Content-Security-Policy');
-  cspMeta.setAttribute('content', DISCORD_CONFIG.IFRAME_CONFIG.CONTENT_SECURITY_POLICY);
-  document.head.appendChild(cspMeta);
-  
-  // Add X-Frame-Options to allow Discord framing
-  const frameOptionsMeta = document.createElement('meta');
-  frameOptionsMeta.setAttribute('http-equiv', 'X-Frame-Options');
+  // Add very permissive X-Frame-Options
+  let frameOptionsMeta = document.querySelector('meta[http-equiv="X-Frame-Options"]');
+  if (!frameOptionsMeta) {
+    frameOptionsMeta = document.createElement('meta');
+    frameOptionsMeta.setAttribute('http-equiv', 'X-Frame-Options');
+    document.head.appendChild(frameOptionsMeta);
+  }
   frameOptionsMeta.setAttribute('content', 'ALLOWALL');
-  document.head.appendChild(frameOptionsMeta);
   
-  console.log('🔒 Discord Activity meta tags added');
+  console.log('🔓 Permissive headers set for Discord Activity');
 };
 
 // Initialize Discord Activity specific styles
@@ -153,7 +137,7 @@ export const initDiscordStyles = () => {
     window.location.search.includes('guild_id=');
 
   if (isInDiscord) {
-    console.log('🎨 Initializing Discord Activity styles');
+    console.log('🎨 Initializing Discord Activity styles - NO CSP RESTRICTIONS');
     
     // Create and inject Discord Activity specific CSS
     const discordStyles = document.createElement('style');
