@@ -17,30 +17,36 @@ export const DISCORD_CONFIG = {
   // URL-uri pentru Discord Activity - FOARTE IMPORTANT!
   ACTIVITY_URL: 'https://faceit-toolz.lovable.app',
   
-  // Configurație specifică pentru Discord iframe - Updated CSP
+  // Configurație specifică pentru Discord iframe - Updated for Activities
   IFRAME_CONFIG: {
-    // Headers necesare pentru Discord - Enhanced for CSP
+    // Headers necesare pentru Discord Activities
     ALLOWED_ORIGINS: [
       'https://discord.com',
       'https://canary.discord.com',
       'https://ptb.discord.com',
       'https://*.discordsays.com',
-      'https://1386122028167331902.discordsays.com'
+      'https://1386122028167331902.discordsays.com',
+      // Discord Activity specific origins
+      'https://discordapp.com',
+      'https://*.discordapp.com'
     ],
-    // CSP pentru Discord - Updated pentru iframe + script sources
+    // CSP pentru Discord Activities - More permissive for Activities
     CONTENT_SECURITY_POLICY: `
-      default-src 'self';
-      script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.gpteng.co https://static.cloudflareinsights.com;
-      connect-src 'self' https://*.supabase.co https://rwizxoeyatdtggrpnpmq.supabase.co;
-      style-src 'self' 'unsafe-inline';
-      img-src 'self' data: https:;
-      font-src 'self' data:;
-      frame-ancestors 'self' https://*.discord.com https://discord.com https://*.discordsays.com;
+      default-src 'self' 'unsafe-inline' 'unsafe-eval' https: data: blob:;
+      script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.gpteng.co https://static.cloudflareinsights.com https: data: blob:;
+      connect-src 'self' https://*.supabase.co https://rwizxoeyatdtggrpnpmq.supabase.co https: wss: data: blob:;
+      style-src 'self' 'unsafe-inline' https: data: blob:;
+      img-src 'self' data: https: blob:;
+      font-src 'self' data: https: blob:;
+      frame-src 'self' https: data: blob:;
+      frame-ancestors 'self' https://*.discord.com https://discord.com https://*.discordsays.com https://discordapp.com https://*.discordapp.com;
+      object-src 'none';
+      base-uri 'self';
     `.replace(/\s+/g, ' ').trim(),
   }
 };
 
-// Validare configurare specifică Discord
+// Enhanced Discord environment detection for Activities
 export const validateDiscordConfig = () => {
   const missingVars = [];
   
@@ -53,78 +59,103 @@ export const validateDiscordConfig = () => {
     return false;
   }
   
-  // Verifică dacă rulează în Discord - Enhanced detection
+  // Enhanced Discord Activity detection
   const isInDiscord = 
     window.parent !== window ||
     window.location.href.includes('discord.com') ||
     window.location.href.includes('discordsays.com') ||
+    window.location.href.includes('discordapp.com') ||
     document.referrer.includes('discord.com') ||
+    document.referrer.includes('discordapp.com') ||
     window.location.search.includes('frame_id') ||
     window.location.search.includes('instance_id') ||
-    // Enhanced Discord detection
     window.location.hostname === 'faceit-toolz.lovable.app' ||
     window.location.hostname.includes('discordsays.com') ||
+    window.location.hostname.includes('discordapp.com') ||
     navigator.userAgent.includes('Discord') ||
-    window.top !== window.self;
+    window.top !== window.self ||
+    // Additional Activity-specific detection
+    window.location.search.includes('v=') ||
+    window.location.search.includes('channel_id=') ||
+    window.location.search.includes('guild_id=');
   
   if (isInDiscord) {
-    console.log('✅ Discord environment detected');
-    console.log('🎮 Discord Activity URL:', DISCORD_CONFIG.ACTIVITY_URL);
-    console.log('🔒 CSP Headers will be applied for Discord compatibility');
+    console.log('✅ Discord Activity environment detected');
+    console.log('🎮 Activity URL:', DISCORD_CONFIG.ACTIVITY_URL);
     
-    // Force white background for Discord
-    document.body.style.backgroundColor = '#0d1117';
-    document.documentElement.style.backgroundColor = '#0d1117';
+    // More aggressive styling for Discord Activities
+    const rootElement = document.getElementById('root');
+    if (rootElement) {
+      rootElement.style.setProperty('background-color', '#0d1117', 'important');
+      rootElement.style.setProperty('min-height', '100vh', 'important');
+      rootElement.style.setProperty('width', '100%', 'important');
+    }
     
-    // Ensure proper sizing in Discord iframe
-    document.body.style.margin = '0';
-    document.body.style.padding = '0';
-    document.body.style.width = '100%';
-    document.body.style.height = '100vh';
-    document.body.style.overflow = 'auto';
+    // Force proper iframe sizing
+    document.body.style.setProperty('background-color', '#0d1117', 'important');
+    document.documentElement.style.setProperty('background-color', '#0d1117', 'important');
+    document.body.style.setProperty('margin', '0', 'important');
+    document.body.style.setProperty('padding', '0', 'important');
+    document.body.style.setProperty('width', '100%', 'important');
+    document.body.style.setProperty('height', '100vh', 'important');
+    document.body.style.setProperty('overflow', 'auto', 'important');
 
-    // Add meta CSP tag for Discord
-    addDiscordCSPMeta();
+    // Add Discord Activity specific meta tags
+    addDiscordActivityMeta();
   }
   
   return true;
 };
 
-// Add CSP meta tag specifically for Discord
-const addDiscordCSPMeta = () => {
-  // Remove existing CSP meta tags
+// Add Discord Activity specific meta tags
+const addDiscordActivityMeta = () => {
+  console.log('🔧 Adding Discord Activity meta tags');
+  
+  // Remove existing CSP and add Activity-friendly one
   const existingCSP = document.querySelector('meta[http-equiv="Content-Security-Policy"]');
   if (existingCSP) {
     existingCSP.remove();
   }
 
-  // Add Discord-compatible CSP
+  // Add Activity-friendly CSP
   const cspMeta = document.createElement('meta');
   cspMeta.setAttribute('http-equiv', 'Content-Security-Policy');
   cspMeta.setAttribute('content', DISCORD_CONFIG.IFRAME_CONFIG.CONTENT_SECURITY_POLICY);
   document.head.appendChild(cspMeta);
   
-  console.log('🔒 Discord CSP meta tag added');
+  // Add X-Frame-Options to allow Discord framing
+  const frameOptionsMeta = document.createElement('meta');
+  frameOptionsMeta.setAttribute('http-equiv', 'X-Frame-Options');
+  frameOptionsMeta.setAttribute('content', 'ALLOWALL');
+  document.head.appendChild(frameOptionsMeta);
+  
+  console.log('🔒 Discord Activity meta tags added');
 };
 
-// Initialize Discord-specific styles
+// Initialize Discord Activity specific styles
 export const initDiscordStyles = () => {
   const isInDiscord = 
     window.parent !== window ||
     window.location.href.includes('discord.com') ||
     window.location.href.includes('discordsays.com') ||
+    window.location.href.includes('discordapp.com') ||
     document.referrer.includes('discord.com') ||
+    document.referrer.includes('discordapp.com') ||
     window.location.search.includes('frame_id') ||
     window.location.search.includes('instance_id') ||
     window.location.hostname === 'faceit-toolz.lovable.app' ||
     window.location.hostname.includes('discordsays.com') ||
+    window.location.hostname.includes('discordapp.com') ||
     navigator.userAgent.includes('Discord') ||
-    window.top !== window.self;
+    window.top !== window.self ||
+    window.location.search.includes('v=') ||
+    window.location.search.includes('channel_id=') ||
+    window.location.search.includes('guild_id=');
 
   if (isInDiscord) {
-    console.log('🎨 Initializing Discord-specific styles');
+    console.log('🎨 Initializing Discord Activity styles');
     
-    // Create and inject Discord-specific CSS
+    // Create and inject Discord Activity specific CSS
     const discordStyles = document.createElement('style');
     discordStyles.innerHTML = `
       html, body {
@@ -134,6 +165,7 @@ export const initDiscordStyles = () => {
         width: 100% !important;
         height: 100% !important;
         overflow: auto !important;
+        color: white !important;
       }
       
       #root {
@@ -141,33 +173,55 @@ export const initDiscordStyles = () => {
         height: 100% !important;
         min-height: 100vh !important;
         background-color: #0d1117 !important;
+        color: white !important;
       }
       
-      /* Ensure all containers are visible */
+      /* Ensure all containers are visible in Discord */
       .min-h-screen {
         min-height: 100vh !important;
         background-color: #0d1117 !important;
+        color: white !important;
       }
       
       /* Make sure content is visible */
       * {
         box-sizing: border-box;
+        color: inherit;
       }
 
-      /* Ensure visibility over Discord's dark theme */
+      /* Force visibility over Discord's theme */
       body, #root, .container {
         visibility: visible !important;
         opacity: 1 !important;
         display: block !important;
       }
+      
+      /* Discord Activity specific overrides */
+      .text-white {
+        color: white !important;
+      }
+      
+      /* Ensure buttons and interactive elements are visible */
+      button, input, select, textarea {
+        background-color: rgba(255, 255, 255, 0.1) !important;
+        color: white !important;
+        border: 1px solid rgba(255, 255, 255, 0.2) !important;
+      }
     `;
     
     document.head.appendChild(discordStyles);
     
-    // Force immediate style application
-    document.body.style.setProperty('background-color', '#0d1117', 'important');
-    document.documentElement.style.setProperty('background-color', '#0d1117', 'important');
-    document.body.style.setProperty('visibility', 'visible', 'important');
-    document.body.style.setProperty('opacity', '1', 'important');
+    // Additional immediate style forcing
+    setTimeout(() => {
+      document.body.style.setProperty('background-color', '#0d1117', 'important');
+      document.documentElement.style.setProperty('background-color', '#0d1117', 'important');
+      document.body.style.setProperty('color', 'white', 'important');
+      
+      const root = document.getElementById('root');
+      if (root) {
+        root.style.setProperty('background-color', '#0d1117', 'important');
+        root.style.setProperty('color', 'white', 'important');
+      }
+    }, 100);
   }
 };
