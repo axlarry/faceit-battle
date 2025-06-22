@@ -16,6 +16,7 @@ interface LiveMatchInfo {
 export const useLiveMatchChecker = (friends: Player[]) => {
   const [liveMatches, setLiveMatches] = useState<Record<string, LiveMatchInfo>>({});
   const [isChecking, setIsChecking] = useState(false);
+  const [loadingPlayers, setLoadingPlayers] = useState<Set<string>>(new Set());
   const [lastCheckTime, setLastCheckTime] = useState<number>(0);
   const { checkPlayerLiveMatch } = useFaceitApi();
   const intervalRef = useRef<NodeJS.Timeout>();
@@ -26,15 +27,15 @@ export const useLiveMatchChecker = (friends: Player[]) => {
     const now = Date.now();
     const timeSinceLastCheck = now - lastCheckTime;
     
-    // Check every 4 minutes to reduce API stress
-    if (timeSinceLastCheck < 240000) {
+    // Check every 90 seconds for live matches
+    if (timeSinceLastCheck < 90000) {
       console.log(`⏱️ Skipping live check, only ${Math.round(timeSinceLastCheck / 1000)}s since last check`);
       return;
     }
     
     setIsChecking(true);
     setLastCheckTime(now);
-    console.log(`🔍 Starting optimized Lcrypt live matches check for ${friends.length} friends...`);
+    console.log(`🔍 Starting LIVE matches check for ${friends.length} friends (90s interval)...`);
     
     try {
       const newLiveMatches: Record<string, LiveMatchInfo> = { ...liveMatches };
@@ -42,38 +43,56 @@ export const useLiveMatchChecker = (friends: Player[]) => {
       
       for (const friend of friends) {
         try {
-          console.log(`🎯 Checking live status via Lcrypt for: ${friend.nickname} (${friend.player_id})`);
+          // Set loading state for current player
+          setLoadingPlayers(prev => new Set([...prev, friend.player_id]));
+          
+          console.log(`🎯 Checking live status for: ${friend.nickname} (${friend.player_id})`);
           const liveInfo = await checkPlayerLiveMatch(friend.player_id);
           
           newLiveMatches[friend.player_id] = liveInfo;
           processedCount++;
           
           if (liveInfo.isLive) {
-            console.log(`🟢 LIVE PLAYER DETECTED: ${friend.nickname} in ${liveInfo.competition} (${liveInfo.status}) - Lcrypt Data Available`);
+            console.log(`🟢 LIVE PLAYER DETECTED: ${friend.nickname} in ${liveInfo.competition} (${liveInfo.status})`);
           } else {
-            console.log(`⚪ ${friend.nickname} is not live (Lcrypt check)`);
+            console.log(`⚪ ${friend.nickname} is not live`);
           }
           
-          // Longer delay between checks to reduce API stress
+          // Remove loading state for current player
+          setLoadingPlayers(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(friend.player_id);
+            return newSet;
+          });
+          
+          // 2 second delay between API calls
           if (processedCount < friends.length) {
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            await new Promise(resolve => setTimeout(resolve, 2000));
           }
           
         } catch (error) {
           console.warn(`⚠️ Error in live check for ${friend.nickname}:`, error);
           newLiveMatches[friend.player_id] = liveMatches[friend.player_id] || { isLive: false };
+          
+          // Remove loading state even on error
+          setLoadingPlayers(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(friend.player_id);
+            return newSet;
+          });
         }
       }
       
       setLiveMatches(newLiveMatches);
       
       const liveCount = Object.values(newLiveMatches).filter(match => match.isLive).length;
-      console.log(`✅ Optimized Lcrypt live matches check completed: ${liveCount}/${friends.length} friends are live`);
+      console.log(`✅ LIVE matches check completed: ${liveCount}/${friends.length} friends are live`);
       
     } catch (error) {
       console.warn('⚠️ Live matches check failed:', error);
     } finally {
       setIsChecking(false);
+      setLoadingPlayers(new Set()); // Clear all loading states
     }
   };
 
@@ -84,10 +103,10 @@ export const useLiveMatchChecker = (friends: Player[]) => {
         checkAllFriendsLiveMatches();
       }, 5000);
       
-      // Check every 5 minutes for live matches (reduced frequency to stress API less)
+      // Check every 90 seconds for live matches
       intervalRef.current = setInterval(() => {
         checkAllFriendsLiveMatches();
-      }, 300000);
+      }, 90000);
 
       return () => {
         clearTimeout(initialTimeout);
@@ -109,6 +128,7 @@ export const useLiveMatchChecker = (friends: Player[]) => {
   return {
     liveMatches,
     isChecking,
+    loadingPlayers,
     checkAllFriendsLiveMatches,
     lastCheckTime
   };

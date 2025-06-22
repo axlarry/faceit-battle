@@ -19,6 +19,7 @@ interface FriendsListProps {
   flashingPlayer: string | null;
   loadingFriends: Set<string>;
   liveMatches: Record<string, LiveMatchInfo>;
+  loadingLivePlayers?: Set<string>;
   onPlayerClick: (player: Player) => void;
 }
 
@@ -27,6 +28,7 @@ export const FriendsList = React.memo(({
   flashingPlayer, 
   loadingFriends,
   liveMatches,
+  loadingLivePlayers = new Set(),
   onPlayerClick 
 }: FriendsListProps) => {
   // Sortează prietenii doar după ELO, fără să îi mute pe cei live la început
@@ -41,6 +43,8 @@ export const FriendsList = React.memo(({
     <div className="space-y-2 px-1">
       {sortedFriends.map((friend, index) => {
         const liveInfo = liveMatches[friend.player_id];
+        const isLoadingLive = loadingLivePlayers.has(friend.player_id);
+        
         return (
           <FriendListItem
             key={friend.player_id}
@@ -48,6 +52,7 @@ export const FriendsList = React.memo(({
             index={index}
             isFlashing={flashingPlayer === friend.player_id}
             isLoadingElo={loadingFriends.has(friend.nickname)}
+            isLoadingLive={isLoadingLive}
             isLive={liveInfo?.isLive || false}
             liveCompetition={liveInfo?.competition}
             liveMatchDetails={liveInfo?.matchDetails}
