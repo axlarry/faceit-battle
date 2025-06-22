@@ -36,8 +36,8 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
       return;
     }
 
-    // Verifică dacă au trecut cel puțin 2 minute de la ultimul update pentru a reduce stresul pe API
-    if (!canUpdate(120000)) { // 2 minute = 120000ms
+    // Verifică dacă au trecut cel puțin 1.5 minute de la ultimul update pentru a reduce stresul pe API (changed from 2 minutes)
+    if (!canUpdate(90000)) { // 1.5 minute = 90000ms
       return;
     }
 
