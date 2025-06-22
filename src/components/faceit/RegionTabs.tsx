@@ -28,8 +28,8 @@ export const RegionTabs = ({ currentRegion, onRegionChange }: RegionTabsProps) =
             rounded-md sm:rounded-lg border-2 min-h-[36px] sm:min-h-[42px] md:min-h-[48px] 
             min-w-[60px] sm:min-w-[80px] md:min-w-[120px] lg:min-w-[140px]
             ${currentRegion === region.id 
-              ? 'bg-[#ff6500] hover:bg-[#e55a00] text-white border-[#ff6500] shadow-lg shadow-[#ff6500]/25' 
-              : 'bg-[#2a2f36] hover:bg-[#363c45] text-[#b3b3b3] hover:text-white border-[#3a4048] hover:border-[#ff6500]/50'
+              ? 'bg-[#ff6500] hover:bg-[#e55a00] text-white border-[#ff6500] shadow-lg shadow-[#ff6500]/40 drop-shadow-[0_8px_16px_rgba(255,101,0,0.3)]' 
+              : 'bg-[#2a2f36] hover:bg-[#363c45] text-[#b3b3b3] hover:text-white border-[#3a4048] hover:border-[#ff6500]/50 hover:shadow-md hover:shadow-[#ff6500]/20'
             }
           `}
         >
