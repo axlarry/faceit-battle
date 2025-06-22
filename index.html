@@ -17,40 +17,45 @@
     <meta name="twitter:site" content="@LaCurte" />
     <meta name="twitter:image" content="./waha.png" />
 
-    <!-- Discord Activity friendly headers - MAXIMUM PERMISSIVENESS -->
+    <!-- Discord Activity friendly headers - Let Discord handle CSP -->
     <meta http-equiv="X-Frame-Options" content="ALLOWALL" />
     <meta name="referrer" content="unsafe-url" />
     
-    <!-- Completely permissive CSP for Discord Activities -->
-    <meta http-equiv="Content-Security-Policy" content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; script-src * 'unsafe-inline' 'unsafe-eval'; connect-src * 'unsafe-inline'; img-src * data: blob: 'unsafe-inline'; frame-src *; style-src * 'unsafe-inline'; font-src * data:; media-src * data: blob:; object-src *; child-src *; worker-src * blob: data:; base-uri *; form-action *; frame-ancestors *;" />
+    <!-- Remove CSP meta tag - let Discord handle security policy -->
+    <!-- Discord will apply its own CSP which we need to work within -->
     
-    <!-- Remove any existing restrictive headers -->
     <script>
-      // Force removal of any restrictive CSP on page load
+      // Discord compatibility initialization
       if (typeof document !== 'undefined') {
-        // Remove any existing CSP meta tags that might be restrictive
-        const restrictiveTags = document.querySelectorAll('meta[http-equiv="Content-Security-Policy"]');
-        restrictiveTags.forEach(tag => {
-          const content = tag.getAttribute('content');
-          if (content && !content.includes('* \'unsafe-inline\' \'unsafe-eval\'')) {
-            tag.remove();
-          }
-        });
-        
         // Set document domain for Discord compatibility
         try {
-          if (window.location.hostname.includes('discordsays.com') || window.location.hostname.includes('discord.com')) {
+          if (window.location.hostname.includes('discordsays.com') || 
+              window.location.hostname.includes('discord.com') ||
+              window.parent !== window) {
+            console.log('🎮 Discord environment detected - initializing compatibility mode');
             document.domain = document.domain;
+            
+            // Handle CSP violations gracefully
+            window.addEventListener('securitypolicyviolation', function(e) {
+              console.warn('🔒 CSP Violation (expected in Discord):', {
+                directive: e.violatedDirective,
+                blockedURI: e.blockedURI
+              });
+            });
+            
+            // Set immediate Discord-friendly styles
+            document.documentElement.style.backgroundColor = '#0d1117';
+            document.documentElement.style.color = 'white';
           }
         } catch (e) {
-          console.log('Domain setting not applicable in Discord');
+          console.log('💭 Domain setting handled by Discord');
         }
       }
     </script>
   </head>
 
-  <body>
-    <div id="root"></div>
+  <body style="background-color: #0d1117; color: white; margin: 0; padding: 0;">
+    <div id="root" style="background-color: #0d1117; color: white; min-height: 100vh; width: 100%;"></div>
     <!-- IMPORTANT: DO NOT REMOVE THIS SCRIPT TAG OR THIS VERY COMMENT! -->
     <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
     <script type="module" src="/src/main.tsx"></script>

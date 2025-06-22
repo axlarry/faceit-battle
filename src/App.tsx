@@ -5,11 +5,25 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { DiscordProvider } from "@/contexts/DiscordContext";
+import { DiscordErrorBoundary } from "@/components/discord/DiscordErrorBoundary";
 import { useEffect } from "react";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      // Handle network errors gracefully in Discord
+      retry: (failureCount, error) => {
+        // Don't retry CSP-blocked requests
+        if (error.message.includes('CSP') || error.message.includes('blocked')) {
+          return false;
+        }
+        return failureCount < 3;
+      },
+    },
+  },
+});
 
 const App = () => {
   useEffect(() => {
@@ -28,25 +42,27 @@ const App = () => {
       console.log('🎮 Discord environment detected in App component');
       document.body.style.setProperty('background-color', '#0d1117', 'important');
       document.documentElement.style.setProperty('background-color', '#0d1117', 'important');
+      document.body.style.setProperty('color', 'white', 'important');
     }
   }, []);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <DiscordProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
-      </DiscordProvider>
-    </QueryClientProvider>
+    <DiscordErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <DiscordProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </DiscordProvider>
+      </QueryClientProvider>
+    </DiscordErrorBoundary>
   );
 };
 

@@ -14,21 +14,27 @@ export const DISCORD_CONFIG = {
   // Pentru dezvoltare locală
   isDevelopment: import.meta.env.DEV,
   
-  // URL-uri pentru Discord Activity - FOARTE IMPORTANT!
+  // URL-uri pentru Discord Activity
   ACTIVITY_URL: 'https://faceit-toolz.lovable.app',
   
-  // Configurație specifică pentru Discord iframe - MAXIMUM PERMISSIVENESS
-  IFRAME_CONFIG: {
-    // Headers necesare pentru Discord Activities
-    ALLOWED_ORIGINS: [
-      '*' // Allow all origins for Discord compatibility
+  // Discord CSP compatible configuration
+  DISCORD_CSP_CONFIG: {
+    // Use Discord-allowed domains only
+    ALLOWED_SCRIPT_DOMAINS: [
+      'https://discord.com',
+      'https://discordapp.com',
+      'https://*.discordsays.com'
     ],
-    // Completely permissive CSP for Discord Activities
-    CONTENT_SECURITY_POLICY: "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; script-src * 'unsafe-inline' 'unsafe-eval'; connect-src * 'unsafe-inline'; img-src * data: blob: 'unsafe-inline'; frame-src *; style-src * 'unsafe-inline'; font-src * data:; media-src * data: blob:; object-src *; child-src *; worker-src * blob: data:; base-uri *; form-action *; frame-ancestors *;",
+    ALLOWED_CONNECT_DOMAINS: [
+      'https://discord.com',
+      'https://discordapp.com',
+      'https://*.discordsays.com',
+      'wss://gateway.discord.gg'
+    ]
   }
 };
 
-// Enhanced Discord environment detection for Activities with aggressive CSP removal
+// Enhanced Discord environment detection that works with CSP
 export const validateDiscordConfig = () => {
   const missingVars = [];
   
@@ -56,88 +62,81 @@ export const validateDiscordConfig = () => {
     window.location.hostname.includes('discordapp.com') ||
     navigator.userAgent.includes('Discord') ||
     window.top !== window.self ||
-    // Additional Activity-specific detection
     window.location.search.includes('v=') ||
     window.location.search.includes('channel_id=') ||
     window.location.search.includes('guild_id=');
   
   if (isInDiscord) {
-    console.log('✅ Discord Activity environment detected - REMOVING ALL CSP RESTRICTIONS');
+    console.log('✅ Discord Activity environment detected - Working within CSP constraints');
     console.log('🎮 Activity URL:', DISCORD_CONFIG.ACTIVITY_URL);
     
-    // Aggressively remove ALL CSP restrictions
-    removeAllCSPRestrictions();
-    
-    // More aggressive styling for Discord Activities
-    const rootElement = document.getElementById('root');
-    if (rootElement) {
-      rootElement.style.setProperty('background-color', '#0d1117', 'important');
-      rootElement.style.setProperty('min-height', '100vh', 'important');
-      rootElement.style.setProperty('width', '100%', 'important');
-    }
-    
-    // Force proper iframe sizing
-    document.body.style.setProperty('background-color', '#0d1117', 'important');
-    document.documentElement.style.setProperty('background-color', '#0d1117', 'important');
-    document.body.style.setProperty('margin', '0', 'important');
-    document.body.style.setProperty('padding', '0', 'important');
-    document.body.style.setProperty('width', '100%', 'important');
-    document.body.style.setProperty('height', '100vh', 'important');
-    document.body.style.setProperty('overflow', 'auto', 'important');
-
-    // Set maximally permissive headers for Discord
-    setMaximallyPermissiveHeaders();
+    // Initialize Discord-compatible mode
+    initDiscordCompatibleMode();
   }
   
   return true;
 };
 
-// Aggressively remove ALL CSP restrictions
-const removeAllCSPRestrictions = () => {
-  console.log('🔧 AGGRESSIVELY removing ALL CSP restrictions for Discord');
+// Initialize Discord-compatible mode that works with CSP
+const initDiscordCompatibleMode = () => {
+  console.log('🔧 Initializing Discord-compatible mode');
   
-  // Remove ALL existing CSP meta tags
-  const allCSPTags = document.querySelectorAll('meta[http-equiv="Content-Security-Policy"], meta[http-equiv="content-security-policy"]');
-  allCSPTags.forEach(meta => {
-    console.log('🗑️ Removing CSP tag:', meta.getAttribute('content'));
-    meta.remove();
+  // Set Discord-friendly styling without violating CSP
+  const rootElement = document.getElementById('root');
+  if (rootElement) {
+    rootElement.style.setProperty('background-color', '#0d1117', 'important');
+    rootElement.style.setProperty('min-height', '100vh', 'important');
+    rootElement.style.setProperty('width', '100%', 'important');
+    rootElement.style.setProperty('color', 'white', 'important');
+  }
+  
+  // Force proper iframe sizing
+  document.body.style.setProperty('background-color', '#0d1117', 'important');
+  document.documentElement.style.setProperty('background-color', '#0d1117', 'important');
+  document.body.style.setProperty('margin', '0', 'important');
+  document.body.style.setProperty('padding', '0', 'important');
+  document.body.style.setProperty('width', '100%', 'important');
+  document.body.style.setProperty('height', '100vh', 'important');
+  document.body.style.setProperty('overflow', 'auto', 'important');
+  document.body.style.setProperty('color', 'white', 'important');
+
+  // Add Discord-compatible error handling
+  setupDiscordErrorHandling();
+};
+
+// Setup error handling for Discord CSP violations
+const setupDiscordErrorHandling = () => {
+  // Handle CSP violations gracefully
+  window.addEventListener('securitypolicyviolation', (e) => {
+    console.warn('🔒 CSP Violation detected (expected in Discord):', {
+      directive: e.violatedDirective,
+      blockedURI: e.blockedURI,
+      lineNumber: e.lineNumber
+    });
+    
+    // Handle specific blocked resources
+    if (e.blockedURI.includes('supabase.co')) {
+      console.log('📡 Supabase request blocked - implementing fallback');
+      // The app will handle this via existing error handling
+    }
+    
+    if (e.blockedURI.includes('gpteng.co')) {
+      console.log('🔧 GPTEng script blocked - this is expected in Discord');
+      // This is expected and doesn't affect functionality
+    }
   });
 
-  // Add maximally permissive CSP
-  const permissiveCSP = document.createElement('meta');
-  permissiveCSP.setAttribute('http-equiv', 'Content-Security-Policy');
-  permissiveCSP.setAttribute('content', "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; script-src * 'unsafe-inline' 'unsafe-eval'; connect-src * 'unsafe-inline'; img-src * data: blob: 'unsafe-inline'; frame-src *; style-src * 'unsafe-inline'; font-src * data:; media-src * data: blob:; object-src *; child-src *; worker-src * blob: data:; base-uri *; form-action *; frame-ancestors *;");
-  document.head.appendChild(permissiveCSP);
-  
-  console.log('✅ Added maximally permissive CSP for Discord Activity');
+  // Handle network errors for blocked requests
+  window.addEventListener('error', (e) => {
+    if (e.message.includes('CSP') || e.message.includes('Content Security Policy')) {
+      console.warn('🔒 CSP-related error handled:', e.message);
+      // Prevent error from bubbling up
+      e.preventDefault();
+    }
+  });
 };
 
-// Set maximally permissive headers for Discord compatibility
-const setMaximallyPermissiveHeaders = () => {
-  console.log('🔧 Setting maximally permissive headers for Discord');
-  
-  // Set very permissive X-Frame-Options
-  let frameOptionsMeta = document.querySelector('meta[http-equiv="X-Frame-Options"]');
-  if (!frameOptionsMeta) {
-    frameOptionsMeta = document.createElement('meta');
-    frameOptionsMeta.setAttribute('http-equiv', 'X-Frame-Options');
-    document.head.appendChild(frameOptionsMeta);
-  }
-  frameOptionsMeta.setAttribute('content', 'ALLOWALL');
-  
-  // Set permissive referrer policy
-  let referrerMeta = document.querySelector('meta[name="referrer"]');
-  if (!referrerMeta) {
-    referrerMeta = document.createElement('meta');
-    referrerMeta.setAttribute('name', 'referrer');
-    document.head.appendChild(referrerMeta);
-  }
-  referrerMeta.setAttribute('content', 'unsafe-url');
-  
-  console.log('🔓 Maximally permissive headers set for Discord Activity');
-};
-
-// Initialize Discord Activity specific styles with CSP removal
+// Initialize Discord Activity specific styles that work with CSP
 export const initDiscordStyles = () => {
   const isInDiscord = 
     window.parent !== window ||
@@ -158,13 +157,11 @@ export const initDiscordStyles = () => {
     window.location.search.includes('guild_id=');
 
   if (isInDiscord) {
-    console.log('🎨 Initializing Discord Activity styles - REMOVING ALL CSP RESTRICTIONS');
+    console.log('🎨 Initializing Discord-compatible styles');
     
-    // Remove ALL CSP restrictions immediately
-    removeAllCSPRestrictions();
-    
-    // Create and inject Discord Activity specific CSS
+    // Create and inject Discord Activity specific CSS (inline styles to avoid CSP issues)
     const discordStyles = document.createElement('style');
+    discordStyles.setAttribute('type', 'text/css');
     discordStyles.innerHTML = `
       html, body {
         background-color: #0d1117 !important;
@@ -184,32 +181,27 @@ export const initDiscordStyles = () => {
         color: white !important;
       }
       
-      /* Ensure all containers are visible in Discord */
       .min-h-screen {
         min-height: 100vh !important;
         background-color: #0d1117 !important;
         color: white !important;
       }
       
-      /* Make sure content is visible */
       * {
         box-sizing: border-box;
         color: inherit;
       }
 
-      /* Force visibility over Discord's theme */
       body, #root, .container {
         visibility: visible !important;
         opacity: 1 !important;
         display: block !important;
       }
       
-      /* Discord Activity specific overrides */
       .text-white {
         color: white !important;
       }
       
-      /* Ensure buttons and interactive elements are visible */
       button, input, select, textarea {
         background-color: rgba(255, 255, 255, 0.1) !important;
         color: white !important;
@@ -219,7 +211,7 @@ export const initDiscordStyles = () => {
     
     document.head.appendChild(discordStyles);
     
-    // Additional immediate style forcing
+    // Apply immediate styles
     setTimeout(() => {
       document.body.style.setProperty('background-color', '#0d1117', 'important');
       document.documentElement.style.setProperty('background-color', '#0d1117', 'important');
@@ -231,20 +223,8 @@ export const initDiscordStyles = () => {
         root.style.setProperty('color', 'white', 'important');
       }
     }, 100);
-    
-    // Continuously remove CSP restrictions every 500ms for the first 5 seconds
-    let attempts = 0;
-    const maxAttempts = 10;
-    const removeCSPInterval = setInterval(() => {
-      removeAllCSPRestrictions();
-      attempts++;
-      if (attempts >= maxAttempts) {
-        clearInterval(removeCSPInterval);
-        console.log('🏁 Finished aggressive CSP removal attempts');
-      }
-    }, 500);
   }
 };
 
-// Export the CSP removal function for use in other modules
-export { removeAllCSPRestrictions };
+// Export utility functions
+export { setupDiscordErrorHandling };
