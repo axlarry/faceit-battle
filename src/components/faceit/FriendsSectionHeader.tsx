@@ -2,7 +2,6 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Users, RefreshCw } from "lucide-react";
-import { LivePlayersIndicator } from "./LivePlayersIndicator";
 
 interface FriendsSectionHeaderProps {
   friendsCount: number;
@@ -28,7 +27,12 @@ export const FriendsSectionHeader = React.memo(({
             </div>
             <span>Prietenii Mei ({friendsCount})</span>
           </h2>
-          <LivePlayersIndicator livePlayersCount={livePlayersCount} />
+          {livePlayersCount > 0 && (
+            <div className="flex items-center gap-1 bg-green-500/20 border border-green-500/30 rounded-full px-2 py-1">
+              <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+              <span className="text-green-300 text-xs font-medium">{livePlayersCount} LIVE</span>
+            </div>
+          )}
         </div>
         
         <Button

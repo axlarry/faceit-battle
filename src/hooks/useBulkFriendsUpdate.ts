@@ -50,7 +50,7 @@ export const useBulkFriendsUpdate = ({
                 level: statsData.games?.cs2?.skill_level || friend.level,
                 elo: statsData.games?.cs2?.faceit_elo || friend.elo,
                 isLive: liveStatus.isLive || false,
-                liveMatchDetails: liveStatus.isLive ? liveStatus.matchDetails : undefined
+                liveMatchDetails: liveStatus.isLive && liveStatus.matchDetails ? liveStatus.matchDetails : undefined
               };
 
               updateFriend(updatedFriend);
@@ -65,7 +65,7 @@ export const useBulkFriendsUpdate = ({
         
         // Add delay between batches to respect rate limits
         if (batches.indexOf(batch) < batches.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
+          await new Promise(resolve => setTimeout(resolve, 500));
         }
       }
 

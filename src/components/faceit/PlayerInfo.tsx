@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { FriendInfo } from './FriendInfo';
-import { LiveIndicator } from './LiveIndicator';
 
 interface PlayerInfoProps {
   nickname: string;
@@ -18,7 +17,12 @@ export const PlayerInfo = ({ nickname, level, elo, lcryptData, isLive }: PlayerI
         {/* Nickname with live indicator */}
         <div className="flex items-center gap-2 justify-between">
           <h3 className="text-base font-bold text-white truncate">{nickname}</h3>
-          <LiveIndicator isLive={isLive} />
+          {isLive && (
+            <div className="flex items-center gap-1 bg-green-500/20 border border-green-500/30 rounded-full px-2 py-0.5">
+              <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></div>
+              <span className="text-green-300 text-xs font-medium">LIVE</span>
+            </div>
+          )}
         </div>
         
         {/* ELO and Level Row */}
