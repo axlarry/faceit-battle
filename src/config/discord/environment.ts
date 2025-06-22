@@ -1,5 +1,6 @@
 
 import { DISCORD_CONFIG } from './constants';
+import { setupDiscordErrorHandling } from './errorHandling';
 
 // Enhanced Discord environment detection that works with CSP
 export const validateDiscordConfig = () => {
@@ -67,7 +68,6 @@ const initDiscordCompatibleMode = () => {
   document.body.style.setProperty('overflow', 'auto', 'important');
   document.body.style.setProperty('color', 'white', 'important');
 
-  // Add Discord-compatible error handling
-  const { setupDiscordErrorHandling } = require('./errorHandling');
+  // Add Discord-compatible error handling using ES6 import
   setupDiscordErrorHandling();
 };
