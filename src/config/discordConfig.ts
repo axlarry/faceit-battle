@@ -17,18 +17,18 @@ export const DISCORD_CONFIG = {
   // URL-uri pentru Discord Activity - FOARTE IMPORTANT!
   ACTIVITY_URL: 'https://faceit-toolz.lovable.app',
   
-  // Configurație specifică pentru Discord iframe - NO CSP RESTRICTIONS
+  // Configurație specifică pentru Discord iframe - MAXIMUM PERMISSIVENESS
   IFRAME_CONFIG: {
     // Headers necesare pentru Discord Activities
     ALLOWED_ORIGINS: [
       '*' // Allow all origins for Discord compatibility
     ],
-    // No CSP restrictions for Discord Activities
-    CONTENT_SECURITY_POLICY: null,
+    // Completely permissive CSP for Discord Activities
+    CONTENT_SECURITY_POLICY: "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; script-src * 'unsafe-inline' 'unsafe-eval'; connect-src * 'unsafe-inline'; img-src * data: blob: 'unsafe-inline'; frame-src *; style-src * 'unsafe-inline'; font-src * data:; media-src * data: blob:; object-src *; child-src *; worker-src * blob: data:; base-uri *; form-action *; frame-ancestors *;",
   }
 };
 
-// Enhanced Discord environment detection for Activities
+// Enhanced Discord environment detection for Activities with aggressive CSP removal
 export const validateDiscordConfig = () => {
   const missingVars = [];
   
@@ -62,12 +62,11 @@ export const validateDiscordConfig = () => {
     window.location.search.includes('guild_id=');
   
   if (isInDiscord) {
-    console.log('✅ Discord Activity environment detected - NO CSP RESTRICTIONS');
+    console.log('✅ Discord Activity environment detected - REMOVING ALL CSP RESTRICTIONS');
     console.log('🎮 Activity URL:', DISCORD_CONFIG.ACTIVITY_URL);
     
-    // Remove any existing CSP meta tags that might interfere
-    const existingCSP = document.querySelectorAll('meta[http-equiv="Content-Security-Policy"]');
-    existingCSP.forEach(meta => meta.remove());
+    // Aggressively remove ALL CSP restrictions
+    removeAllCSPRestrictions();
     
     // More aggressive styling for Discord Activities
     const rootElement = document.getElementById('root');
@@ -86,25 +85,38 @@ export const validateDiscordConfig = () => {
     document.body.style.setProperty('height', '100vh', 'important');
     document.body.style.setProperty('overflow', 'auto', 'important');
 
-    // Set permissive headers for Discord
-    setDiscordHeaders();
+    // Set maximally permissive headers for Discord
+    setMaximallyPermissiveHeaders();
   }
   
   return true;
 };
 
-// Set permissive headers for Discord compatibility
-const setDiscordHeaders = () => {
-  console.log('🔧 Setting permissive headers for Discord');
+// Aggressively remove ALL CSP restrictions
+const removeAllCSPRestrictions = () => {
+  console.log('🔧 AGGRESSIVELY removing ALL CSP restrictions for Discord');
   
-  // Remove any restrictive CSP
-  const existingCSP = document.querySelectorAll('meta[http-equiv="Content-Security-Policy"]');
-  existingCSP.forEach(meta => {
-    console.log('🗑️ Removing restrictive CSP:', meta.getAttribute('content'));
+  // Remove ALL existing CSP meta tags
+  const allCSPTags = document.querySelectorAll('meta[http-equiv="Content-Security-Policy"], meta[http-equiv="content-security-policy"]');
+  allCSPTags.forEach(meta => {
+    console.log('🗑️ Removing CSP tag:', meta.getAttribute('content'));
     meta.remove();
   });
 
-  // Add very permissive X-Frame-Options
+  // Add maximally permissive CSP
+  const permissiveCSP = document.createElement('meta');
+  permissiveCSP.setAttribute('http-equiv', 'Content-Security-Policy');
+  permissiveCSP.setAttribute('content', "default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; script-src * 'unsafe-inline' 'unsafe-eval'; connect-src * 'unsafe-inline'; img-src * data: blob: 'unsafe-inline'; frame-src *; style-src * 'unsafe-inline'; font-src * data:; media-src * data: blob:; object-src *; child-src *; worker-src * blob: data:; base-uri *; form-action *; frame-ancestors *;");
+  document.head.appendChild(permissiveCSP);
+  
+  console.log('✅ Added maximally permissive CSP for Discord Activity');
+};
+
+// Set maximally permissive headers for Discord compatibility
+const setMaximallyPermissiveHeaders = () => {
+  console.log('🔧 Setting maximally permissive headers for Discord');
+  
+  // Set very permissive X-Frame-Options
   let frameOptionsMeta = document.querySelector('meta[http-equiv="X-Frame-Options"]');
   if (!frameOptionsMeta) {
     frameOptionsMeta = document.createElement('meta');
@@ -113,10 +125,19 @@ const setDiscordHeaders = () => {
   }
   frameOptionsMeta.setAttribute('content', 'ALLOWALL');
   
-  console.log('🔓 Permissive headers set for Discord Activity');
+  // Set permissive referrer policy
+  let referrerMeta = document.querySelector('meta[name="referrer"]');
+  if (!referrerMeta) {
+    referrerMeta = document.createElement('meta');
+    referrerMeta.setAttribute('name', 'referrer');
+    document.head.appendChild(referrerMeta);
+  }
+  referrerMeta.setAttribute('content', 'unsafe-url');
+  
+  console.log('🔓 Maximally permissive headers set for Discord Activity');
 };
 
-// Initialize Discord Activity specific styles
+// Initialize Discord Activity specific styles with CSP removal
 export const initDiscordStyles = () => {
   const isInDiscord = 
     window.parent !== window ||
@@ -137,7 +158,10 @@ export const initDiscordStyles = () => {
     window.location.search.includes('guild_id=');
 
   if (isInDiscord) {
-    console.log('🎨 Initializing Discord Activity styles - NO CSP RESTRICTIONS');
+    console.log('🎨 Initializing Discord Activity styles - REMOVING ALL CSP RESTRICTIONS');
+    
+    // Remove ALL CSP restrictions immediately
+    removeAllCSPRestrictions();
     
     // Create and inject Discord Activity specific CSS
     const discordStyles = document.createElement('style');
@@ -207,5 +231,20 @@ export const initDiscordStyles = () => {
         root.style.setProperty('color', 'white', 'important');
       }
     }, 100);
+    
+    // Continuously remove CSP restrictions every 500ms for the first 5 seconds
+    let attempts = 0;
+    const maxAttempts = 10;
+    const removeCSPInterval = setInterval(() => {
+      removeAllCSPRestrictions();
+      attempts++;
+      if (attempts >= maxAttempts) {
+        clearInterval(removeCSPInterval);
+        console.log('🏁 Finished aggressive CSP removal attempts');
+      }
+    }, 500);
   }
 };
+
+// Export the CSP removal function for use in other modules
+export { removeAllCSPRestrictions };
