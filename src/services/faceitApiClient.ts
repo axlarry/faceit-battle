@@ -76,6 +76,123 @@ export class FaceitApiClient {
       };
     }
     
+    if (endpoint.includes('/matches/') && endpoint.includes('/stats')) {
+      // Mock match stats data with proper structure
+      return {
+        elo_change: [
+          {
+            player_id: 'mock-player-id-' + Date.now(),
+            elo_before: 1500,
+            elo_after: 1525,
+            elo_change: 25
+          }
+        ],
+        results: {
+          winner: 'team1',
+          score: {
+            team1: 16,
+            team2: 14
+          }
+        },
+        teams: {
+          team1: {
+            team_id: 'team1',
+            nickname: 'Team Alpha',
+            players: [
+              {
+                player_id: 'mock-player-id-' + Date.now(),
+                nickname: 'MockPlayer',
+                player_stats: {
+                  Kills: '18',
+                  Deaths: '12',
+                  Assists: '6',
+                  'K/D Ratio': '1.50',
+                  'Headshots %': '45',
+                  ADR: '78.5'
+                }
+              }
+            ]
+          },
+          team2: {
+            team_id: 'team2',
+            nickname: 'Team Beta',
+            players: [
+              {
+                player_id: 'mock-enemy-id-' + Date.now(),
+                nickname: 'EnemyPlayer',
+                player_stats: {
+                  Kills: '14',
+                  Deaths: '16',
+                  Assists: '8',
+                  'K/D Ratio': '0.88',
+                  'Headshots %': '38',
+                  ADR: '65.2'
+                }
+              }
+            ]
+          }
+        },
+        rounds: [
+          {
+            round_stats: {
+              Map: 'de_dust2',
+              Score: '16 / 14'
+            },
+            teams: {
+              team1: {
+                players: [
+                  {
+                    player_id: 'mock-player-id-' + Date.now(),
+                    nickname: 'MockPlayer',
+                    player_stats: {
+                      Kills: '18',
+                      Deaths: '12',
+                      Assists: '6'
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      };
+    }
+    
+    if (endpoint.includes('/matches/')) {
+      // Mock match details data
+      return {
+        match_id: 'mock-match-id-' + Date.now(),
+        competition_name: 'CS2 5v5',
+        status: 'FINISHED',
+        started_at: Math.floor(Date.now() / 1000) - 3600,
+        finished_at: Math.floor(Date.now() / 1000) - 600,
+        results: {
+          winner: 'team1',
+          score: {
+            team1: 16,
+            team2: 14
+          }
+        },
+        teams: {
+          team1: {
+            team_id: 'team1',
+            nickname: 'Team Alpha',
+            players: [
+              {
+                player_id: 'mock-player-id-' + Date.now(),
+                nickname: 'MockPlayer',
+                player_stats: {
+                  Kills: '18',
+                  Deaths: '12',
+                  Assists: '6'
+                }
+              }
+            ]
+          }
+        }
+      };
+    }
+    
     if (endpoint.includes('/players?game=cs2&game_player_id=')) {
       return {
         player_id: 'mock-steam-player-id-' + Date.now(),
