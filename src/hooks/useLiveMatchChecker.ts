@@ -17,6 +17,7 @@ export const useLiveMatchChecker = (friends: Player[]) => {
   const [liveMatches, setLiveMatches] = useState<Record<string, LiveMatchInfo>>({});
   const [isChecking, setIsChecking] = useState(false);
   const [lastCheckTime, setLastCheckTime] = useState<number>(0);
+  const [initialLoadCompleted, setInitialLoadCompleted] = useState(false);
   const { checkPlayerLiveMatch } = useFaceitApi();
   const intervalRef = useRef<NodeJS.Timeout>();
   const liveCheckIntervalRef = useRef<NodeJS.Timeout>();
@@ -72,14 +73,14 @@ export const useLiveMatchChecker = (friends: Player[]) => {
     const timeSinceLastCheck = now - lastCheckTime;
     
     // Check every 4 minutes to reduce API stress
-    if (timeSinceLastCheck < 240000) {
+    if (timeSinceLastCheck < 240000 && initialLoadCompleted) {
       console.log(`⏱️ Skipping full live check, only ${Math.round(timeSinceLastCheck / 1000)}s since last check`);
       return;
     }
     
     setIsChecking(true);
     setLastCheckTime(now);
-    console.log(`🔍 Starting full Lcrypt live matches check for ${friends.length} friends...`);
+    console.log(`🔍 Starting full live matches check for ${friends.length} friends...`);
     
     try {
       const newLiveMatches: Record<string, LiveMatchInfo> = { ...liveMatches };
@@ -113,7 +114,13 @@ export const useLiveMatchChecker = (friends: Player[]) => {
       setLiveMatches(newLiveMatches);
       
       const liveCount = Object.values(newLiveMatches).filter(match => match.isLive).length;
-      console.log(`✅ Full Lcrypt live matches check completed: ${liveCount}/${friends.length} friends are live`);
+      console.log(`✅ Full live matches check completed: ${liveCount}/${friends.length} friends are live`);
+      
+      // Marchează încărcarea inițială ca finalizată doar după prima verificare completă
+      if (!initialLoadCompleted) {
+        setInitialLoadCompleted(true);
+        console.log(`🚀 Initial load completed! Starting rapid live checks in 30 seconds...`);
+      }
       
     } catch (error) {
       console.warn('⚠️ Full live matches check failed:', error);
@@ -134,11 +141,6 @@ export const useLiveMatchChecker = (friends: Player[]) => {
         checkAllFriendsLiveMatches();
       }, 300000);
 
-      // Verificare rapidă la 30 de secunde doar pentru jucătorii live
-      liveCheckIntervalRef.current = setInterval(() => {
-        checkLivePlayersOnly();
-      }, 30000);
-
       return () => {
         clearTimeout(initialTimeout);
         if (intervalRef.current) {
@@ -149,7 +151,26 @@ export const useLiveMatchChecker = (friends: Player[]) => {
         }
       };
     }
-  }, [friends, liveMatches]);
+  }, [friends]);
+
+  // Effect separat pentru verificarea rapidă a jucătorilor live
+  useEffect(() => {
+    // Pornește verificarea rapidă doar după ce încărcarea inițială s-a terminat
+    if (initialLoadCompleted && friends.length > 0) {
+      console.log(`🔥 Starting rapid live checks every 30 seconds for live players...`);
+      
+      // Verificare rapidă la 30 de secunde doar pentru jucătorii live
+      liveCheckIntervalRef.current = setInterval(() => {
+        checkLivePlayersOnly();
+      }, 30000);
+
+      return () => {
+        if (liveCheckIntervalRef.current) {
+          clearInterval(liveCheckIntervalRef.current);
+        }
+      };
+    }
+  }, [initialLoadCompleted, friends, liveMatches]);
 
   useEffect(() => {
     return () => {
@@ -166,6 +187,7 @@ export const useLiveMatchChecker = (friends: Player[]) => {
     liveMatches,
     isChecking,
     checkAllFriendsLiveMatches,
-    lastCheckTime
+    lastCheckTime,
+    initialLoadCompleted
   };
 };
