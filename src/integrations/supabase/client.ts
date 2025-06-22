@@ -22,30 +22,64 @@ const isDiscordEnvironment = () => {
     window.top !== window.self;
 };
 
-// Configure Supabase client with Discord-specific settings
-const supabaseOptions = isDiscordEnvironment() ? {
-  global: {
-    fetch: (...args: Parameters<typeof fetch>) => {
-      console.log('🎮 Supabase fetch intercepted for Discord compatibility');
-      return fetch(...args).catch(error => {
-        if (error.message.includes('CSP') || error.message.includes('blocked')) {
-          console.warn('🔒 Supabase direct call blocked in Discord - using Edge Functions');
-          throw new Error('CSP_BLOCKED');
-        }
-        throw error;
-      });
+// În Discord, creăm un client mock care nu face cereri reale
+const createMockSupabaseClient = () => {
+  console.log('🎮 Creating mock Supabase client for Discord');
+  
+  return {
+    from: () => ({
+      select: () => Promise.resolve({ data: [], error: null }),
+      insert: () => Promise.resolve({ data: null, error: null }),
+      update: () => Promise.resolve({ data: null, error: null }),
+      delete: () => Promise.resolve({ data: null, error: null }),
+    }),
+    functions: {
+      invoke: async (name: string, options?: any) => {
+        console.log(`🎮 Mock function call: ${name}`);
+        return { data: null, error: { message: 'Discord CSP blocked - using local storage' } };
+      }
+    },
+    auth: {
+      getUser: () => Promise.resolve({ data: { user: null }, error: null }),
+      signInWithPassword: () => Promise.resolve({ data: null, error: null }),
+      signUp: () => Promise.resolve({ data: null, error: null }),
+      signOut: () => Promise.resolve({ error: null }),
     }
-  }
-} : {};
+  };
+};
+
+// Configure Supabase client with Discord-specific settings
+let supabaseClient;
+
+if (isDiscordEnvironment()) {
+  console.log('🎮 Discord environment detected - using mock client');
+  supabaseClient = createMockSupabaseClient();
+} else {
+  console.log('🌐 Standard environment - using real Supabase client');
+  
+  const supabaseOptions = {
+    global: {
+      fetch: (...args: Parameters<typeof fetch>) => {
+        console.log('🚀 Supabase fetch call');
+        return fetch(...args).catch(error => {
+          console.warn('⚠️ Supabase fetch error:', error);
+          throw error;
+        });
+      }
+    }
+  };
+
+  supabaseClient = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, supabaseOptions);
+}
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
-export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, supabaseOptions);
+export const supabase = supabaseClient as any;
 
-// Log Discord environment status
+// Log environment status
 if (isDiscordEnvironment()) {
-  console.log('🎮 Supabase client configured for Discord environment');
+  console.log('🎮 Supabase mock client configured for Discord environment');
 } else {
-  console.log('🌐 Supabase client configured for standard environment');
+  console.log('🌐 Supabase real client configured for standard environment');
 }
