@@ -90,7 +90,10 @@ export const MatchRow = ({ match, player, matchesStats, onMatchClick, matchIndex
                   onError={(e) => {
                     // Fallback to text if image fails to load
                     e.currentTarget.style.display = 'none';
-                    e.currentTarget.nextElementSibling!.style.display = 'block';
+                    const nextElement = e.currentTarget.nextElementSibling as HTMLElement;
+                    if (nextElement) {
+                      nextElement.style.display = 'block';
+                    }
                   }}
                 />
               ) : null}
@@ -207,7 +210,10 @@ export const MatchRow = ({ match, player, matchesStats, onMatchClick, matchIndex
                 onError={(e) => {
                   // Fallback to text if image fails to load
                   e.currentTarget.style.display = 'none';
-                  e.currentTarget.nextElementSibling!.style.display = 'block';
+                  const nextElement = e.currentTarget.nextElementSibling as HTMLElement;
+                  if (nextElement) {
+                    nextElement.style.display = 'block';
+                  }
                 }}
               />
             ) : null}
