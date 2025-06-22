@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -15,15 +16,6 @@ interface FaceitToolProps {
   onAddFriend: (player: Player) => Promise<void>;
 }
 
-// Discord environment detection
-const isDiscordEnvironment = () => {
-  return window.parent !== window ||
-    window.location.href.includes('discord.com') ||
-    document.referrer.includes('discord.com') ||
-    window.location.search.includes('frame_id') ||
-    navigator.userAgent.includes('Discord');
-};
-
 export const FaceitTool = ({ onShowPlayerDetails, onAddFriend }: FaceitToolProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchType, setSearchType] = useState<'steam' | 'nickname'>('steam');
@@ -32,7 +24,6 @@ export const FaceitTool = ({ onShowPlayerDetails, onAddFriend }: FaceitToolProps
   const [apiError, setApiError] = useState<string | null>(null);
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [pendingPlayer, setPendingPlayer] = useState<Player | null>(null);
-  const [usingMockData, setUsingMockData] = useState(false);
 
   const { makeApiCall } = useFaceitApi();
 
@@ -67,7 +58,6 @@ export const FaceitTool = ({ onShowPlayerDetails, onAddFriend }: FaceitToolProps
     setLoading(true);
     setPlayerData(null);
     setApiError(null);
-    setUsingMockData(false);
 
     try {
       let playerInfo;
@@ -109,11 +99,6 @@ export const FaceitTool = ({ onShowPlayerDetails, onAddFriend }: FaceitToolProps
       };
 
       setPlayerData(player);
-      
-      // Verificăm dacă playerInfo conține mock data
-      if (playerInfo.player_id === "mock-player-id-123") {
-        setUsingMockData(true);
-      }
 
     } catch (error) {
       const friendlyErrorMessage = getUserFriendlyErrorMessage(error);
@@ -151,28 +136,6 @@ export const FaceitTool = ({ onShowPlayerDetails, onAddFriend }: FaceitToolProps
 
   return (
     <div className="space-y-6">
-      {/* Discord Info Banner */}
-      {isDiscordEnvironment() && (
-        <Card className="bg-blue-500/10 backdrop-blur-lg border-blue-500/30">
-          <div className="p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
-                <User className="w-4 h-4 text-white" />
-              </div>
-              <div>
-                <h3 className="text-blue-400 font-medium">Discord Activity Mode</h3>
-                <p className="text-blue-300 text-sm">
-                  {usingMockData 
-                    ? "Folosind date demo din cauza restricțiilor CSP Discord." 
-                    : "Aplicația rulează în Discord cu API-uri reale prin proxy securizat."
-                  }
-                </p>
-              </div>
-            </div>
-          </div>
-        </Card>
-      )}
-
       {/* Search Section */}
       <Card className="bg-white/5 backdrop-blur-lg border-white/10">
         <div className="p-6">
@@ -255,7 +218,7 @@ export const FaceitTool = ({ onShowPlayerDetails, onAddFriend }: FaceitToolProps
                 Rezultate Căutare
               </h3>
               <Badge className="bg-gradient-to-r from-orange-500/10 to-red-500/10 text-orange-400 border border-orange-400/30">
-                {usingMockData ? 'Demo Data' : (isDiscordEnvironment() ? 'Live Data' : 'CS2 Stats')}
+                CS2 Stats
               </Badge>
             </div>
 

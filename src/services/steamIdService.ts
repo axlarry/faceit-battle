@@ -2,14 +2,6 @@
 import { supabase } from '@/integrations/supabase/client';
 
 export class SteamIdService {
-  private isDiscordEnvironment(): boolean {
-    return window.parent !== window ||
-      window.location.href.includes('discord.com') ||
-      document.referrer.includes('discord.com') ||
-      window.location.search.includes('frame_id') ||
-      navigator.userAgent.includes('Discord');
-  }
-
   async getSteamID64(vanityurl: string): Promise<string> {
     try {
       console.log(`🔍 Converting vanity URL via Supabase proxy: ${vanityurl}`);
@@ -32,19 +24,6 @@ export class SteamIdService {
       
     } catch (error) {
       console.error('❌ Steam ID conversion error:', error);
-      
-      // Dacă suntem în Discord și API-ul este blocat de CSP, returnăm un mock SteamID64
-      if (this.isDiscordEnvironment() && (
-        error.message?.includes('CSP') || 
-        error.message?.includes('blocked') ||
-        error.message?.includes('NetworkError') ||
-        error.message?.includes('Failed to fetch')
-      )) {
-        console.log('🎭 Using mock SteamID64 due to Discord CSP restrictions');
-        // Returnăm un SteamID64 valid mock pentru demonstrație
-        return '76561198000000000';
-      }
-      
       throw error;
     }
   }

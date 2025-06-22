@@ -3,16 +3,15 @@ import { useState, useEffect } from 'react';
 import { Player } from '@/types/Player';
 import { toast } from '@/hooks/use-toast';
 
-// Discord-compatible friends management
 export const useFriends = () => {
   const [friends, setFriends] = useState<Player[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Load friends from localStorage (Discord-compatible storage)
+  // Load friends from localStorage
   const loadFriends = () => {
     try {
-      console.log('📱 Loading friends from localStorage (Discord-compatible)');
+      console.log('📱 Loading friends from localStorage');
       const savedFriends = localStorage.getItem('faceit-friends');
       if (savedFriends) {
         const parsedFriends = JSON.parse(savedFriends);

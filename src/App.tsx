@@ -4,124 +4,33 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { DiscordProvider } from "@/contexts/DiscordContext";
-import { DiscordErrorBoundary } from "@/components/discord/DiscordErrorBoundary";
-import { useEffect } from "react";
-import { setupDiscordErrorHandling } from "@/config/discord/errorHandling";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // Enhanced error handling for Discord CSP constraints
-      retry: (failureCount, error: any) => {
-        // Don't retry CSP-blocked requests or network errors in Discord
-        if (error?.message && (
-          error.message.includes('CSP') || 
-          error.message.includes('blocked') ||
-          error.message.includes('NetworkError') ||
-          error.message.includes('Failed to fetch') ||
-          error.message.includes('violates the following Content Security Policy')
-        )) {
-          console.log('🔒 Not retrying CSP-blocked request:', error.message);
-          return false;
-        }
-        return failureCount < 1; // Reduce retry attempts in Discord
-      },
-      staleTime: 60000, // Cache data longer in Discord to reduce network requests
-      refetchOnWindowFocus: false, // Disable refetch on focus in Discord iframe
-      refetchOnReconnect: false, // Disable refetch on reconnect in Discord
+      retry: 3,
+      staleTime: 60000,
+      refetchOnWindowFocus: false,
     },
   },
 });
 
 const App = () => {
-  useEffect(() => {
-    // Initialize Discord error handling immediately
-    setupDiscordErrorHandling();
-
-    // Enhanced Discord environment detection and styling
-    const isInDiscord = 
-      window.parent !== window ||
-      window.location.href.includes('discord.com') ||
-      window.location.href.includes('discordsays.com') ||
-      window.location.href.includes('discordapp.com') ||
-      document.referrer.includes('discord.com') ||
-      document.referrer.includes('discordapp.com') ||
-      window.location.search.includes('frame_id') ||
-      window.location.search.includes('instance_id') ||
-      window.location.hostname === 'faceit-toolz.lovable.app' ||
-      window.location.hostname.includes('discordsays.com') ||
-      window.location.hostname.includes('discordapp.com') ||
-      navigator.userAgent.includes('Discord') ||
-      window.top !== window.self ||
-      window.location.search.includes('v=') ||
-      window.location.search.includes('channel_id=') ||
-      window.location.search.includes('guild_id=');
-
-    if (isInDiscord) {
-      console.log('🎮 Discord environment detected in App component');
-      console.log('🎨 Applying Discord-specific styling');
-      
-      // Apply Discord theme immediately
-      document.body.style.setProperty('background-color', '#0d1117', 'important');
-      document.documentElement.style.setProperty('background-color', '#0d1117', 'important');
-      document.body.style.setProperty('color', 'white', 'important');
-      document.body.style.setProperty('margin', '0', 'important');
-      document.body.style.setProperty('padding', '0', 'important');
-      document.body.style.setProperty('overflow', 'hidden', 'important');
-      document.body.style.setProperty('height', '100vh', 'important');
-
-      // Suppress Discord-specific errors that don't affect functionality
-      const handleDiscordError = (error: any) => {
-        if (error?.message && (
-          error.message.includes('CSP') || 
-          error.message.includes('blocked') ||
-          error.message.includes('Content Security Policy') ||
-          error.message.includes('Invalid Origin') ||
-          error.message.includes('cross-origin frame') ||
-          error.message.includes('SecurityError') ||
-          error.message.includes('RPCError')
-        )) {
-          console.warn('🔒 Discord error suppressed in App:', error.message);
-          return true;
-        }
-        return false;
-      };
-
-      // Add global error handler
-      window.addEventListener('error', (e) => {
-        if (handleDiscordError(e.error)) {
-          e.preventDefault();
-        }
-      });
-
-      window.addEventListener('unhandledrejection', (e) => {
-        if (handleDiscordError(e.reason)) {
-          e.preventDefault();
-        }
-      });
-    }
-  }, []);
-
   return (
-    <DiscordErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <DiscordProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </BrowserRouter>
-          </TooltipProvider>
-        </DiscordProvider>
-      </QueryClientProvider>
-    </DiscordErrorBoundary>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
   );
 };
 
