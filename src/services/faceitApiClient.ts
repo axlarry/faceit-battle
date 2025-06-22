@@ -2,14 +2,36 @@
 import { apiService } from './apiService';
 import { supabase } from '@/integrations/supabase/client';
 
+// Discord environment detection
+const isDiscordEnvironment = () => {
+  return window.parent !== window ||
+    window.location.href.includes('discord.com') ||
+    window.location.href.includes('discordsays.com') ||
+    window.location.href.includes('discordapp.com') ||
+    document.referrer.includes('discord.com') ||
+    document.referrer.includes('discordapp.com') ||
+    window.location.search.includes('frame_id') ||
+    window.location.search.includes('instance_id') ||
+    window.location.hostname.includes('discordsays.com') ||
+    window.location.hostname.includes('discordapp.com') ||
+    navigator.userAgent.includes('Discord') ||
+    window.top !== window.self;
+};
+
 export class FaceitApiClient {
   async makeApiCall(endpoint: string, useLeaderboardApi: boolean = false) {
     const requestKey = `faceit-edge-${endpoint}-${useLeaderboardApi ? 'leaderboard' : 'friends'}`;
     
     return apiService.dedupedRequest(requestKey, async () => {
       return apiService.retryRequest(async () => {
-        // FORȚĂM folosirea Edge Functions pentru compatibilitate maximă cu Discord
-        console.log('🎯 FORCING Edge Function usage for Discord compatibility');
+        // ALWAYS use Edge Functions in Discord - no direct API calls
+        if (isDiscordEnvironment()) {
+          console.log('🎮 Discord environment detected - using Edge Functions exclusively');
+          return await this.makeEdgeFunctionCall(endpoint, useLeaderboardApi);
+        }
+        
+        // For non-Discord environments, still prefer Edge Functions for consistency
+        console.log('🌐 Non-Discord environment - using Edge Functions for reliability');
         return await this.makeEdgeFunctionCall(endpoint, useLeaderboardApi);
       }, { maxRetries: 3, baseDelay: 1500 });
     });
