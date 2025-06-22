@@ -56,6 +56,7 @@ export class FaceitApiClient {
         player_id: 'mock-player-id-' + Date.now(),
         nickname: 'MockPlayer',
         avatar: '/placeholder.svg',
+        cover_image: '/placeholder.svg', // Add cover_image for player profile
         games: {
           cs2: {
             skill_level: 5,
@@ -92,7 +93,15 @@ export class FaceitApiClient {
           score: {
             team1: 16,
             team2: 14
-          }
+          },
+          elo_changes: [ // Add elo_changes to results
+            {
+              player_id: 'mock-player-id-' + Date.now(),
+              elo_before: 1500,
+              elo_after: 1525,
+              elo_change: 25
+            }
+          ]
         },
         teams: {
           team1: {
@@ -171,7 +180,15 @@ export class FaceitApiClient {
           score: {
             team1: 16,
             team2: 14
-          }
+          },
+          elo_changes: [ // Add elo_changes to match results
+            {
+              player_id: 'mock-player-id-' + Date.now(),
+              elo_before: 1500,
+              elo_after: 1525,
+              elo_change: 25
+            }
+          ]
         },
         teams: {
           team1: {
@@ -198,6 +215,7 @@ export class FaceitApiClient {
         player_id: 'mock-steam-player-id-' + Date.now(),
         nickname: 'SteamMockPlayer',
         avatar: '/placeholder.svg',
+        cover_image: '/placeholder.svg', // Add cover_image for Steam player profile
         games: {
           cs2: {
             skill_level: 7,
