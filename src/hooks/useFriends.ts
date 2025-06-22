@@ -46,8 +46,8 @@ export const useFriends = () => {
     }
   };
 
-  // Add friend
-  const addFriend = (player: Player) => {
+  // Add friend - now async to match expected type
+  const addFriend = async (player: Player) => {
     const updatedFriends = [...friends, player];
     setFriends(updatedFriends);
     saveFriends(updatedFriends);
