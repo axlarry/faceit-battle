@@ -3,6 +3,7 @@ import { useState, useCallback } from 'react';
 import { Player } from '@/types/Player';
 import { useFaceitApi } from '@/hooks/useFaceitApi';
 import { playerService } from '@/services/playerService';
+import { LiveMatchInfo } from '@/hooks/types/lcryptDataManagerTypes';
 
 interface UseBulkFriendsUpdateProps {
   friends: Player[];
@@ -45,12 +46,15 @@ export const useBulkFriendsUpdate = ({
             ]);
 
             if (statsData) {
+              // Type assertion to ensure we have the correct type
+              const typedLiveStatus = liveStatus as LiveMatchInfo;
+              
               const updatedFriend: Player = {
                 ...friend,
                 level: statsData.games?.cs2?.skill_level || friend.level,
                 elo: statsData.games?.cs2?.faceit_elo || friend.elo,
-                isLive: liveStatus.isLive || false,
-                liveMatchDetails: liveStatus.isLive && liveStatus.matchDetails ? liveStatus.matchDetails : undefined
+                isLive: typedLiveStatus.isLive || false,
+                liveMatchDetails: typedLiveStatus.isLive && typedLiveStatus.matchDetails ? typedLiveStatus.matchDetails : undefined
               };
 
               updateFriend(updatedFriend);
