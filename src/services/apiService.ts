@@ -6,15 +6,28 @@ interface RetryOptions {
 }
 
 const DEFAULT_RETRY_OPTIONS: RetryOptions = {
-  maxRetries: 1, // Reduced from 3 to 1
-  baseDelay: 3000, // Increased from 2000ms to 3000ms
-  maxDelay: 15000 // Increased from 10000ms to 15000ms
+  maxRetries: 2, // Increased for Discord iframe
+  baseDelay: 2000, // Reduced delay for better UX
+  maxDelay: 10000
 };
 
 export class ApiService {
   private static instance: ApiService;
   private requestQueue: Map<string, Promise<any>> = new Map();
-  private rateLimitDelay: number = 0; // Track rate limiting
+  private rateLimitDelay: number = 0;
+  private isDiscordEnvironment: boolean = false;
+
+  constructor() {
+    // Detect Discord environment
+    this.isDiscordEnvironment = 
+      window.parent !== window || 
+      window.location.href.includes('discord.com') ||
+      document.referrer.includes('discord.com');
+    
+    if (this.isDiscordEnvironment) {
+      console.log('🎮 API Service initialized in Discord environment');
+    }
+  }
 
   static getInstance(): ApiService {
     if (!ApiService.instance) {
@@ -33,8 +46,9 @@ export class ApiService {
     
     // Apply rate limit delay if needed
     if (this.rateLimitDelay > 0) {
+      console.log(`⏰ Applying rate limit delay: ${this.rateLimitDelay}ms`);
       await new Promise(resolve => setTimeout(resolve, this.rateLimitDelay));
-      this.rateLimitDelay = Math.max(0, this.rateLimitDelay - 1000); // Reduce delay over time
+      this.rateLimitDelay = Math.max(0, this.rateLimitDelay - 1000);
     }
     
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -46,23 +60,42 @@ export class ApiService {
       } catch (error) {
         lastError = error as Error;
         
+        console.log(`🔄 Attempt ${attempt + 1}/${maxRetries + 1} failed:`, lastError.message);
+        
         // Check if it's a rate limit error
         if (lastError.message.includes('Rate limited') || lastError.message.includes('429')) {
-          this.rateLimitDelay = Math.min(this.rateLimitDelay + 5000, 30000); // Increase delay up to 30s
+          this.rateLimitDelay = Math.min(this.rateLimitDelay + 3000, 15000);
+          console.log(`⏰ Rate limited, increasing delay to: ${this.rateLimitDelay}ms`);
+        }
+        
+        // Special handling for Discord iframe errors
+        if (this.isDiscordEnvironment && (
+          lastError.message.includes('CORS') || 
+          lastError.message.includes('Network') ||
+          lastError.message.includes('Failed to fetch')
+        )) {
+          console.log('🎮 Discord iframe network issue, adjusting retry strategy');
+          // Shorter delays in Discord to avoid timeouts
+          const discordDelay = Math.min(baseDelay * (attempt + 1), 5000);
+          if (attempt < maxRetries) {
+            console.log(`🔄 Discord retry ${attempt + 1} after ${discordDelay}ms`);
+            await new Promise(resolve => setTimeout(resolve, discordDelay));
+            continue;
+          }
         }
         
         if (attempt === maxRetries) {
-          console.warn(`Request failed after ${maxRetries} retries`);
+          console.warn(`❌ Request failed after ${maxRetries + 1} attempts in ${this.isDiscordEnvironment ? 'Discord' : 'standalone'} environment`);
           throw lastError;
         }
         
-        // Exponential backoff cu delay mai mare
+        // Exponential backoff with jitter
         const delay = Math.min(
-          baseDelay * Math.pow(2, attempt) + Math.random() * 3000,
+          baseDelay * Math.pow(1.5, attempt) + Math.random() * 1000,
           maxDelay
         );
         
-        console.log(`Retry attempt ${attempt + 1}/${maxRetries} after ${delay}ms`);
+        console.log(`⏳ Retrying in ${delay}ms...`);
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
@@ -73,7 +106,7 @@ export class ApiService {
   async dedupedRequest<T>(key: string, requestFn: () => Promise<T>): Promise<T> {
     // Deduplicarea request-urilor identice
     if (this.requestQueue.has(key)) {
-      console.log(`Deduplicating request for key: ${key}`);
+      console.log(`♻️ Deduplicating request for key: ${key}`);
       return this.requestQueue.get(key)!;
     }
 
@@ -86,6 +119,7 @@ export class ApiService {
   }
 
   clearRequestQueue(): void {
+    console.log('🧹 Clearing request queue');
     this.requestQueue.clear();
     this.rateLimitDelay = 0;
   }

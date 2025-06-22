@@ -19,18 +19,35 @@ export const useDiscordSDK = () => {
   const [auth, setAuth] = useState<DiscordAuth | null>(null);
   const [isReady, setIsReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isInDiscord, setIsInDiscord] = useState(false);
 
   useEffect(() => {
     const initializeDiscord = async () => {
       try {
         console.log('🎮 Initializing Discord SDK...');
         
-        // Check if we're running in Discord
-        const isInDiscord = window.location.href.includes('discord.com') || 
-                           window.parent !== window ||
-                           document.referrer.includes('discord.com');
+        // Verificare mai robustă pentru mediul Discord
+        const isDiscordEnvironment = 
+          window.location.href.includes('discord.com') || 
+          window.parent !== window ||
+          document.referrer.includes('discord.com') ||
+          window.location.hostname.includes('discord.com') ||
+          // Verificare pentru iframe Discord
+          (window.frameElement && window.frameElement.getAttribute('src')?.includes('discord.com')) ||
+          // Verificare pentru user agent Discord
+          navigator.userAgent.includes('Discord');
 
-        if (!isInDiscord) {
+        console.log('🔍 Discord environment check:', {
+          isDiscordEnvironment,
+          hostname: window.location.hostname,
+          referrer: document.referrer,
+          userAgent: navigator.userAgent,
+          isIframe: window.parent !== window
+        });
+
+        setIsInDiscord(isDiscordEnvironment);
+
+        if (!isDiscordEnvironment) {
           console.log('🔍 Not running in Discord environment, skipping SDK initialization');
           setIsReady(true);
           return;
@@ -104,7 +121,10 @@ export const useDiscordSDK = () => {
       small_text?: string;
     };
   }) => {
-    if (!discordSdk) return;
+    if (!discordSdk || !isInDiscord) {
+      console.log('💭 Skipping activity update - not in Discord or SDK not ready');
+      return;
+    }
 
     try {
       await discordSdk.commands.setActivity({
@@ -121,7 +141,7 @@ export const useDiscordSDK = () => {
     auth,
     isReady,
     error,
-    isInDiscord: !!discordSdk,
+    isInDiscord,
     updateActivity
   };
 };
