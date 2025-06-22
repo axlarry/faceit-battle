@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Header } from "@/components/faceit/Header";
 import { RegionTabs } from "@/components/faceit/RegionTabs";
 import { LeaderboardTable } from "@/components/faceit/LeaderboardTable";
@@ -14,8 +14,38 @@ const Index = () => {
   const { friends, addFriend, updateFriend, removeFriend, loadFriendsFromDatabase } = useFriends();
   const { selectedPlayer, showModal, showPlayerDetails, closeModal } = usePlayerModal();
 
+  useEffect(() => {
+    // Enhanced Discord detection and debugging
+    const isInDiscord = 
+      window.parent !== window ||
+      window.location.href.includes('discord.com') ||
+      document.referrer.includes('discord.com') ||
+      window.location.search.includes('frame_id') ||
+      window.location.search.includes('instance_id') ||
+      window.location.hostname === 'faceit-toolz.lovable.app' ||
+      navigator.userAgent.includes('Discord') ||
+      window.top !== window.self;
+
+    console.log('🎮 Index page loaded');
+    console.log('📱 Discord detected:', isInDiscord);
+    console.log('🌍 Window details:', {
+      href: window.location.href,
+      hostname: window.location.hostname,
+      search: window.location.search,
+      referrer: document.referrer,
+      inIframe: window.parent !== window,
+      userAgent: navigator.userAgent
+    });
+
+    if (isInDiscord) {
+      console.log('🎨 Applying Discord-specific styles to Index');
+      document.body.style.setProperty('background-color', '#0d1117', 'important');
+      document.documentElement.style.setProperty('background-color', '#0d1117', 'important');
+    }
+  }, []);
+
   return (
-    <div className="min-h-screen bg-[#0d1117]">
+    <div className="min-h-screen bg-[#0d1117]" style={{ backgroundColor: '#0d1117' }}>
       {/* Background pattern */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute inset-0 bg-gradient-to-br from-[#ff6500]/5 via-transparent to-[#ff6500]/5"></div>
