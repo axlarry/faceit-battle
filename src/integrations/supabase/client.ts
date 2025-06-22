@@ -6,80 +6,24 @@ import type { Database } from './types';
 const SUPABASE_URL = "https://rwizxoeyatdtggrpnpmq.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ3aXp4b2V5YXRkdGdncnBucG1xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2OTkwOTYsImV4cCI6MjA2NDI3NTA5Nn0.6Rpmb1a2iFqw2VZaHl-k-3otQlQuDpaxUPf28uOlLRU";
 
-// Discord environment detection
-const isDiscordEnvironment = () => {
-  return window.parent !== window ||
-    window.location.href.includes('discord.com') ||
-    window.location.href.includes('discordsays.com') ||
-    window.location.href.includes('discordapp.com') ||
-    document.referrer.includes('discord.com') ||
-    document.referrer.includes('discordapp.com') ||
-    window.location.search.includes('frame_id') ||
-    window.location.search.includes('instance_id') ||
-    window.location.hostname.includes('discordsays.com') ||
-    window.location.hostname.includes('discordapp.com') ||
-    navigator.userAgent.includes('Discord') ||
-    window.top !== window.self;
+// Configure Supabase client pentru toate mediile
+const supabaseOptions = {
+  global: {
+    fetch: (...args: Parameters<typeof fetch>) => {
+      console.log('🚀 Supabase fetch call');
+      return fetch(...args).catch(error => {
+        console.warn('⚠️ Supabase fetch error:', error);
+        throw error;
+      });
+    }
+  }
 };
 
-// În Discord, creăm un client mock care nu face cereri reale
-const createMockSupabaseClient = () => {
-  console.log('🎮 Creating mock Supabase client for Discord');
-  
-  return {
-    from: () => ({
-      select: () => Promise.resolve({ data: [], error: null }),
-      insert: () => Promise.resolve({ data: null, error: null }),
-      update: () => Promise.resolve({ data: null, error: null }),
-      delete: () => Promise.resolve({ data: null, error: null }),
-    }),
-    functions: {
-      invoke: async (name: string, options?: any) => {
-        console.log(`🎮 Mock function call: ${name}`);
-        return { data: null, error: { message: 'Discord CSP blocked - using local storage' } };
-      }
-    },
-    auth: {
-      getUser: () => Promise.resolve({ data: { user: null }, error: null }),
-      signInWithPassword: () => Promise.resolve({ data: null, error: null }),
-      signUp: () => Promise.resolve({ data: null, error: null }),
-      signOut: () => Promise.resolve({ error: null }),
-    }
-  };
-};
-
-// Configure Supabase client with Discord-specific settings
-let supabaseClient;
-
-if (isDiscordEnvironment()) {
-  console.log('🎮 Discord environment detected - using mock client');
-  supabaseClient = createMockSupabaseClient();
-} else {
-  console.log('🌐 Standard environment - using real Supabase client');
-  
-  const supabaseOptions = {
-    global: {
-      fetch: (...args: Parameters<typeof fetch>) => {
-        console.log('🚀 Supabase fetch call');
-        return fetch(...args).catch(error => {
-          console.warn('⚠️ Supabase fetch error:', error);
-          throw error;
-        });
-      }
-    }
-  };
-
-  supabaseClient = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, supabaseOptions);
-}
+const supabaseClient = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, supabaseOptions);
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
 
-export const supabase = supabaseClient as any;
+export const supabase = supabaseClient;
 
-// Log environment status
-if (isDiscordEnvironment()) {
-  console.log('🎮 Supabase mock client configured for Discord environment');
-} else {
-  console.log('🌐 Supabase real client configured for standard environment');
-}
+console.log('🌐 Supabase client configured for all environments');

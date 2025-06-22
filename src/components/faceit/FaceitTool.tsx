@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -36,10 +37,6 @@ export const FaceitTool = ({ onShowPlayerDetails, onAddFriend }: FaceitToolProps
   const { makeApiCall } = useFaceitApi();
 
   const getUserFriendlyErrorMessage = (error: any): string => {
-    if (isDiscordEnvironment()) {
-      return 'Căutarea funcționează în modul demonstrativ în Discord. Încearcă să cauți orice nume pentru a vedea un exemplu.';
-    }
-
     const errorMessage = error instanceof Error ? error.message : String(error);
     
     if (errorMessage.includes('API Error:')) {
@@ -157,7 +154,7 @@ export const FaceitTool = ({ onShowPlayerDetails, onAddFriend }: FaceitToolProps
               </div>
               <div>
                 <h3 className="text-blue-400 font-medium">Discord Activity Mode</h3>
-                <p className="text-blue-300 text-sm">Aplicația rulează în modul demonstrativ. Toate căutările vor afișa date de exemplu.</p>
+                <p className="text-blue-300 text-sm">Aplicația rulează în Discord cu API-uri reale prin proxy securizat.</p>
               </div>
             </div>
           </div>
@@ -246,7 +243,7 @@ export const FaceitTool = ({ onShowPlayerDetails, onAddFriend }: FaceitToolProps
                 Rezultate Căutare
               </h3>
               <Badge className="bg-gradient-to-r from-orange-500/10 to-red-500/10 text-orange-400 border border-orange-400/30">
-                {isDiscordEnvironment() ? 'Demo Data' : 'CS2 Stats'}
+                {isDiscordEnvironment() ? 'Live Data' : 'CS2 Stats'}
               </Badge>
             </div>
 
