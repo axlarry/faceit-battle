@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
   <head>
@@ -16,126 +15,12 @@
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:site" content="@LaCurte" />
     <meta name="twitter:image" content="./waha.png" />
-
-    <!-- Discord Activity friendly headers - remove X-Frame-Options -->
-    <meta name="referrer" content="unsafe-url" />
-    
-    <script>
-      // Discord compatibility initialization with enhanced error suppression
-      if (typeof document !== 'undefined') {
-        // Detect Discord environment more reliably
-        const isDiscordEnvironment = 
-          window.parent !== window ||
-          window.location.href.includes('discord.com') ||
-          window.location.href.includes('discordsays.com') ||
-          window.location.href.includes('discordapp.com') ||
-          document.referrer.includes('discord.com') ||
-          document.referrer.includes('discordapp.com') ||
-          window.location.search.includes('frame_id') ||
-          window.location.search.includes('instance_id') ||
-          window.location.hostname.includes('discordsays.com') ||
-          window.location.hostname.includes('discordapp.com') ||
-          navigator.userAgent.includes('Discord') ||
-          window.top !== window.self;
-
-        if (isDiscordEnvironment) {
-          console.log('🎮 Discord environment detected - initializing compatibility mode');
-          
-          // Enhanced error suppression for Discord
-          window.addEventListener('securitypolicyviolation', function(e) {
-            console.warn('🔒 CSP Violation (expected in Discord):', {
-              directive: e.violatedDirective,
-              blockedURI: e.blockedURI
-            });
-            e.preventDefault();
-          });
-
-          window.addEventListener('unhandledrejection', function(e) {
-            if (e.reason && (
-              (e.reason.message && (
-                e.reason.message.includes('CSP') || 
-                e.reason.message.includes('Content Security Policy') ||
-                e.reason.message.includes('blocked') ||
-                e.reason.message.includes('Invalid Origin') ||
-                e.reason.message.includes('cross-origin frame')
-              )) ||
-              e.reason.name === 'SecurityError' ||
-              e.reason.name === 'RPCError' ||
-              e.reason.name === 'NotAllowedError'
-            )) {
-              console.warn('🔒 Discord-related promise rejection suppressed:', e.reason);
-              e.preventDefault();
-            }
-          });
-
-          window.addEventListener('error', function(e) {
-            if (e.message && (
-              e.message.includes('Cannot read properties of null') ||
-              e.message.includes('Invalid Origin') ||
-              e.message.includes('cross-origin frame') ||
-              e.filename?.includes('inpage.js') ||
-              e.filename?.includes('all-frames.js') ||
-              e.filename?.includes('web.99ba76722fe9e845.js')
-            )) {
-              console.warn('🔒 Discord error suppressed:', e.message);
-              e.preventDefault();
-              return false;
-            }
-          });
-          
-          // Set immediate Discord-friendly styles
-          document.documentElement.style.backgroundColor = '#0d1117';
-          document.documentElement.style.color = 'white';
-          document.body.style.backgroundColor = '#0d1117';
-          document.body.style.color = 'white';
-          document.body.style.margin = '0';
-          document.body.style.padding = '0';
-          document.body.style.overflow = 'hidden';
-          document.body.style.height = '100vh';
-        }
-      }
-    </script>
   </head>
 
-  <body style="background-color: #0d1117; color: white; margin: 0; padding: 0; overflow: hidden; height: 100vh;">
-    <div id="root" style="background-color: #0d1117; color: white; min-height: 100vh; width: 100%; overflow: auto;"></div>
-    
-    <!-- Only load external scripts if NOT in Discord environment -->
-    <script>
-      // Check if we're in Discord before loading external scripts
-      const isDiscordEnvironment = 
-        window.parent !== window ||
-        window.location.href.includes('discord.com') ||
-        window.location.href.includes('discordsays.com') ||
-        window.location.href.includes('discordapp.com') ||
-        document.referrer.includes('discord.com') ||
-        document.referrer.includes('discordapp.com') ||
-        window.location.search.includes('frame_id') ||
-        window.location.search.includes('instance_id') ||
-        window.location.hostname.includes('discordsays.com') ||
-        window.location.hostname.includes('discordapp.com') ||
-        navigator.userAgent.includes('Discord') ||
-        window.top !== window.self;
-
-      if (!isDiscordEnvironment) {
-        // Only load GPTEng script outside of Discord
-        try {
-          const script = document.createElement('script');
-          script.src = 'https://cdn.gpteng.co/gptengineer.js';
-          script.type = 'module';
-          script.onerror = function() {
-            console.log('📦 GPTEng script failed to load (expected in some environments)');
-          };
-          document.body.appendChild(script);
-          console.log('📦 External scripts loaded (non-Discord environment)');
-        } catch (error) {
-          console.log('📦 External script loading failed (expected in some environments)');
-        }
-      } else {
-        console.log('🎮 Skipping external scripts in Discord environment');
-      }
-    </script>
-    
+  <body>
+    <div id="root"></div>
+    <!-- IMPORTANT: DO NOT REMOVE THIS SCRIPT TAG OR THIS VERY COMMENT! -->
+    <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

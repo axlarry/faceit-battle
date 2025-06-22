@@ -6,19 +6,15 @@ interface RetryOptions {
 }
 
 const DEFAULT_RETRY_OPTIONS: RetryOptions = {
-  maxRetries: 4,
-  baseDelay: 1000,
-  maxDelay: 8000
+  maxRetries: 1, // Reduced from 3 to 1
+  baseDelay: 3000, // Increased from 2000ms to 3000ms
+  maxDelay: 15000 // Increased from 10000ms to 15000ms
 };
 
 export class ApiService {
   private static instance: ApiService;
   private requestQueue: Map<string, Promise<any>> = new Map();
-  private rateLimitDelay: number = 0;
-
-  constructor() {
-    console.log('🎮 API Service initialized - optimized for Discord compatibility');
-  }
+  private rateLimitDelay: number = 0; // Track rate limiting
 
   static getInstance(): ApiService {
     if (!ApiService.instance) {
@@ -37,9 +33,8 @@ export class ApiService {
     
     // Apply rate limit delay if needed
     if (this.rateLimitDelay > 0) {
-      console.log(`⏰ Applying rate limit delay: ${this.rateLimitDelay}ms`);
       await new Promise(resolve => setTimeout(resolve, this.rateLimitDelay));
-      this.rateLimitDelay = Math.max(0, this.rateLimitDelay - 500);
+      this.rateLimitDelay = Math.max(0, this.rateLimitDelay - 1000); // Reduce delay over time
     }
     
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
@@ -51,23 +46,23 @@ export class ApiService {
       } catch (error) {
         lastError = error as Error;
         
-        console.log(`🔄 Discord-optimized retry ${attempt + 1}/${maxRetries + 1} failed:`, lastError.message);
-        
         // Check if it's a rate limit error
         if (lastError.message.includes('Rate limited') || lastError.message.includes('429')) {
-          this.rateLimitDelay = Math.min(this.rateLimitDelay + 2000, 10000);
-          console.log(`⏰ Rate limited, increasing delay to: ${this.rateLimitDelay}ms`);
+          this.rateLimitDelay = Math.min(this.rateLimitDelay + 5000, 30000); // Increase delay up to 30s
         }
         
         if (attempt === maxRetries) {
-          console.warn(`❌ Request failed after ${maxRetries + 1} attempts`);
+          console.warn(`Request failed after ${maxRetries} retries`);
           throw lastError;
         }
         
-        // Exponential backoff with jitter, optimized for Discord
-        const delay = Math.min(baseDelay * Math.pow(2, attempt) + Math.random() * 500, maxDelay);
+        // Exponential backoff cu delay mai mare
+        const delay = Math.min(
+          baseDelay * Math.pow(2, attempt) + Math.random() * 3000,
+          maxDelay
+        );
         
-        console.log(`⏳ Retrying in ${delay}ms...`);
+        console.log(`Retry attempt ${attempt + 1}/${maxRetries} after ${delay}ms`);
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
@@ -76,9 +71,9 @@ export class ApiService {
   }
 
   async dedupedRequest<T>(key: string, requestFn: () => Promise<T>): Promise<T> {
-    // Deduplication for Edge Function requests
+    // Deduplicarea request-urilor identice
     if (this.requestQueue.has(key)) {
-      console.log(`♻️ Deduplicating Edge Function request for key: ${key}`);
+      console.log(`Deduplicating request for key: ${key}`);
       return this.requestQueue.get(key)!;
     }
 
@@ -91,7 +86,6 @@ export class ApiService {
   }
 
   clearRequestQueue(): void {
-    console.log('🧹 Clearing request queue');
     this.requestQueue.clear();
     this.rateLimitDelay = 0;
   }

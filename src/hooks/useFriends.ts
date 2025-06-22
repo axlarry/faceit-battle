@@ -1,103 +1,186 @@
-
 import { useState, useEffect } from 'react';
 import { Player } from '@/types/Player';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 export const useFriends = () => {
   const [friends, setFriends] = useState<Player[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  // Load friends from localStorage
-  const loadFriends = () => {
+  // Load friends from Supabase
+  useEffect(() => {
+    loadFriendsFromDatabase();
+  }, []);
+
+  const loadFriendsFromDatabase = async () => {
     try {
-      console.log('📱 Loading friends from localStorage');
-      const savedFriends = localStorage.getItem('faceit-friends');
-      if (savedFriends) {
-        const parsedFriends = JSON.parse(savedFriends);
-        console.log(`✅ Loaded ${parsedFriends.length} friends from localStorage`);
-        setFriends(parsedFriends);
-      } else {
-        console.log('📝 No friends found in localStorage, starting with empty list');
-        setFriends([]);
+      const { data, error } = await supabase
+        .from('friends')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error loading friends:', error);
+        toast({
+          title: "Eroare la încărcare",
+          description: "Nu s-au putut încărca prietenii din baza de date.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (data) {
+        const friendsData: Player[] = data.map(friend => ({
+          player_id: friend.player_id,
+          nickname: friend.nickname,
+          avatar: friend.avatar,
+          level: friend.level || 0,
+          elo: friend.elo || 0,
+          wins: friend.wins || 0,
+          winRate: friend.win_rate || 0,
+          hsRate: friend.hs_rate || 0,
+          kdRatio: friend.kd_ratio || 0,
+        }));
+        setFriends(friendsData);
       }
     } catch (error) {
-      console.error('❌ Error loading friends from localStorage:', error);
-      setError('Failed to load friends');
-      setFriends([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Save friends to localStorage
-  const saveFriends = (friendsList: Player[]) => {
-    try {
-      localStorage.setItem('faceit-friends', JSON.stringify(friendsList));
-      console.log(`💾 Saved ${friendsList.length} friends to localStorage`);
-    } catch (error) {
-      console.error('❌ Error saving friends to localStorage:', error);
+      console.error('Error loading friends from database:', error);
       toast({
-        title: "Eroare la salvare",
-        description: "Nu s-au putut salva prietenii",
+        title: "Eroare la încărcare",
+        description: "Nu s-au putut încărca prietenii din baza de date.",
         variant: "destructive",
       });
     }
   };
 
-  // Add friend - now async to match expected type
   const addFriend = async (player: Player) => {
-    const updatedFriends = [...friends, player];
-    setFriends(updatedFriends);
-    saveFriends(updatedFriends);
-    
-    toast({
-      title: "Prieten adăugat",
-      description: `${player.nickname} a fost adăugat în lista de prieteni`,
-    });
-  };
+    const exists = friends.some(f => f.player_id === player.player_id);
+    if (!exists) {
+      try {
+        const { error } = await supabase
+          .from('friends')
+          .insert({
+            player_id: player.player_id,
+            nickname: player.nickname,
+            avatar: player.avatar,
+            level: player.level || 0,
+            elo: player.elo || 0,
+            wins: player.wins || 0,
+            win_rate: player.winRate || 0,
+            hs_rate: player.hsRate || 0,
+            kd_ratio: player.kdRatio || 0,
+          });
 
-  // Remove friend
-  const removeFriend = (playerId: string) => {
-    const updatedFriends = friends.filter(friend => friend.player_id !== playerId);
-    setFriends(updatedFriends);
-    saveFriends(updatedFriends);
-    
-    const removedFriend = friends.find(f => f.player_id === playerId);
-    if (removedFriend) {
+        if (error) {
+          console.error('Error adding friend:', error);
+          toast({
+            title: "Eroare la adăugare",
+            description: "Nu s-a putut adăuga prietenul în baza de date.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        const updatedFriends = [...friends, player];
+        setFriends(updatedFriends);
+        
+        toast({
+          title: "Prieten adăugat!",
+          description: `${player.nickname} a fost adăugat în lista de prieteni.`,
+        });
+      } catch (error) {
+        console.error('Error adding friend:', error);
+        toast({
+          title: "Eroare la adăugare",
+          description: "Nu s-a putut adăuga prietenul.",
+          variant: "destructive",
+        });
+      }
+    } else {
       toast({
-        title: "Prieten șters",
-        description: `${removedFriend.nickname} a fost șters din lista de prieteni`,
+        title: "Deja în listă",
+        description: `${player.nickname} este deja în lista de prieteni.`,
+        variant: "destructive",
       });
     }
   };
 
-  // Update friend
-  const updateFriend = (updatedPlayer: Player) => {
-    const updatedFriends = friends.map(friend => 
-      friend.player_id === updatedPlayer.player_id ? updatedPlayer : friend
-    );
-    setFriends(updatedFriends);
-    saveFriends(updatedFriends);
+  const updateFriend = async (updatedPlayer: Player) => {
+    try {
+      console.log(`Updating friend ${updatedPlayer.nickname} in database...`, updatedPlayer);
+      
+      const { error } = await supabase
+        .from('friends')
+        .update({
+          nickname: updatedPlayer.nickname,
+          avatar: updatedPlayer.avatar,
+          level: updatedPlayer.level || 0,
+          elo: updatedPlayer.elo || 0,
+          wins: updatedPlayer.wins || 0,
+          win_rate: updatedPlayer.winRate || 0,
+          hs_rate: updatedPlayer.hsRate || 0,
+          kd_ratio: updatedPlayer.kdRatio || 0,
+        })
+        .eq('player_id', updatedPlayer.player_id);
+
+      if (error) {
+        console.error('Error updating friend in database:', error);
+        throw error;
+      }
+
+      console.log(`Successfully updated ${updatedPlayer.nickname} in database`);
+
+      // Update local state only after successful database update
+      setFriends(prevFriends => 
+        prevFriends.map(f => 
+          f.player_id === updatedPlayer.player_id ? updatedPlayer : f
+        )
+      );
+      
+    } catch (error) {
+      console.error('Error updating friend:', error);
+      throw error; // Re-throw to handle in calling function
+    }
   };
 
-  // Reload friends (refresh from localStorage)
-  const reloadFriends = () => {
-    loadFriends();
-  };
+  const removeFriend = async (playerId: string) => {
+    try {
+      const { error } = await supabase
+        .from('friends')
+        .delete()
+        .eq('player_id', playerId);
 
-  // Initialize friends on mount
-  useEffect(() => {
-    loadFriends();
-  }, []);
+      if (error) {
+        console.error('Error removing friend:', error);
+        toast({
+          title: "Eroare la ștergere",
+          description: "Nu s-a putut șterge prietenul din baza de date.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const updatedFriends = friends.filter(f => f.player_id !== playerId);
+      setFriends(updatedFriends);
+      
+      toast({
+        title: "Prieten șters",
+        description: "Jucătorul a fost șters din lista de prieteni.",
+      });
+    } catch (error) {
+      console.error('Error removing friend:', error);
+      toast({
+        title: "Eroare la ștergere",
+        description: "Nu s-a putut șterge prietenul din listă.",
+        variant: "destructive",
+      });
+    }
+  };
 
   return {
     friends,
-    loading,
-    error,
     addFriend,
-    removeFriend,
     updateFriend,
-    reloadFriends
+    removeFriend,
+    loadFriendsFromDatabase
   };
 };

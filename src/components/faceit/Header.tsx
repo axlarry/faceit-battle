@@ -1,6 +1,4 @@
-
 import { useState } from "react";
-
 export const Header = () => {
   const [faceitIconError, setFaceitIconError] = useState(false);
   const [faviconError, setFaviconError] = useState(false);

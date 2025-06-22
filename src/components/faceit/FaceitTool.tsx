@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -9,11 +8,21 @@ import { Search, User, Trophy, Sword, Crosshair, BarChart2 } from "lucide-react"
 import { toast } from "@/hooks/use-toast";
 import { PasswordDialog } from "./PasswordDialog";
 import { useFaceitApi } from "@/hooks/useFaceitApi";
-import { steamIdService } from "@/services/steamIdService";
 
 interface FaceitToolProps {
   onShowPlayerDetails: (player: Player) => void;
   onAddFriend: (player: Player) => Promise<void>;
+}
+
+const PROXY_SERVER = 'https://lacurte.ro:3000';
+
+interface StatsData {
+  lifetime?: {
+    Wins?: string;
+    Matches?: string;
+    'Average Headshots %'?: string;
+    'Average K/D Ratio'?: string;
+  };
 }
 
 export const FaceitTool = ({ onShowPlayerDetails, onAddFriend }: FaceitToolProps) => {
@@ -27,9 +36,81 @@ export const FaceitTool = ({ onShowPlayerDetails, onAddFriend }: FaceitToolProps
 
   const { makeApiCall } = useFaceitApi();
 
+  const isValidSteamID64 = (input: string): boolean => {
+    return /^\d{17}$/.test(input);
+  };
+
+  const extractSteamVanity = (input: string): string => {
+    input = input.trim();
+
+    // Dacă este URL de tip steamcommunity.com/profiles/STEAMID64
+    if (input.includes('steamcommunity.com/profiles/')) {
+      const match = input.match(/steamcommunity\.com\/profiles\/(\d+)/);
+      if (match && match[1]) {
+        return match[1]; // Returnăm direct SteamID64
+      }
+    }
+
+    // Dacă este URL de tip steamcommunity.com/id/username
+    if (input.includes('steamcommunity.com/id/')) {
+      const match = input.match(/steamcommunity\.com\/id\/([^\/]+)/);
+      return match ? match[1] : input;
+    }
+
+    return input;
+  };
+
+  const getSteamID64 = async (input: string) => {
+    try {
+      input = input.trim();
+
+      // Verificăm dacă inputul este deja un SteamID64 valid (17 cifre)
+      if (/^\d{17}$/.test(input)) {
+        return input;
+      }
+
+      // Extragem vanity name sau SteamID64 din URL (dacă e cazul)
+      const extracted = extractSteamVanity(input);
+
+      // Dacă după extracție avem un SteamID64 valid, îl returnăm direct
+      if (/^\d{17}$/.test(extracted)) {
+        return extracted;
+      }
+
+      // Altfel facem request către proxy pentru a obține SteamID64
+      const response = await fetch(
+        `${PROXY_SERVER}/api/steamid?vanityurl=${extracted}`
+      );
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Eroare la conexiunea cu serverul proxy');
+      }
+
+      const data = await response.json();
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      if (!data.steamid) {
+        throw new Error('Profil Steam nu a fost găsit');
+      }
+
+      return data.steamid;
+    } catch (error) {
+      let errorMessage = 'Eroare la obținerea SteamID';
+      if (error instanceof Error) {
+        errorMessage += `: ${error.message}`;
+      }
+      throw new Error(errorMessage);
+    }
+  };
+
   const getUserFriendlyErrorMessage = (error: any): string => {
     const errorMessage = error instanceof Error ? error.message : String(error);
     
+    // Verificăm dacă eroarea conține "API Error:"
     if (errorMessage.includes('API Error:')) {
       if (errorMessage.includes('not found') || errorMessage.includes('404')) {
         return 'Jucătorul nu a fost găsit pe FACEIT. Verifică dacă numele sau ID-ul sunt corecte.';
@@ -43,9 +124,11 @@ export const FaceitTool = ({ onShowPlayerDetails, onAddFriend }: FaceitToolProps
       if (errorMessage.includes('rate limit') || errorMessage.includes('429')) {
         return 'Prea multe cereri. Te rog așteaptă câteva secunde și încearcă din nou.';
       }
+      // Pentru alte tipuri de API Error, returnăm un mesaj generic
       return 'Nu s-au găsit rezultate pentru căutarea ta. Verifică dacă datele introduse sunt corecte.';
     }
     
+    // Pentru alte tipuri de erori, returnăm mesajul original
     return errorMessage;
   };
 
@@ -63,21 +146,13 @@ export const FaceitTool = ({ onShowPlayerDetails, onAddFriend }: FaceitToolProps
       let playerInfo;
 
       if (searchType === 'steam') {
-        // Verificăm dacă inputul este deja un SteamID64 valid
-        if (steamIdService.isValidSteamID64(searchTerm)) {
+        // Folosim SteamID64 direct dacă este valid
+        if (isValidSteamID64(searchTerm)) {
           playerInfo = await makeApiCall(`/players?game=cs2&game_player_id=${searchTerm}`);
         } else {
-          // Extragem vanity name din URL sau folosim direct
-          const extracted = steamIdService.extractSteamVanity(searchTerm);
-          
-          // Dacă după extracție avem un SteamID64 valid, îl folosim direct
-          if (steamIdService.isValidSteamID64(extracted)) {
-            playerInfo = await makeApiCall(`/players?game=cs2&game_player_id=${extracted}`);
-          } else {
-            // Altfel convertim vanity URL la SteamID64
-            const steamID64 = await steamIdService.getSteamID64(extracted);
-            playerInfo = await makeApiCall(`/players?game=cs2&game_player_id=${steamID64}`);
-          }
+          // Altfel încercăm să obținem SteamID64 din vanity URL sau profile URL
+          const steamID64 = await getSteamID64(searchTerm);
+          playerInfo = await makeApiCall(`/players?game=cs2&game_player_id=${steamID64}`);
         }
       } else {
         // Căutare după nickname FACEIT
@@ -99,7 +174,6 @@ export const FaceitTool = ({ onShowPlayerDetails, onAddFriend }: FaceitToolProps
       };
 
       setPlayerData(player);
-
     } catch (error) {
       const friendlyErrorMessage = getUserFriendlyErrorMessage(error);
       setApiError(friendlyErrorMessage);
@@ -193,7 +267,7 @@ export const FaceitTool = ({ onShowPlayerDetails, onAddFriend }: FaceitToolProps
                 setSearchTerm(e.target.value);
                 setApiError(null);
               }}
-              onKeyPress={(e) => e.key === 'Enter' && !loading && searchPlayer()}
+              onKeyPress={(e) => e.key === 'Enter' && searchPlayer()}
               className="bg-white/10 border-orange-400/30 text-white placeholder:text-gray-400 focus:border-orange-400"
             />
             <Button
