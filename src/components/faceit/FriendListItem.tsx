@@ -69,8 +69,9 @@ export const FriendListItem = React.memo(({
 
   const playerStyles = getPlayerStyles();
   
-  // Loading overlay doar pentru încărcarea inițială (când lcryptData === undefined) și când isLoadingElo este true
-  const isPlayerDataLoading = (friend.lcryptData === undefined && isLoadingElo);
+  // Loading overlay DOAR pentru încărcarea inițială și actualizarea manuală
+  // Nu pentru actualizările individuale în fundal
+  const shouldShowLoadingOverlay = (friend.lcryptData === undefined && isLoadingElo);
 
   // Create background style with cover image
   const backgroundStyle = friend.cover_image ? {
@@ -88,8 +89,8 @@ export const FriendListItem = React.memo(({
       } ${!friend.cover_image ? `bg-gradient-to-br ${playerStyles.background}` : ''}`}
       style={friend.cover_image ? backgroundStyle : {}}
     >
-      {/* Loading Overlay doar pentru încărcarea inițială și actualizarea manuală */}
-      {isPlayerDataLoading && (
+      {/* Loading Overlay DOAR pentru încărcarea inițială și actualizarea manuală */}
+      {shouldShowLoadingOverlay && (
         <div className="absolute inset-0 bg-gray-900/90 rounded-xl flex items-center justify-center z-20 backdrop-blur-sm">
           <div className="flex flex-col items-center gap-3">
             <div className="relative">

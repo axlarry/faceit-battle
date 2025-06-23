@@ -30,7 +30,7 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
     return friendDataProcessor.updateFriendData(
       friend,
       enabled,
-      showLoadingOverlay ? setLoadingFriends : () => {}, // Nu afișa loading pentru actualizările individuale
+      showLoadingOverlay ? setLoadingFriends : () => {}, // Afișează loading doar pentru încărcarea inițială și manuală
       setFriendsWithLcrypt,
       setLiveMatches
     );
@@ -120,8 +120,13 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
     const sortedFriends = [...friends].sort((a, b) => (b.elo || 0) - (a.elo || 0));
     console.log(`🚀 Loading: Starting data fetch for ${sortedFriends.length} friends...`);
     
-    // Inițializează lista cu toți prietenii cu lcryptData undefined pentru a declașa loading-ul individual
-    setFriendsWithLcrypt(sortedFriends.map(f => ({ ...f, lcryptData: undefined })));
+    // Pentru încărcarea inițială și manuală, marchează prietenii ca fiind în curs de încărcare
+    if (isManual) {
+      setFriendsWithLcrypt(sortedFriends.map(f => ({ ...f, lcryptData: undefined })));
+    } else {
+      // Pentru prima încărcare, inițializează lista cu datele existente
+      setFriendsWithLcrypt(sortedFriends.map(f => ({ ...f, lcryptData: undefined })));
+    }
     
     // Procesare cu batch-uri
     const batchSize = 3;
@@ -158,6 +163,11 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
     // Pornește actualizările individuale după 1.5 minute de la finalizarea încărcării inițiale
     // Dar nu pentru actualizările manuale
     if (!isManual) {
+      individualUpdateTimeoutRef.current = setTimeout(() => {
+        startIndividualUpdates();
+      }, 90000); // 1.5 minute = 90000ms
+    } else {
+      // Pentru actualizarea manuală, pornește imediat actualizările individuale
       individualUpdateTimeoutRef.current = setTimeout(() => {
         startIndividualUpdates();
       }, 90000); // 1.5 minute = 90000ms
