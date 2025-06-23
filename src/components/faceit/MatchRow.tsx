@@ -1,4 +1,3 @@
-
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
@@ -40,65 +39,73 @@ export const MatchRow = ({ match, player, matchesStats, onMatchClick, matchIndex
   const lcryptMatches = lcryptData?.report ? parseLcryptReport(lcryptData.report) : [];
   const lcryptEloChange = findMatchEloChange(match, lcryptMatches, matchIndex);
 
-  // Function to get map image URL from Faceit with multiple fallback options
-  const getMapImageUrl = (mapName: string) => {
+  // Function to get map icon URL from local assets
+  const getMapIconUrl = (mapName: string) => {
     if (!mapName || mapName === 'Unknown') return null;
     
     // Clean and normalize the map name
     const cleanMapName = mapName.toLowerCase().trim();
     
-    // Common map name mappings for Faceit
+    // Common map name mappings for icon files
     const mapMappings: { [key: string]: string } = {
-      'de_dust2': 'de_dust2',
-      'dust2': 'de_dust2',
-      'de_mirage': 'de_mirage',
-      'mirage': 'de_mirage',
-      'de_inferno': 'de_inferno',
-      'inferno': 'de_inferno',
-      'de_cache': 'de_cache',
-      'cache': 'de_cache',
-      'de_overpass': 'de_overpass',
-      'overpass': 'de_overpass',
-      'de_cobblestone': 'de_cbble',
-      'cobblestone': 'de_cbble',
-      'de_cbble': 'de_cbble',
-      'de_train': 'de_train',
-      'train': 'de_train',
-      'de_nuke': 'de_nuke',
-      'nuke': 'de_nuke',
-      'de_vertigo': 'de_vertigo',
-      'vertigo': 'de_vertigo',
-      'de_ancient': 'de_ancient',
-      'ancient': 'de_ancient',
-      'de_anubis': 'de_anubis',
-      'anubis': 'de_anubis'
+      'de_dust2': 'icon_de_dust2.png',
+      'dust2': 'icon_de_dust2.png',
+      'de_mirage': 'icon_de_mirage.png',
+      'mirage': 'icon_de_mirage.png',
+      'de_inferno': 'icon_de_inferno.png',
+      'inferno': 'icon_de_inferno.png',
+      'de_cache': 'icon_de_cache.png',
+      'cache': 'icon_de_cache.png',
+      'de_overpass': 'icon_de_overpass.png',
+      'overpass': 'icon_de_overpass.png',
+      'de_cobblestone': 'icon_de_cbble.png',
+      'cobblestone': 'icon_de_cbble.png',
+      'de_cbble': 'icon_de_cbble.png',
+      'de_train': 'icon_de_train.png',
+      'train': 'icon_de_train.png',
+      'de_nuke': 'icon_de_nuke.png',
+      'nuke': 'icon_de_nuke.png',
+      'de_vertigo': 'icon_de_vertigo.png',
+      'vertigo': 'icon_de_vertigo.png',
+      'de_ancient': 'icon_de_ancient.png',
+      'ancient': 'icon_de_ancient.png',
+      'de_anubis': 'icon_de_anubis.png',
+      'anubis': 'icon_de_anubis.png',
+      'cs_office': 'icon_cs_office.png',
+      'office': 'icon_cs_office.png',
+      'cs_agency': 'icon_cs_agency.png',
+      'agency': 'icon_cs_agency.png',
+      'cs_italy': 'icon_cs_italy.png',
+      'italy': 'icon_cs_italy.png'
     };
     
-    const normalizedMapName = mapMappings[cleanMapName] || cleanMapName;
+    const iconFileName = mapMappings[cleanMapName];
+    if (iconFileName) {
+      return `/faceit-icons/${iconFileName}`;
+    }
     
-    // Faceit map images URL pattern
-    return `https://assets.faceit-cdn.net/third_party/games/ce652bd2-2015-4c2c-8e5d-8338ce6723d9/assets/votables/maps/${normalizedMapName}.jpg`;
+    return null;
   };
 
   const handleImageError = (mapName: string) => {
-    console.log(`Failed to load image for map: ${mapName}`);
+    console.log(`Failed to load icon for map: ${mapName}`);
     setImageLoadErrors(prev => new Set([...prev, mapName]));
   };
 
   const renderMapDisplay = (mapName: string) => {
-    const imageUrl = getMapImageUrl(mapName);
+    const iconUrl = getMapIconUrl(mapName);
     const hasError = imageLoadErrors.has(mapName);
     
     return (
       <div className="flex items-center gap-2">
         <div className="w-10 h-7 rounded overflow-hidden bg-gray-800 flex items-center justify-center border border-gray-700">
-          {imageUrl && !hasError ? (
+          {iconUrl && !hasError ? (
             <img 
-              src={imageUrl} 
+              src={iconUrl} 
               alt={mapName}
               className="w-full h-full object-cover"
               onError={() => handleImageError(mapName)}
-              onLoad={() => console.log(`Successfully loaded image for: ${mapName}`)}
+              onLoad={() => console.log(`Successfully loaded icon for: ${mapName}`)}
             />
           ) : (
             <Map className="w-4 h-4 text-orange-400" />

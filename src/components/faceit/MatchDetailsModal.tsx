@@ -1,4 +1,3 @@
-
 import {
   Dialog,
   DialogContent,
@@ -96,13 +95,14 @@ export const MatchDetailsModal = ({
         </DialogHeader>
         
         <div className="flex-1 overflow-y-auto px-4 md:px-6 pb-6 space-y-4 md:space-y-6 scrollbar-hide">
-          {/* Match Header - Team vs Team */}
+          {/* Match Header - Team vs Team with Map Background */}
           <MatchHeader 
             team1Name={team1Name}
             team2Name={team2Name}
             team1Score={team1Score}
             team2Score={team2Score}
             isWin={isWin}
+            mapName={mapName}
           />
 
           {/* Match Info Row */}
