@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Player } from '@/types/Player';
 import { friendDataProcessor } from '@/services/friendDataProcessor';
@@ -53,21 +52,21 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
   const startIndividualUpdates = useCallback(() => {
     if (!enabled || friends.length === 0) return;
 
-    console.log(`🚀 Starting individual updates cycle for ${friends.length} friends (1 player every 1.5s)`);
+    console.log(`🚀 Starting individual updates cycle for ${friends.length} friends (1 player every 1.2s)`);
     setIsIndividualUpdating(true);
     currentPlayerIndexRef.current = 0;
 
     const updateNextPlayer = () => {
       if (currentPlayerIndexRef.current >= friends.length) {
         // Ciclul s-a terminat, resetează pentru următorul ciclu
-        console.log(`✅ Individual updates cycle completed. Next cycle in 1.5 minutes.`);
+        console.log(`✅ Individual updates cycle completed. Next cycle in 45 seconds.`);
         currentPlayerIndexRef.current = 0;
         setIsIndividualUpdating(false);
         
-        // Programează următorul ciclu după 1.5 minute
+        // Programează următorul ciclu după 45 de secunde
         individualUpdateTimeoutRef.current = setTimeout(() => {
           startIndividualUpdates();
-        }, 90000); // 1.5 minute = 90000ms
+        }, 45000); // 45 secunde = 45000ms
         
         return;
       }
@@ -76,8 +75,8 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
       updateSingleFriend(currentFriend);
       currentPlayerIndexRef.current++;
 
-      // Programează următorul jucător după 1.5 secunde
-      individualUpdateIntervalRef.current = setTimeout(updateNextPlayer, 1500);
+      // Programează următorul jucător după 1.2 secunde
+      individualUpdateIntervalRef.current = setTimeout(updateNextPlayer, 1200);
     };
 
     // Începe primul update
@@ -105,7 +104,7 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
     }
 
     // Pentru actualizările manuale, nu verifica timeout-ul
-    if (!isManual && !canUpdate(90000)) { // 1.5 minute = 90000ms
+    if (!isManual && !canUpdate(45000)) { // 45 secunde = 45000ms
       return;
     }
 
@@ -160,18 +159,10 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
     setIsManualUpdate(false);
     console.log(`✅ Loading completed: Data fetch for all friends completed successfully`);
     
-    // Pornește actualizările individuale după 1.5 minute de la finalizarea încărcării inițiale
-    // Dar nu pentru actualizările manuale
-    if (!isManual) {
-      individualUpdateTimeoutRef.current = setTimeout(() => {
-        startIndividualUpdates();
-      }, 90000); // 1.5 minute = 90000ms
-    } else {
-      // Pentru actualizarea manuală, pornește imediat actualizările individuale
-      individualUpdateTimeoutRef.current = setTimeout(() => {
-        startIndividualUpdates();
-      }, 90000); // 1.5 minute = 90000ms
-    }
+    // Pornește actualizările individuale după 45 de secunde de la finalizarea încărcării
+    individualUpdateTimeoutRef.current = setTimeout(() => {
+      startIndividualUpdates();
+    }, 45000); // 45 secunde = 45000ms
     
   }, [friends, enabled, updateFriendLcryptData, canUpdate, startLoading, finishLoading, updateProgress, stopIndividualUpdates, startIndividualUpdates]);
 
