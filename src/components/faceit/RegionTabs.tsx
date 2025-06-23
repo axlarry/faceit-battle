@@ -43,7 +43,7 @@ export const RegionTabs = ({ currentRegion, onRegionChange }: RegionTabsProps) =
     const special = specialTabs.find(t => t.id === currentRegion);
     if (special) return special.name;
     
-    return 'Global Rank';
+    return 'Rank Global';
   };
 
   const handleRegionSelect = (regionId: string) => {
@@ -170,7 +170,7 @@ export const RegionTabs = ({ currentRegion, onRegionChange }: RegionTabsProps) =
                     <span className="hidden md:inline text-lg font-bold tracking-wide">
                       {getCurrentRegionDisplay()}
                     </span>
-                    <span className="md:hidden text-lg font-bold">Global</span>
+                    <span className="md:hidden text-lg font-bold">Rank Global</span>
                     <span className="text-xs text-white/70 font-medium">
                       Select Region
                     </span>
