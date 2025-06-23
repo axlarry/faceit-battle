@@ -1,6 +1,5 @@
-
 import { 
-  MapPin, 
+  Map, 
   Clock, 
   Calendar, 
   TrendingUp,
@@ -20,7 +19,7 @@ export const MatchInfo = ({ mapName, startedAt, finishedAt, eloChange }: MatchIn
   return (
     <div className="grid grid-cols-4 gap-4 pt-4 border-t border-slate-700">
       <div className="flex items-center gap-2">
-        <MapPin className="w-4 h-4 text-orange-400" />
+        <Map className="w-4 h-4 text-orange-400" />
         <div>
           <div className="text-slate-400 text-xs">Map</div>
           <div className="text-white font-semibold">{mapName}</div>
