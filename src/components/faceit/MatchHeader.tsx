@@ -40,10 +40,10 @@ export const MatchHeader = ({
   };
 
   return (
-    <div className="relative rounded-2xl overflow-hidden h-32 md:h-40 flex items-center justify-center">
+    <div className="relative rounded-2xl overflow-hidden h-32 md:h-40">
       {/* Background Image with improved visibility */}
       <div 
-        className="absolute inset-0 bg-cover bg-center bg-no-repeat opacity-80"
+        className="absolute inset-0 bg-cover bg-center bg-no-repeat"
         style={{
           backgroundImage: `url(${getMapImage(mapName)})`,
         }}
@@ -52,8 +52,8 @@ export const MatchHeader = ({
       {/* Dark Overlay for text readability */}
       <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/40 to-black/70" />
       
-      {/* Content */}
-      <div className="relative z-10 text-center text-white px-4">
+      {/* Content - Centered */}
+      <div className="relative z-10 h-full flex flex-col items-center justify-center text-white px-4">
         {/* Win/Loss Status */}
         <div className="flex items-center justify-center mb-2 md:mb-3">
           {isWin ? (
@@ -71,8 +71,8 @@ export const MatchHeader = ({
           )}
         </div>
         
-        {/* Team vs Team with Score */}
-        <div className="text-xl md:text-3xl font-bold">
+        {/* Team vs Team with Score - Centered */}
+        <div className="text-xl md:text-3xl font-bold text-center">
           <span className="text-blue-400">{team1Name}</span>
           <span className="mx-2 md:mx-4 text-orange-400">
             {team1Score} - {team2Score}
@@ -81,7 +81,7 @@ export const MatchHeader = ({
         </div>
         
         {/* Map Name */}
-        <div className="text-sm md:text-base text-gray-300 mt-1 md:mt-2 capitalize">
+        <div className="text-sm md:text-base text-gray-300 mt-1 md:mt-2 capitalize text-center">
           {mapName && mapName !== 'N/A' ? mapName.replace('de_', '').replace('cs_', '') : 'Hartă Necunoscută'}
         </div>
       </div>

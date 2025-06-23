@@ -1,3 +1,4 @@
+
 import { Badge } from "@/components/ui/badge";
 import { Player } from "@/types/Player";
 import { useLcryptApi } from "@/hooks/useLcryptApi";
@@ -108,8 +109,8 @@ export const PlayerHeader = ({ player }: PlayerHeaderProps) => {
               backgroundImage: `url(${player.cover_image})`,
             }}
           />
-          {/* Dark overlay for text readability */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/70 to-black/80" />
+          {/* Uniform dark overlay - no gradient to avoid bright streak */}
+          <div className="absolute inset-0 bg-black/75" />
         </>
       )}
       
