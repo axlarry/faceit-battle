@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Player } from "@/types/Player";
 import { useSteamIdConverter } from './SteamIdConverter';
@@ -8,11 +7,9 @@ import { PlayerInfo } from './PlayerInfo';
 import { PlayerStatsCompact } from './PlayerStatsCompact';
 import { PlayerActionsCompact } from './PlayerActionsCompact';
 import { LiveMatchDetails } from './LiveMatchDetails';
-
 interface FriendWithLcrypt extends Player {
   lcryptData?: any;
 }
-
 interface FriendListItemProps {
   friend: FriendWithLcrypt;
   index: number;
@@ -23,23 +20,22 @@ interface FriendListItemProps {
   liveMatchDetails?: any;
   onPlayerClick: (player: Player) => void;
 }
-
-export const FriendListItem = React.memo(({ 
-  friend, 
-  index, 
-  isFlashing, 
+export const FriendListItem = React.memo(({
+  friend,
+  index,
+  isFlashing,
   isLoadingElo,
   isLive = false,
   liveCompetition,
   liveMatchDetails,
-  onPlayerClick 
+  onPlayerClick
 }: FriendListItemProps) => {
-  const { steamId64 } = useSteamIdConverter(friend.player_id);
-
+  const {
+    steamId64
+  } = useSteamIdConverter(friend.player_id);
   const handleClick = () => {
     onPlayerClick(friend);
   };
-
   const handleLinkClick = (e: React.MouseEvent) => {
     e.stopPropagation();
   };
@@ -55,7 +51,7 @@ export const FriendListItem = React.memo(({
         pulseColor: 'bg-emerald-400'
       };
     }
-    
+
     // Top 3 players get special treatment
     if (index === 0) {
       return {
@@ -82,7 +78,6 @@ export const FriendListItem = React.memo(({
         pulseColor: 'bg-orange-400'
       };
     }
-    
     return {
       border: 'border-slate-600/40',
       background: 'from-slate-700/30 via-slate-800/20 to-slate-700/30',
@@ -91,9 +86,8 @@ export const FriendListItem = React.memo(({
       pulseColor: 'bg-slate-400'
     };
   };
-
   const playerStyles = getPlayerStyles();
-  const shouldShowLoadingOverlay = (friend.lcryptData === undefined && isLoadingElo);
+  const shouldShowLoadingOverlay = friend.lcryptData === undefined && isLoadingElo;
 
   // Enhanced background with 3D depth
   const backgroundStyle = friend.cover_image ? {
@@ -105,63 +99,45 @@ export const FriendListItem = React.memo(({
     backgroundPosition: 'center',
     backgroundRepeat: 'no-repeat'
   } : {};
-
-  return (
-    <div className="relative group animate-slide-in-up" style={{ animationDelay: `${index * 100}ms` }}>
+  return <div className="relative group animate-slide-in-up" style={{
+    animationDelay: `${index * 100}ms`
+  }}>
       {/* Outer glow effect */}
       <div className={`absolute inset-0 rounded-3xl ${playerStyles.glow} opacity-0 group-hover:opacity-100 transition-all duration-700 blur-xl scale-105`}></div>
       
-      <div
-        onClick={handleClick}
-        className={`
+      <div onClick={handleClick} className={`
           relative rounded-3xl p-5 border-2 ${playerStyles.border} 
           hover:border-white/50 transition-all duration-700 cursor-pointer
           transform hover:scale-[1.03] hover:-translate-y-2
           backdrop-blur-xl overflow-hidden
           ${isFlashing ? 'animate-pulse border-orange-400 bg-gradient-to-br from-orange-500/30 via-red-500/20 to-orange-500/30' : ''}
           ${!friend.cover_image ? `bg-gradient-to-br ${playerStyles.background}` : ''}
-        `}
-        style={friend.cover_image ? backgroundStyle : {}}
-      >
+        `} style={friend.cover_image ? backgroundStyle : {}}>
         {/* 3D depth layers */}
         <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-black/20 rounded-3xl"></div>
         <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-white/5 rounded-3xl"></div>
         
         {/* Rank indicator with special effects */}
         <div className="absolute top-4 left-4 z-20">
-          <div className={`
-            relative flex items-center justify-center w-12 h-12 rounded-2xl font-bold text-lg
-            ${index < 3 ? 'bg-gradient-to-br from-white/20 to-white/5 border-2 border-white/30 text-white backdrop-blur-sm' : 'bg-slate-800/70 text-slate-300 border border-slate-600/50'}
-            transition-all duration-500 group-hover:scale-110
-          `}>
-            {index < 3 && (
-              <Trophy size={16} className={`absolute -top-2 -right-2 text-${playerStyles.accent}-400 animate-bounce`} />
-            )}
-            #{index + 1}
-          </div>
+          
           
           {/* Rank tier indicator */}
-          {index < 3 && (
-            <div className={`absolute -bottom-1 -right-1 w-3 h-3 ${playerStyles.pulseColor} rounded-full animate-pulse shadow-lg`}>
+          {index < 3 && <div className={`absolute -bottom-1 -right-1 w-3 h-3 ${playerStyles.pulseColor} rounded-full animate-pulse shadow-lg`}>
               <div className={`absolute inset-0 ${playerStyles.pulseColor} rounded-full animate-ping`}></div>
-            </div>
-          )}
+            </div>}
         </div>
 
         {/* Live indicator enhancement */}
-        {isLive && (
-          <div className="absolute top-4 right-4 z-20">
+        {isLive && <div className="absolute top-4 right-4 z-20">
             <div className="flex items-center gap-2 bg-gradient-to-r from-red-500 to-red-600 px-3 py-1.5 rounded-full border border-red-400/50 backdrop-blur-sm">
               <div className="w-2 h-2 bg-red-200 rounded-full animate-pulse"></div>
               <span className="text-white text-xs font-bold">LIVE</span>
               <Zap size={12} className="text-red-200 animate-bounce" />
             </div>
-          </div>
-        )}
+          </div>}
 
         {/* Loading overlay with modern design */}
-        {shouldShowLoadingOverlay && (
-          <div className="absolute inset-0 bg-slate-900/95 rounded-3xl flex items-center justify-center z-30 backdrop-blur-lg">
+        {shouldShowLoadingOverlay && <div className="absolute inset-0 bg-slate-900/95 rounded-3xl flex items-center justify-center z-30 backdrop-blur-lg">
             <div className="flex flex-col items-center gap-4">
               <div className="relative">
                 <div className="w-16 h-16 rounded-full border-4 border-slate-700/30"></div>
@@ -173,67 +149,38 @@ export const FriendListItem = React.memo(({
                 <span className="text-xs text-slate-400 font-medium">{friend.nickname}</span>
               </div>
             </div>
-          </div>
-        )}
+          </div>}
 
         {/* Enhanced background overlay for readability */}
-        {friend.cover_image && (
-          <div className="absolute inset-0 bg-gradient-to-br from-black/40 via-black/20 to-black/40 rounded-3xl"></div>
-        )}
+        {friend.cover_image && <div className="absolute inset-0 bg-gradient-to-br from-black/40 via-black/20 to-black/40 rounded-3xl"></div>}
 
         {/* Main content with improved spacing */}
         <div className="flex items-center gap-4 relative z-10 mb-3">
           {/* Enhanced Avatar */}
           <div className="relative">
-            <PlayerAvatar 
-              avatar={friend.avatar}
-              nickname={friend.nickname}
-              index={index}
-              isLive={isLive}
-            />
+            <PlayerAvatar avatar={friend.avatar} nickname={friend.nickname} index={index} isLive={isLive} />
             {/* Performance indicator */}
-            {friend.elo && friend.elo > 2000 && (
-              <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center border-2 border-white/20">
+            {friend.elo && friend.elo > 2000 && <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center border-2 border-white/20">
                 <Target size={12} className="text-white animate-pulse" />
-              </div>
-            )}
+              </div>}
           </div>
 
           {/* Enhanced Player Info */}
           <div className="flex-1">
-            <PlayerInfo
-              nickname={friend.nickname}
-              level={friend.level}
-              elo={friend.elo}
-              lcryptData={friend.lcryptData}
-              isLive={isLive}
-            />
+            <PlayerInfo nickname={friend.nickname} level={friend.level} elo={friend.elo} lcryptData={friend.lcryptData} isLive={isLive} />
           </div>
         </div>
 
         {/* Live Match Details with modern styling */}
-        <LiveMatchDetails 
-          isLive={isLive}
-          liveMatchDetails={liveMatchDetails}
-        />
+        <LiveMatchDetails isLive={isLive} liveMatchDetails={liveMatchDetails} />
 
         {/* Enhanced stats and actions row */}
         <div className="flex items-center justify-between gap-3 mt-4 relative z-10">
           <div className="flex-1">
-            <PlayerStatsCompact
-              wins={friend.wins || 0}
-              winRate={friend.winRate || 0}
-              hsRate={friend.hsRate || 0}
-              kdRatio={friend.kdRatio || 0}
-            />
+            <PlayerStatsCompact wins={friend.wins || 0} winRate={friend.winRate || 0} hsRate={friend.hsRate || 0} kdRatio={friend.kdRatio || 0} />
           </div>
 
-          <PlayerActionsCompact
-            nickname={friend.nickname}
-            steamId64={steamId64}
-            isLive={isLive}
-            onLinkClick={handleLinkClick}
-          />
+          <PlayerActionsCompact nickname={friend.nickname} steamId64={steamId64} isLive={isLive} onLinkClick={handleLinkClick} />
         </div>
 
         {/* Advanced shine effects */}
@@ -241,25 +188,15 @@ export const FriendListItem = React.memo(({
         <div className="absolute inset-0 -skew-x-6 bg-gradient-to-r from-transparent via-purple-300/5 to-transparent translate-x-[-150%] group-hover:translate-x-[150%] transition-transform duration-800 delay-300 rounded-3xl"></div>
         
         {/* Floating particles for top players */}
-        {index < 3 && (
-          <div className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none">
-            {[...Array(3)].map((_, i) => (
-              <div
-                key={i}
-                className={`absolute w-1 h-1 bg-${playerStyles.accent}-400/60 rounded-full animate-float`}
-                style={{
-                  left: `${20 + i * 30}%`,
-                  top: `${30 + (i % 2) * 40}%`,
-                  animationDelay: `${i * 1.5}s`,
-                  animationDuration: `${4 + i}s`
-                }}
-              />
-            ))}
-          </div>
-        )}
+        {index < 3 && <div className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none">
+            {[...Array(3)].map((_, i) => <div key={i} className={`absolute w-1 h-1 bg-${playerStyles.accent}-400/60 rounded-full animate-float`} style={{
+          left: `${20 + i * 30}%`,
+          top: `${30 + i % 2 * 40}%`,
+          animationDelay: `${i * 1.5}s`,
+          animationDuration: `${4 + i}s`
+        }} />)}
+          </div>}
       </div>
-    </div>
-  );
+    </div>;
 });
-
 FriendListItem.displayName = 'FriendListItem';
