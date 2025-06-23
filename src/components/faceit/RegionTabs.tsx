@@ -168,7 +168,7 @@ export const RegionTabs = ({ currentRegion, onRegionChange }: RegionTabsProps) =
                   
                   <div className="flex flex-col items-start">
                     <span className="hidden md:inline text-lg font-bold tracking-wide">
-                      {getCurrentRegionDisplay()}
+                      Rank Global
                     </span>
                     <span className="md:hidden text-lg font-bold">Rank Global</span>
                     <span className="text-xs text-white/70 font-medium">
