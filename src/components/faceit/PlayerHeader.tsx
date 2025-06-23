@@ -1,4 +1,3 @@
-
 import { Badge } from "@/components/ui/badge";
 import { Player } from "@/types/Player";
 import { useLcryptApi } from "@/hooks/useLcryptApi";
@@ -99,78 +98,95 @@ export const PlayerHeader = ({ player }: PlayerHeaderProps) => {
   };
 
   return (
-    <div className="text-center space-y-6">
-      <img
-        src={player.avatar}
-        alt={player.nickname}
-        className="w-28 h-28 rounded-full border-4 border-orange-400 mx-auto animate-fade-in"
-      />
-      <div>
-        <h2 className="text-3xl font-bold text-white">{player.nickname}</h2>
-        {player.position && (
-          <p className="text-orange-400 font-medium text-lg">#{player.position} în clasament</p>
-        )}
-      </div>
+    <div className="relative text-center space-y-6 rounded-2xl overflow-hidden">
+      {/* Background Cover Image */}
+      {player.cover_image && (
+        <>
+          <div 
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+            style={{
+              backgroundImage: `url(${player.cover_image})`,
+            }}
+          />
+          {/* Dark overlay for text readability */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/70 to-black/80" />
+        </>
+      )}
       
-      {/* Enhanced Level and Today Stats Cards */}
-      <div className="grid grid-cols-2 gap-4">
-        {/* Level Card - Enhanced with animations */}
-        <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 text-center border border-white/20 hover:border-orange-400/50 transition-all duration-300 transform hover:scale-105">
-          <div className="flex items-center justify-center gap-2 mb-2">
-            <Trophy className="text-orange-400 animate-pulse" size={20} />
-            <div className="text-3xl font-bold text-orange-400">{player.level}</div>
-          </div>
-          <div className="text-gray-400 text-base mb-3">Skill Level</div>
-          
-          <Badge className={`bg-gradient-to-r ${getLevelColor(player.level || 0)} text-white border-0 text-sm px-3 py-1 animate-fade-in`}>
-            Level {player.level}
-          </Badge>
-          
-          {/* Country Stats */}
-          {lcryptData && (
-            <div className="mt-3 space-y-2">
-              <div className="flex items-center justify-center gap-2 bg-[#1a1d21] rounded-lg p-2">
-                <span className="text-2xl animate-bounce">{lcryptData.country_flag}</span>
-                <div className="text-left">
-                  <div className="text-orange-400 font-bold">#{lcryptData.country_ranking}</div>
-                  <div className="text-xs text-gray-400">Rank țară</div>
-                </div>
-              </div>
-              {lcryptData.region_ranking && (
-                <div className="flex items-center justify-center gap-2 bg-[#1a1d21] rounded-lg p-2">
-                  <Target className="text-blue-400" size={16} />
-                  <div className="text-left">
-                    <div className="text-blue-400 font-bold">#{lcryptData.region_ranking}</div>
-                    <div className="text-xs text-gray-400">Rank regiune</div>
-                  </div>
-                </div>
-              )}
-            </div>
+      {/* Content - positioned above background */}
+      <div className="relative z-10 p-6">
+        <img
+          src={player.avatar}
+          alt={player.nickname}
+          className="w-28 h-28 rounded-full border-4 border-orange-400 mx-auto animate-fade-in"
+        />
+        <div>
+          <h2 className="text-3xl font-bold text-white">{player.nickname}</h2>
+          {player.position && (
+            <p className="text-orange-400 font-medium text-lg">#{player.position} în clasament</p>
           )}
         </div>
         
-        {/* Today Stats Card - Enhanced with detailed ELO tracking */}
-        <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 text-center border border-white/20 hover:border-green-400/50 transition-all duration-300 transform hover:scale-105">
-          {lcryptData?.today?.present ? (
-            <div>
-              <div className="flex items-center justify-center gap-2 mb-2">
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-ping"></div>
-                <div className="text-gray-400 text-sm font-medium">Astăzi</div>
-                <div className="w-2 h-2 bg-green-500 rounded-full animate-ping"></div>
-              </div>
-              
-              {renderTodayStats()}
-              {renderEloChange()}
+        {/* Enhanced Level and Today Stats Cards */}
+        <div className="grid grid-cols-2 gap-4">
+          {/* Level Card - Enhanced with animations */}
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 text-center border border-white/20 hover:border-orange-400/50 transition-all duration-300 transform hover:scale-105">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <Trophy className="text-orange-400 animate-pulse" size={20} />
+              <div className="text-3xl font-bold text-orange-400">{player.level}</div>
             </div>
-          ) : (
-            <>
-              <div className="text-3xl font-bold text-blue-400 animate-fade-in">{player.elo}</div>
-              <div className="text-gray-400 text-base">ELO Points</div>
-              <div className="mt-2 text-xs text-gray-500">
-                Fără date pentru astăzi
+            <div className="text-gray-400 text-base mb-3">Skill Level</div>
+            
+            <Badge className={`bg-gradient-to-r ${getLevelColor(player.level || 0)} text-white border-0 text-sm px-3 py-1 animate-fade-in`}>
+              Level {player.level}
+            </Badge>
+            
+            {/* Country Stats */}
+            {lcryptData && (
+              <div className="mt-3 space-y-2">
+                <div className="flex items-center justify-center gap-2 bg-[#1a1d21] rounded-lg p-2">
+                  <span className="text-2xl animate-bounce">{lcryptData.country_flag}</span>
+                  <div className="text-left">
+                    <div className="text-orange-400 font-bold">#{lcryptData.country_ranking}</div>
+                    <div className="text-xs text-gray-400">Rank țară</div>
+                  </div>
+                </div>
+                {lcryptData.region_ranking && (
+                  <div className="flex items-center justify-center gap-2 bg-[#1a1d21] rounded-lg p-2">
+                    <Target className="text-blue-400" size={16} />
+                    <div className="text-left">
+                      <div className="text-blue-400 font-bold">#{lcryptData.region_ranking}</div>
+                      <div className="text-xs text-gray-400">Rank regiune</div>
+                    </div>
+                  </div>
+                )}
               </div>
-            </>
-          )}
+            )}
+          </div>
+          
+          {/* Today Stats Card - Enhanced with detailed ELO tracking */}
+          <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 text-center border border-white/20 hover:border-green-400/50 transition-all duration-300 transform hover:scale-105">
+            {lcryptData?.today?.present ? (
+              <div>
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-ping"></div>
+                  <div className="text-gray-400 text-sm font-medium">Astăzi</div>
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-ping"></div>
+                </div>
+                
+                {renderTodayStats()}
+                {renderEloChange()}
+              </div>
+            ) : (
+              <>
+                <div className="text-3xl font-bold text-blue-400 animate-fade-in">{player.elo}</div>
+                <div className="text-gray-400 text-base">ELO Points</div>
+                <div className="mt-2 text-xs text-gray-500">
+                  Fără date pentru astăzi
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </div>
