@@ -36,7 +36,7 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
       return;
     }
 
-    // Verifică dacă au trecut cel puțin 1.5 minute de la ultimul update pentru a reduce stresul pe API (changed from 2 minutes)
+    // Verifică dacă au trecut cel puțin 1.5 minute de la ultimul update (optimizat cu mai puține apeluri)
     if (!canUpdate(90000)) { // 1.5 minute = 90000ms
       return;
     }
@@ -45,13 +45,13 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
     
     // Sortează prietenii după ELO (cel mai mare ELO primul - rank #1)
     const sortedFriends = [...friends].sort((a, b) => (b.elo || 0) - (a.elo || 0));
-    console.log(`🔄 Starting to load Lcrypt data, live status and cover images for ${sortedFriends.length} friends in rank order...`);
+    console.log(`🚀 OPTIMIZED Loading: Starting single-call data fetch for ${sortedFriends.length} friends...`);
     
     // Inițializează lista cu toți prietenii cu lcryptData undefined pentru a declașa loading-ul individual
     setFriendsWithLcrypt(sortedFriends.map(f => ({ ...f, lcryptData: undefined })));
     
-    // Procesare individuală pentru fiecare prieten cu delay mai mare între requesturi
-    const batchSize = 2; // Redus pentru a nu supraîncărca serverul
+    // Procesare OPTIMIZATĂ cu batch-uri mai mari deoarece facem mai puține apeluri
+    const batchSize = 3; // Mărit de la 2 la 3 deoarece facem un singur apel per jucător
     const updatedFriends: FriendWithLcrypt[] = [];
     
     for (let i = 0; i < sortedFriends.length; i += batchSize) {
@@ -68,30 +68,30 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
         // Actualizează progresul
         updateProgress(i + batch.length, sortedFriends.length, i, batchSize);
       } catch (error) {
-        console.error('Error processing batch:', error);
+        console.error('Error processing OPTIMIZED batch:', error);
         // Continuă cu următorul batch chiar dacă unul eșuează
       }
       
-      // Pauză mai mare între batch-uri pentru a nu supraîncărca serverul Lcrypt
+      // Pauză redusă între batch-uri deoarece facem mai puține apeluri total
       if (i + batchSize < sortedFriends.length) {
-        await new Promise(resolve => setTimeout(resolve, 800)); // 800ms delay
+        await new Promise(resolve => setTimeout(resolve, 600)); // Redus de la 800ms la 600ms
       }
     }
 
     finishLoading();
-    console.log(`✅ Completed loading Lcrypt data, live status and cover images for all friends in rank order`);
+    console.log(`✅ OPTIMIZED Loading completed: Single-call data fetch for all friends completed successfully`);
   }, [friends, enabled, updateFriendLcryptData, canUpdate, startLoading, finishLoading, updateProgress]);
 
-  // Auto-refresh la intervale mai mici
+  // Auto-refresh la intervale optimizate
   useEffect(() => {
     if (!enabled || friends.length === 0) return;
 
     // Primul load imediat
     loadLcryptDataForAllFriends();
 
-    // Auto-refresh la fiecare 5 minute
+    // Auto-refresh la fiecare 5 minute (optimizat cu mai puține apeluri)
     const interval = setInterval(() => {
-      console.log('🔄 Auto-refreshing Lcrypt data (every 5 minutes)...');
+      console.log('🔄 OPTIMIZED Auto-refresh: Single-call data fetch (every 5 minutes)...');
       loadLcryptDataForAllFriends();
     }, 300000); // 5 minute = 300000ms
 

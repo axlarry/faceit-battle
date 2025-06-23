@@ -1,7 +1,6 @@
 
 import { Player } from '@/types/Player';
-import { fetchLcryptData } from '@/services/lcryptLiveService';
-import { lcryptLiveService } from '@/services/lcryptLiveService';
+import { lcryptOptimizedService } from '@/services/lcryptOptimizedService';
 import { playerService } from '@/services/playerService';
 import { FriendWithLcrypt, LiveMatchInfo } from '@/hooks/types/lcryptDataManagerTypes';
 
@@ -19,34 +18,44 @@ export class FriendDataProcessor {
     setLoadingFriends(prev => new Set(prev).add(friend.nickname));
 
     try {
-      console.log(`Fetching Lcrypt data, live status and cover image for ${friend.nickname}...`);
+      console.log(`🚀 Fetching OPTIMIZED complete data for ${friend.nickname}...`);
       
-      // Încarcă datele Lcrypt, verifică statusul LIVE și cover image în paralel
-      const [lcryptData, liveInfo, coverImage] = await Promise.all([
-        fetchLcryptData(friend.nickname),
-        lcryptLiveService.checkPlayerLiveFromLcrypt(friend.nickname),
+      // UN SINGUR APEL API pentru toate datele (Lcrypt + Live + Cover Image)
+      const [optimizedData, coverImage] = await Promise.all([
+        lcryptOptimizedService.getCompletePlayerData(friend.nickname),
         playerService.getPlayerCoverImage(friend.nickname)
       ]);
       
+      // Construiește obiectul actualizat cu toate datele
       const updatedFriend: FriendWithLcrypt = {
         ...friend,
-        lcryptData,
-        elo: lcryptData?.elo || friend.elo || 0,
-        isLive: liveInfo.isLive,
-        liveMatchDetails: liveInfo.isLive && 'matchDetails' in liveInfo ? liveInfo.matchDetails : undefined,
-        liveCompetition: liveInfo.isLive && 'competition' in liveInfo ? liveInfo.competition : undefined,
+        lcryptData: optimizedData?.error ? null : optimizedData,
+        elo: optimizedData?.elo || friend.elo || 0,
+        isLive: optimizedData?.isLive || false,
+        liveMatchDetails: optimizedData?.liveInfo?.matchDetails,
+        liveCompetition: optimizedData?.liveInfo?.competition,
         cover_image: coverImage || friend.cover_image
       };
 
-      // Actualizează și statusul LIVE în state-ul separat
+      // Actualizează statusul LIVE în state-ul separat
+      const liveMatchInfo: LiveMatchInfo = {
+        isLive: optimizedData?.isLive || false,
+        matchId: optimizedData?.liveInfo?.matchId,
+        competition: optimizedData?.liveInfo?.competition,
+        status: optimizedData?.liveInfo?.status,
+        state: optimizedData?.liveInfo?.state,
+        matchDetails: optimizedData?.liveInfo?.matchDetails,
+        liveMatch: optimizedData?.liveInfo?.liveMatch
+      };
+
       setLiveMatches(prev => ({
         ...prev,
-        [friend.player_id]: liveInfo
+        [friend.player_id]: liveMatchInfo
       }));
 
-      console.log(`✅ Successfully updated ${friend.nickname} with ELO: ${updatedFriend.elo} ${liveInfo.isLive ? '(LIVE)' : ''} ${coverImage ? '(Cover Image)' : ''}`);
+      console.log(`✅ OPTIMIZED update for ${friend.nickname}: ELO=${updatedFriend.elo}, Live=${updatedFriend.isLive}, Cover=${!!coverImage}`);
       
-      // Actualizează prietenul în lista principală imediat după finalizare
+      // Actualizează prietenul în lista principală
       setFriendsWithLcrypt(prevFriends => 
         prevFriends.map(prevFriend => 
           prevFriend.player_id === updatedFriend.player_id ? updatedFriend : prevFriend
@@ -62,7 +71,7 @@ export class FriendDataProcessor {
 
       return updatedFriend;
     } catch (error) {
-      console.error(`❌ Failed to fetch data for ${friend.nickname}:`, error);
+      console.error(`❌ Failed to fetch OPTIMIZED data for ${friend.nickname}:`, error);
       
       // Actualizează cu date null în caz de eroare
       const failedFriend: FriendWithLcrypt = { ...friend, lcryptData: null };
@@ -72,13 +81,13 @@ export class FriendDataProcessor {
         )
       );
       
-      // Actualizează și statusul LIVE ca false în caz de eroare
+      // Actualizează statusul LIVE ca false în caz de eroare
       setLiveMatches(prev => ({
         ...prev,
         [friend.player_id]: { isLive: false }
       }));
       
-      // Elimină prietenul din setul de încărcare chiar și în caz de eroare
+      // Elimină prietenul din setul de încărcare
       setLoadingFriends(prev => {
         const newSet = new Set(prev);
         newSet.delete(friend.nickname);
