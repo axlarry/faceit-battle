@@ -24,8 +24,6 @@ export const useFriendsAutoUpdate = ({
 
   const memoizedUpdateFunction = useCallback(updateAllFriends, [updateAllFriends]);
 
-  // Nu mai folosim auto-update timer deoarece actualizarea individuală 
-  // este gestionată de useLcryptDataManager
   console.log('🔄 OPTIMIZED: Auto-update is now handled by individual player updates (1 player every 1.2s after 45 sec delay)');
 
   return {
