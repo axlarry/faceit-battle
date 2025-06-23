@@ -71,34 +71,29 @@ export const MatchHeader = ({
   const mapImageUrl = getMapImageUrl(mapName);
 
   return (
-    <div className="bg-slate-800/50 rounded-xl border border-slate-700 overflow-hidden">
+    <div className="bg-slate-800/50 rounded-xl border border-slate-700 overflow-hidden relative">
       {/* Map Background Image */}
       {mapImageUrl && !imageLoadError && (
-        <div className="relative h-32 overflow-hidden">
+        <div className="absolute inset-0">
           <img 
             src={mapImageUrl}
             alt={mapName}
-            className="w-full h-full object-cover opacity-30"
+            className="w-full h-full object-cover opacity-20"
             onError={() => setImageLoadError(true)}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-800/90 to-transparent" />
-          <div className="absolute top-4 left-6">
-            <span className="text-white font-bold text-lg bg-black/50 px-3 py-1 rounded">
-              {mapName.toUpperCase()}
-            </span>
-          </div>
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-800/90 to-slate-800/50" />
         </div>
       )}
       
-      <div className="p-6">
-        <div className="flex items-center justify-between mb-6">
+      <div className="relative z-10 p-6">
+        <div className="flex items-center justify-between">
           {/* Team 1 */}
           <div className="flex items-center gap-4">
             <div className="text-right">
               <div className="text-2xl font-bold text-white mb-1">{team1Name}</div>
               <div className="text-slate-400 text-sm">Team</div>
             </div>
-            <div className="w-12 h-12 bg-slate-700 rounded-lg flex items-center justify-center">
+            <div className="w-12 h-12 bg-slate-700/80 rounded-lg flex items-center justify-center backdrop-blur-sm">
               <Shield className="w-6 h-6 text-slate-400" />
             </div>
           </div>
@@ -125,7 +120,7 @@ export const MatchHeader = ({
 
           {/* Team 2 */}
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 bg-slate-700 rounded-lg flex items-center justify-center">
+            <div className="w-12 h-12 bg-slate-700/80 rounded-lg flex items-center justify-center backdrop-blur-sm">
               <Shield className="w-6 h-6 text-slate-400" />
             </div>
             <div className="text-left">
