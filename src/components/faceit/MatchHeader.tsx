@@ -78,10 +78,10 @@ export const MatchHeader = ({
           <img 
             src={mapImageUrl}
             alt={mapName}
-            className="w-full h-full object-cover opacity-20"
+            className="w-full h-full object-cover opacity-40"
             onError={() => setImageLoadError(true)}
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-800/90 to-slate-800/50" />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-800/70 to-slate-800/30" />
         </div>
       )}
       

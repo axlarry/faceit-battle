@@ -35,13 +35,13 @@ export const PlayerActions = ({ player, isFriend, onFriendAction }: PlayerAction
       
       <Button
         variant="outline"
-        className="border-orange-400 text-orange-400 hover:bg-orange-400 hover:text-white w-12 h-12 p-0"
+        className="bg-transparent border-0 text-orange-400 hover:border-2 hover:border-orange-400 hover:bg-orange-400 hover:text-white w-12 h-12 p-0 transition-all duration-200"
         onClick={() => window.open(`https://www.faceit.com/en/players/${player.nickname}`, '_blank')}
       >
         <img 
           src="/faceit-icons/faceit_icon.png" 
           alt="F" 
-          className="w-6 h-6"
+          className="w-10 h-10"
           onError={(e) => {
             console.log('✅ Faceit icon fallback activated in PlayerActions');
             e.currentTarget.style.display = 'none';
@@ -54,13 +54,13 @@ export const PlayerActions = ({ player, isFriend, onFriendAction }: PlayerAction
 
       <Button
         variant="outline"
-        className="border-blue-400 text-blue-400 hover:bg-blue-400 hover:text-white w-12 h-12 p-0"
+        className="bg-transparent border-0 text-blue-400 hover:border-2 hover:border-blue-400 hover:bg-blue-400 hover:text-white w-12 h-12 p-0 transition-all duration-200"
         onClick={() => window.open(`https://steamcommunity.com/search/users/#text=${player.nickname}`, '_blank')}
       >
         <img 
           src="/faceit-icons/steam_icon.png" 
           alt="S" 
-          className="w-6 h-6"
+          className="w-10 h-10"
           onError={(e) => {
             console.log('✅ Steam icon fallback activated in PlayerActions');
             e.currentTarget.style.display = 'none';
