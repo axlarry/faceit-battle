@@ -29,7 +29,7 @@ export const useFriendsAutoUpdate = ({
     enabled,
     itemCount: friends.length,
     updateFunction: memoizedUpdateFunction,
-    intervalMs: 900000 // 15 minutes (900000ms)
+    intervalMs: 300000 // OPTIMIZED: Redus de la 15 min la 5 min pentru sincronizare cu useLcryptDataManager
   });
 
   return {

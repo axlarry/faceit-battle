@@ -5,6 +5,8 @@ import { playerService } from '@/services/playerService';
 import { FriendWithLcrypt, LiveMatchInfo } from '@/hooks/types/lcryptDataManagerTypes';
 
 export class FriendDataProcessor {
+  private coverImageCache = new Map<string, string | null>();
+
   async updateFriendData(
     friend: Player,
     enabled: boolean,
@@ -18,13 +20,21 @@ export class FriendDataProcessor {
     setLoadingFriends(prev => new Set(prev).add(friend.nickname));
 
     try {
-      console.log(`🚀 Fetching OPTIMIZED complete data for ${friend.nickname}...`);
+      console.log(`🚀 OPTIMIZED: Fetching complete data for ${friend.nickname}...`);
       
-      // UN SINGUR APEL API pentru toate datele (Lcrypt + Live + Cover Image)
-      const [optimizedData, coverImage] = await Promise.all([
-        lcryptOptimizedService.getCompletePlayerData(friend.nickname),
-        playerService.getPlayerCoverImage(friend.nickname)
-      ]);
+      // UN SINGUR APEL API pentru datele Lcrypt
+      const optimizedData = await lcryptOptimizedService.getCompletePlayerData(friend.nickname);
+      
+      // OPTIMIZED: Cover image doar dacă nu există în cache
+      let coverImage = friend.cover_image;
+      if (!coverImage && !this.coverImageCache.has(friend.nickname)) {
+        console.log(`🖼️ OPTIMIZED: Fetching cover image for ${friend.nickname} (first time only)`);
+        coverImage = await playerService.getPlayerCoverImage(friend.nickname);
+        this.coverImageCache.set(friend.nickname, coverImage);
+      } else if (this.coverImageCache.has(friend.nickname)) {
+        coverImage = this.coverImageCache.get(friend.nickname) || friend.cover_image;
+        console.log(`📦 OPTIMIZED: Using cached cover image for ${friend.nickname}`);
+      }
       
       // Construiește obiectul actualizat cu toate datele
       const updatedFriend: FriendWithLcrypt = {
@@ -53,7 +63,8 @@ export class FriendDataProcessor {
         [friend.player_id]: liveMatchInfo
       }));
 
-      console.log(`✅ OPTIMIZED update for ${friend.nickname}: ELO=${updatedFriend.elo}, Live=${updatedFriend.isLive}, Cover=${!!coverImage}`);
+      console.log(`✅ OPTIMIZED: Updated ${friend.nickname} with 1 API call instead of 3`);
+      console.log(`📊 OPTIMIZATION: ELO=${updatedFriend.elo}, Live=${updatedFriend.isLive}, Cover=${!!coverImage ? 'cached' : 'none'}`);
       
       // Actualizează prietenul în lista principală
       setFriendsWithLcrypt(prevFriends => 
@@ -110,6 +121,12 @@ export class FriendDataProcessor {
         result.status === 'fulfilled' && result.value !== null
       )
       .map(result => result.value);
+  }
+
+  // Metodă pentru curățarea cache-ului dacă este necesar
+  clearCoverImageCache() {
+    this.coverImageCache.clear();
+    console.log('🧹 OPTIMIZED: Cover image cache cleared');
   }
 }
 

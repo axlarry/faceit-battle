@@ -46,9 +46,9 @@ export const FriendsSectionHeader = React.memo(({
         </Button>
       </div>
       
-      {/* Status Row */}
+      {/* Status Row - OPTIMIZED */}
       <div className="text-xs text-gray-400">
-        Actualizare automată la 15 min
+        <span className="text-green-400">⚡ OPTIMIZAT:</span> Auto-update la 5 min • Cover images cached • 1 apel API/prieten (în loc de 3)
       </div>
     </div>
   );
