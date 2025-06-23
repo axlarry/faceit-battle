@@ -1,7 +1,6 @@
 
 import { useCallback } from 'react';
 import { Player } from '@/types/Player';
-import { useAutoUpdateTimer } from '@/hooks/useAutoUpdateTimer';
 import { useBulkFriendsUpdate } from '@/hooks/useBulkFriendsUpdate';
 
 interface UseFriendsAutoUpdateProps {
@@ -25,15 +24,12 @@ export const useFriendsAutoUpdate = ({
 
   const memoizedUpdateFunction = useCallback(updateAllFriends, [updateAllFriends]);
 
-  useAutoUpdateTimer({
-    enabled,
-    itemCount: friends.length,
-    updateFunction: memoizedUpdateFunction,
-    intervalMs: 300000 // OPTIMIZED: Redus de la 15 min la 5 min pentru sincronizare cu useLcryptDataManager
-  });
+  // Nu mai folosim auto-update timer deoarece actualizarea individuală 
+  // este gestionată de useLcryptDataManager
+  console.log('🔄 OPTIMIZED: Auto-update is now handled by individual player updates (1 player every 1.5s after 1.5min delay)');
 
   return {
     isUpdating,
-    updateAllFriends
+    updateAllFriends: memoizedUpdateFunction
   };
 };

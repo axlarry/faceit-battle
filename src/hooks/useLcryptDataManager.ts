@@ -1,5 +1,5 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Player } from '@/types/Player';
 import { friendDataProcessor } from '@/services/friendDataProcessor';
 import { useLcryptLoadingState } from '@/hooks/helpers/useLcryptLoadingState';
@@ -8,6 +8,11 @@ import { UseLcryptDataManagerProps, FriendWithLcrypt, LiveMatchInfo } from '@/ho
 export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataManagerProps) => {
   const [friendsWithLcrypt, setFriendsWithLcrypt] = useState<FriendWithLcrypt[]>([]);
   const [liveMatches, setLiveMatches] = useState<Record<string, LiveMatchInfo>>({});
+  const [isIndividualUpdating, setIsIndividualUpdating] = useState(false);
+  
+  const individualUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const individualUpdateIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const currentPlayerIndexRef = useRef(0);
   
   const {
     isLoading,
@@ -30,6 +35,68 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
     );
   }, [enabled]);
 
+  // Funcție pentru actualizarea individuală a unui jucător
+  const updateSingleFriend = useCallback(async (friend: Player) => {
+    if (!enabled) return;
+    
+    console.log(`🔄 Individual update: Updating ${friend.nickname}...`);
+    try {
+      await updateFriendLcryptData(friend);
+      console.log(`✅ Individual update: ${friend.nickname} completed`);
+    } catch (error) {
+      console.error(`❌ Individual update failed for ${friend.nickname}:`, error);
+    }
+  }, [enabled, updateFriendLcryptData]);
+
+  // Funcție pentru începerea ciclului de actualizare individuală
+  const startIndividualUpdates = useCallback(() => {
+    if (!enabled || friends.length === 0) return;
+
+    console.log(`🚀 Starting individual updates cycle for ${friends.length} friends (1 player every 1.5s)`);
+    setIsIndividualUpdating(true);
+    currentPlayerIndexRef.current = 0;
+
+    const updateNextPlayer = () => {
+      if (currentPlayerIndexRef.current >= friends.length) {
+        // Ciclul s-a terminat, resetează pentru următorul ciclu
+        console.log(`✅ Individual updates cycle completed. Next cycle in 1.5 minutes.`);
+        currentPlayerIndexRef.current = 0;
+        setIsIndividualUpdating(false);
+        
+        // Programează următorul ciclu după 1.5 minute
+        individualUpdateTimeoutRef.current = setTimeout(() => {
+          startIndividualUpdates();
+        }, 90000); // 1.5 minute = 90000ms
+        
+        return;
+      }
+
+      const currentFriend = friends[currentPlayerIndexRef.current];
+      updateSingleFriend(currentFriend);
+      currentPlayerIndexRef.current++;
+
+      // Programează următorul jucător după 1.5 secunde
+      individualUpdateIntervalRef.current = setTimeout(updateNextPlayer, 1500);
+    };
+
+    // Începe primul update
+    updateNextPlayer();
+  }, [friends, enabled, updateSingleFriend]);
+
+  // Funcție pentru oprirea actualizărilor individuale
+  const stopIndividualUpdates = useCallback(() => {
+    if (individualUpdateTimeoutRef.current) {
+      clearTimeout(individualUpdateTimeoutRef.current);
+      individualUpdateTimeoutRef.current = null;
+    }
+    if (individualUpdateIntervalRef.current) {
+      clearTimeout(individualUpdateIntervalRef.current);
+      individualUpdateIntervalRef.current = null;
+    }
+    setIsIndividualUpdating(false);
+    console.log('🛑 Individual updates stopped');
+  }, []);
+
   const loadLcryptDataForAllFriends = useCallback(async () => {
     if (!enabled || friends.length === 0) {
       setFriendsWithLcrypt(friends.map(f => ({ ...f, lcryptData: null })));
@@ -40,6 +107,9 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
     if (!canUpdate(90000)) { // 1.5 minute = 90000ms
       return;
     }
+
+    // Oprește actualizările individuale în timpul încărcării complete
+    stopIndividualUpdates();
 
     startLoading();
     
@@ -80,30 +150,40 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
 
     finishLoading();
     console.log(`✅ OPTIMIZED Loading completed: Single-call data fetch for all friends completed successfully`);
-  }, [friends, enabled, updateFriendLcryptData, canUpdate, startLoading, finishLoading, updateProgress]);
+    
+    // Pornește actualizările individuale după 1.5 minute de la finalizarea încărcării inițiale
+    individualUpdateTimeoutRef.current = setTimeout(() => {
+      startIndividualUpdates();
+    }, 90000); // 1.5 minute = 90000ms
+    
+  }, [friends, enabled, updateFriendLcryptData, canUpdate, startLoading, finishLoading, updateProgress, stopIndividualUpdates, startIndividualUpdates]);
 
-  // Auto-refresh la intervale optimizate
+  // Primul load imediat când se schimbă lista de prieteni
   useEffect(() => {
     if (!enabled || friends.length === 0) return;
 
-    // Primul load imediat
     loadLcryptDataForAllFriends();
 
-    // Auto-refresh la fiecare 5 minute (optimizat cu mai puține apeluri)
-    const interval = setInterval(() => {
-      console.log('🔄 OPTIMIZED Auto-refresh: Single-call data fetch (every 5 minutes)...');
-      loadLcryptDataForAllFriends();
-    }, 300000); // 5 minute = 300000ms
+    // Cleanup la unmount sau când se schimbă prietenii
+    return () => {
+      stopIndividualUpdates();
+    };
+  }, [friends, enabled, loadLcryptDataForAllFriends, stopIndividualUpdates]);
 
-    return () => clearInterval(interval);
-  }, [friends, enabled, loadLcryptDataForAllFriends]);
+  // Cleanup la unmount
+  useEffect(() => {
+    return () => {
+      stopIndividualUpdates();
+    };
+  }, [stopIndividualUpdates]);
 
   return {
     friendsWithLcrypt,
-    isLoading,
+    isLoading: isLoading || isIndividualUpdating,
     loadingProgress,
     loadingFriends,
     liveMatches,
-    reloadLcryptData: loadLcryptDataForAllFriends
+    reloadLcryptData: loadLcryptDataForAllFriends,
+    isIndividualUpdating
   };
 };
