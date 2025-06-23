@@ -45,11 +45,6 @@ export const FriendsSectionHeader = React.memo(({
           {isUpdating ? 'Actualizare...' : 'Actualizează'}
         </Button>
       </div>
-      
-      {/* Status Row - OPTIMIZED */}
-      <div className="text-xs text-gray-400">
-        <span className="text-green-400">⚡ OPTIMIZAT:</span> Auto-update individual • 1 jucător/1.5s după 1.5min • Cover images cached • 1 apel API/prieten
-      </div>
     </div>
   );
 });

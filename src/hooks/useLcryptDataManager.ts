@@ -9,6 +9,7 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
   const [friendsWithLcrypt, setFriendsWithLcrypt] = useState<FriendWithLcrypt[]>([]);
   const [liveMatches, setLiveMatches] = useState<Record<string, LiveMatchInfo>>({});
   const [isIndividualUpdating, setIsIndividualUpdating] = useState(false);
+  const [isManualUpdate, setIsManualUpdate] = useState(false);
   
   const individualUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const individualUpdateIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -25,23 +26,23 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
     canUpdate
   } = useLcryptLoadingState();
 
-  const updateFriendLcryptData = useCallback(async (friend: Player) => {
+  const updateFriendLcryptData = useCallback(async (friend: Player, showLoadingOverlay = false) => {
     return friendDataProcessor.updateFriendData(
       friend,
       enabled,
-      setLoadingFriends,
+      showLoadingOverlay ? setLoadingFriends : () => {}, // Nu afișa loading pentru actualizările individuale
       setFriendsWithLcrypt,
       setLiveMatches
     );
-  }, [enabled]);
+  }, [enabled, setLoadingFriends]);
 
-  // Funcție pentru actualizarea individuală a unui jucător
+  // Funcție pentru actualizarea individuală a unui jucător (fără loading overlay)
   const updateSingleFriend = useCallback(async (friend: Player) => {
     if (!enabled) return;
     
     console.log(`🔄 Individual update: Updating ${friend.nickname}...`);
     try {
-      await updateFriendLcryptData(friend);
+      await updateFriendLcryptData(friend, false); // false = nu afișa loading overlay
       console.log(`✅ Individual update: ${friend.nickname} completed`);
     } catch (error) {
       console.error(`❌ Individual update failed for ${friend.nickname}:`, error);
@@ -97,17 +98,19 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
     console.log('🛑 Individual updates stopped');
   }, []);
 
-  const loadLcryptDataForAllFriends = useCallback(async () => {
+  const loadLcryptDataForAllFriends = useCallback(async (isManual = false) => {
     if (!enabled || friends.length === 0) {
       setFriendsWithLcrypt(friends.map(f => ({ ...f, lcryptData: null })));
       return;
     }
 
-    // Verifică dacă au trecut cel puțin 1.5 minute de la ultimul update (optimizat cu mai puține apeluri)
-    if (!canUpdate(90000)) { // 1.5 minute = 90000ms
+    // Pentru actualizările manuale, nu verifica timeout-ul
+    if (!isManual && !canUpdate(90000)) { // 1.5 minute = 90000ms
       return;
     }
 
+    setIsManualUpdate(isManual);
+    
     // Oprește actualizările individuale în timpul încărcării complete
     stopIndividualUpdates();
 
@@ -115,13 +118,13 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
     
     // Sortează prietenii după ELO (cel mai mare ELO primul - rank #1)
     const sortedFriends = [...friends].sort((a, b) => (b.elo || 0) - (a.elo || 0));
-    console.log(`🚀 OPTIMIZED Loading: Starting single-call data fetch for ${sortedFriends.length} friends...`);
+    console.log(`🚀 Loading: Starting data fetch for ${sortedFriends.length} friends...`);
     
     // Inițializează lista cu toți prietenii cu lcryptData undefined pentru a declașa loading-ul individual
     setFriendsWithLcrypt(sortedFriends.map(f => ({ ...f, lcryptData: undefined })));
     
-    // Procesare OPTIMIZATĂ cu batch-uri mai mari deoarece facem mai puține apeluri
-    const batchSize = 3; // Mărit de la 2 la 3 deoarece facem un singur apel per jucător
+    // Procesare cu batch-uri
+    const batchSize = 3;
     const updatedFriends: FriendWithLcrypt[] = [];
     
     for (let i = 0; i < sortedFriends.length; i += batchSize) {
@@ -130,7 +133,7 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
       try {
         const validResults = await friendDataProcessor.processFriendsBatch(
           batch,
-          updateFriendLcryptData
+          (friend) => updateFriendLcryptData(friend, true) // true = afișează loading pentru încărcarea completă
         );
         
         updatedFriends.push(...validResults);
@@ -138,23 +141,27 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
         // Actualizează progresul
         updateProgress(i + batch.length, sortedFriends.length, i, batchSize);
       } catch (error) {
-        console.error('Error processing OPTIMIZED batch:', error);
+        console.error('Error processing batch:', error);
         // Continuă cu următorul batch chiar dacă unul eșuează
       }
       
-      // Pauză redusă între batch-uri deoarece facem mai puține apeluri total
+      // Pauză între batch-uri
       if (i + batchSize < sortedFriends.length) {
-        await new Promise(resolve => setTimeout(resolve, 600)); // Redus de la 800ms la 600ms
+        await new Promise(resolve => setTimeout(resolve, 600));
       }
     }
 
     finishLoading();
-    console.log(`✅ OPTIMIZED Loading completed: Single-call data fetch for all friends completed successfully`);
+    setIsManualUpdate(false);
+    console.log(`✅ Loading completed: Data fetch for all friends completed successfully`);
     
     // Pornește actualizările individuale după 1.5 minute de la finalizarea încărcării inițiale
-    individualUpdateTimeoutRef.current = setTimeout(() => {
-      startIndividualUpdates();
-    }, 90000); // 1.5 minute = 90000ms
+    // Dar nu pentru actualizările manuale
+    if (!isManual) {
+      individualUpdateTimeoutRef.current = setTimeout(() => {
+        startIndividualUpdates();
+      }, 90000); // 1.5 minute = 90000ms
+    }
     
   }, [friends, enabled, updateFriendLcryptData, canUpdate, startLoading, finishLoading, updateProgress, stopIndividualUpdates, startIndividualUpdates]);
 
@@ -162,7 +169,7 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
   useEffect(() => {
     if (!enabled || friends.length === 0) return;
 
-    loadLcryptDataForAllFriends();
+    loadLcryptDataForAllFriends(false); // false = nu este manual
 
     // Cleanup la unmount sau când se schimbă prietenii
     return () => {
@@ -179,11 +186,11 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
 
   return {
     friendsWithLcrypt,
-    isLoading: isLoading || isIndividualUpdating,
+    isLoading: isLoading || (isManualUpdate && isIndividualUpdating), // Loading doar pentru încărcarea inițială și actualizarea manuală
     loadingProgress,
     loadingFriends,
     liveMatches,
-    reloadLcryptData: loadLcryptDataForAllFriends,
+    reloadLcryptData: () => loadLcryptDataForAllFriends(true), // true = este manual
     isIndividualUpdating
   };
 };
