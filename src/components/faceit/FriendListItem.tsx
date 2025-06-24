@@ -142,11 +142,7 @@ export const FriendListItem = React.memo(({
               <div style={{
             animationDuration: '4s'
           }} className="absolute inset-0 -m-4">
-                {[...Array(4)].map((_, i) => <div key={i} className="absolute w-1 h-1 bg-yellow-400 rounded-full" style={{
-              top: i % 2 === 0 ? '0%' : '100%',
-              left: i < 2 ? '0%' : '100%',
-              transform: 'translate(-50%, -50%)'
-            }} />)}
+                {[...Array(4)].map((_, i) => {})}
               </div>
             </div>
           </div>}
