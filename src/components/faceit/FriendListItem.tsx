@@ -160,9 +160,7 @@ export const FriendListItem = React.memo(({
           <div className="relative">
             <PlayerAvatar avatar={friend.avatar} nickname={friend.nickname} index={index} isLive={isLive} />
             {/* Performance indicator */}
-            {friend.elo && friend.elo > 2000 && <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center border-2 border-white/20">
-                <Target size={12} className="text-white animate-pulse" />
-              </div>}
+            {friend.elo && friend.elo > 2000}
           </div>
 
           {/* Enhanced Player Info */}
