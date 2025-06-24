@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Player } from "@/types/Player";
 import { useSteamIdConverter } from './SteamIdConverter';
@@ -129,41 +128,28 @@ export const FriendListItem = React.memo(({
         </div>
 
         {/* Animated Crown for #1 Player */}
-        {index === 0 && (
-          <div className="absolute top-2 right-2 z-30">
+        {index === 0 && <div className="absolute top-2 right-2 z-30">
             <div className="relative">
-              <Crown 
-                size={32} 
-                className="text-yellow-400 animate-bounce drop-shadow-lg"
-                style={{
-                  filter: 'drop-shadow(0 0 8px rgba(251, 191, 36, 0.6))',
-                  animationDuration: '2s'
-                }}
-              />
+              <Crown size={32} className="text-yellow-400 animate-bounce drop-shadow-lg" style={{
+            filter: 'drop-shadow(0 0 8px rgba(251, 191, 36, 0.6))',
+            animationDuration: '2s'
+          }} />
               {/* Glowing effect around crown */}
               <div className="absolute inset-0 -m-2">
-                <Crown 
-                  size={36} 
-                  className="text-yellow-400/30 animate-pulse"
-                />
+                <Crown size={36} className="text-yellow-400/30 animate-pulse" />
               </div>
               {/* Rotating sparkles around crown */}
-              <div className="absolute inset-0 -m-4 animate-spin" style={{ animationDuration: '4s' }}>
-                {[...Array(4)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="absolute w-1 h-1 bg-yellow-400 rounded-full"
-                    style={{
-                      top: i % 2 === 0 ? '0%' : '100%',
-                      left: i < 2 ? '0%' : '100%',
-                      transform: 'translate(-50%, -50%)'
-                    }}
-                  />
-                ))}
+              <div style={{
+            animationDuration: '4s'
+          }} className="absolute inset-0 -m-4">
+                {[...Array(4)].map((_, i) => <div key={i} className="absolute w-1 h-1 bg-yellow-400 rounded-full" style={{
+              top: i % 2 === 0 ? '0%' : '100%',
+              left: i < 2 ? '0%' : '100%',
+              transform: 'translate(-50%, -50%)'
+            }} />)}
               </div>
             </div>
-          </div>
-        )}
+          </div>}
 
         {/* Live indicator enhancement */}
         {isLive && <div className="absolute top-4 right-4 z-20">
