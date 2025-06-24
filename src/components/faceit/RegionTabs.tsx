@@ -72,7 +72,7 @@ export const RegionTabs = ({ currentRegion, onRegionChange }: RegionTabsProps) =
   return (
     <div className="flex justify-center items-center p-6">
       <div className="flex gap-4 items-center">
-        {/* Modern Special Tabs with clean UI/UX Design */}
+        {/* Modern Special Tabs */}
         {specialTabs.map((tab) => {
           const IconComponent = tab.icon;
           const isActive = currentRegion === tab.id;
@@ -104,7 +104,7 @@ export const RegionTabs = ({ currentRegion, onRegionChange }: RegionTabsProps) =
           );
         })}
 
-        {/* Modern Global Rank Button with clean UI/UX Design */}
+        {/* Global Rank Button */}
         <div className="relative">
           <Popover open={isOpen} onOpenChange={setIsOpen}>
             <PopoverTrigger asChild>
@@ -124,9 +124,7 @@ export const RegionTabs = ({ currentRegion, onRegionChange }: RegionTabsProps) =
                     className={`transition-all duration-300 ${isOpen ? 'rotate-180' : ''} ${regions.some(r => r.id === currentRegion) ? 'text-white' : 'text-indigo-400'}`} 
                   />
                   
-                  <span>
-                    Rank Global
-                  </span>
+                  <span>Rank Global</span>
                   
                   <ChevronDown 
                     size={16} 
@@ -142,12 +140,12 @@ export const RegionTabs = ({ currentRegion, onRegionChange }: RegionTabsProps) =
               side="bottom"
               sideOffset={12}
             >
-              {/* Regions Grid with Clear SVG Backgrounds */}
+              {/* Regions Grid */}
               <div className="p-6 grid grid-cols-2 gap-4">
                 {regions.map((region, index) => (
                   <div
                     key={region.id}
-                    className="relative group animate-bounce-in"
+                    className="relative group"
                     style={{ animationDelay: `${index * 150}ms` }}
                   >
                     <button
@@ -159,18 +157,18 @@ export const RegionTabs = ({ currentRegion, onRegionChange }: RegionTabsProps) =
                         ${currentRegion === region.id ? 'ring-2 ring-white/70 scale-105 shadow-xl' : ''}
                       `}
                     >
-                      {/* Clear SVG Flag Background - Full visibility without blur */}
+                      {/* Flag Background - Full visibility */}
                       <div 
-                        className="absolute inset-0 opacity-80 bg-center bg-contain bg-no-repeat"
+                        className="absolute inset-0 opacity-90 bg-center bg-contain bg-no-repeat"
                         style={{
                           backgroundImage: `url(${region.flag})`,
-                          backgroundSize: '70%',
+                          backgroundSize: '80%',
                           backgroundPosition: 'center'
                         }}
                       />
                       
                       {/* Minimal overlay for text readability */}
-                      <div className="absolute inset-0 bg-black/20 rounded-xl"></div>
+                      <div className="absolute inset-0 bg-black/10 rounded-xl"></div>
                       
                       <div className="relative z-10 text-center">
                         <div className="text-white font-bold text-base mb-2 tracking-wide drop-shadow-lg">
@@ -192,7 +190,7 @@ export const RegionTabs = ({ currentRegion, onRegionChange }: RegionTabsProps) =
                 ))}
               </div>
 
-              {/* Simple footer */}
+              {/* Footer */}
               <div className="p-4 bg-slate-800/60 text-center border-t border-slate-700/50">
                 <p className="text-sm text-slate-400">Select any region to explore rankings</p>
               </div>

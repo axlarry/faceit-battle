@@ -2,7 +2,7 @@
 import React from 'react';
 import { Player } from "@/types/Player";
 import { useSteamIdConverter } from './SteamIdConverter';
-import { LoaderCircle, Zap, Trophy, Target, Crown } from 'lucide-react';
+import { LoaderCircle, Zap, Crown } from 'lucide-react';
 import { PlayerAvatar } from './PlayerAvatar';
 import { PlayerInfo } from './PlayerInfo';
 import { PlayerStatsCompact } from './PlayerStatsCompact';
@@ -34,9 +34,7 @@ export const FriendListItem = React.memo(({
   liveMatchDetails,
   onPlayerClick
 }: FriendListItemProps) => {
-  const {
-    steamId64
-  } = useSteamIdConverter(friend.player_id);
+  const { steamId64 } = useSteamIdConverter(friend.player_id);
   
   const handleClick = () => {
     onPlayerClick(friend);
@@ -46,7 +44,7 @@ export const FriendListItem = React.memo(({
     e.stopPropagation();
   };
 
-  // Modern 3D styling system
+  // Modern styling system
   const getPlayerStyles = () => {
     if (isLive) {
       return {
@@ -108,9 +106,7 @@ export const FriendListItem = React.memo(({
   } : {};
 
   return (
-    <div className="relative group animate-slide-in-up" style={{
-      animationDelay: `${index * 100}ms`
-    }}>
+    <div className="relative group" style={{ animationDelay: `${index * 100}ms` }}>
       {/* Outer glow effect */}
       <div className={`absolute inset-0 rounded-3xl ${playerStyles.glow} opacity-0 group-hover:opacity-100 transition-all duration-700 blur-xl scale-105`}></div>
       
@@ -130,9 +126,8 @@ export const FriendListItem = React.memo(({
         <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-black/20 rounded-3xl"></div>
         <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-white/5 rounded-3xl"></div>
         
-        {/* Rank indicator with special effects */}
+        {/* Rank indicator */}
         <div className="absolute top-4 left-4 z-20">
-          {/* Rank tier indicator */}
           {index < 3 && (
             <div className={`absolute -bottom-1 -right-1 w-3 h-3 ${playerStyles.pulseColor} rounded-full animate-pulse shadow-lg`}>
               <div className={`absolute inset-0 ${playerStyles.pulseColor} rounded-full animate-ping`}></div>
@@ -156,31 +151,11 @@ export const FriendListItem = React.memo(({
               <div className="absolute inset-0 -m-2">
                 <Crown size={36} className="text-yellow-400/30 animate-pulse" />
               </div>
-              {/* Rotating sparkles around crown */}
-              <div 
-                style={{
-                  animationDuration: '4s'
-                }} 
-                className="absolute inset-0 -m-4"
-              >
-                {[...Array(4)].map((_, i) => (
-                  <div
-                    key={i}
-                    className={`absolute w-1 h-1 bg-yellow-400/60 rounded-full animate-orbital`}
-                    style={{
-                      left: `${20 + i * 30}%`,
-                      top: `${30 + (i % 2) * 40}%`,
-                      animationDelay: `${i * 1.5}s`,
-                      animationDuration: `${4 + i}s`
-                    }}
-                  />
-                ))}
-              </div>
             </div>
           </div>
         )}
 
-        {/* Live indicator enhancement */}
+        {/* Live indicator */}
         {isLive && (
           <div className="absolute top-4 right-4 z-20">
             <div className="flex items-center gap-2 bg-gradient-to-r from-red-500 to-red-600 px-3 py-1.5 rounded-full border border-red-400/50 backdrop-blur-sm">
@@ -191,7 +166,7 @@ export const FriendListItem = React.memo(({
           </div>
         )}
 
-        {/* Loading overlay with modern design */}
+        {/* Loading overlay */}
         {shouldShowLoadingOverlay && (
           <div className="absolute inset-0 bg-slate-900/95 rounded-3xl flex items-center justify-center z-30 backdrop-blur-lg">
             <div className="flex flex-col items-center gap-4">
@@ -213,9 +188,9 @@ export const FriendListItem = React.memo(({
           <div className="absolute inset-0 bg-gradient-to-br from-black/40 via-black/20 to-black/40 rounded-3xl"></div>
         )}
 
-        {/* Main content with improved spacing */}
+        {/* Main content */}
         <div className="flex items-center gap-4 relative z-10 mb-3">
-          {/* Enhanced Avatar */}
+          {/* Avatar */}
           <div className="relative">
             <PlayerAvatar avatar={friend.avatar} nickname={friend.nickname} index={index} isLive={isLive} />
             {/* Performance indicator */}
@@ -226,16 +201,16 @@ export const FriendListItem = React.memo(({
             )}
           </div>
 
-          {/* Enhanced Player Info */}
+          {/* Player Info */}
           <div className="flex-1">
             <PlayerInfo nickname={friend.nickname} level={friend.level} elo={friend.elo} lcryptData={friend.lcryptData} isLive={isLive} />
           </div>
         </div>
 
-        {/* Live Match Details with modern styling */}
+        {/* Live Match Details */}
         <LiveMatchDetails isLive={isLive} liveMatchDetails={liveMatchDetails} />
 
-        {/* Enhanced stats and actions row */}
+        {/* Stats and actions row */}
         <div className="flex items-center justify-between gap-3 mt-4 relative z-10">
           <div className="flex-1">
             <PlayerStatsCompact wins={friend.wins || 0} winRate={friend.winRate || 0} hsRate={friend.hsRate || 0} kdRatio={friend.kdRatio || 0} />
@@ -254,7 +229,7 @@ export const FriendListItem = React.memo(({
             {[...Array(3)].map((_, i) => (
               <div 
                 key={i} 
-                className={`absolute w-1 h-1 bg-${playerStyles.accent}-400/60 rounded-full animate-float`} 
+                className={`absolute w-1 h-1 bg-${playerStyles.accent}-400/60 rounded-full`} 
                 style={{
                   left: `${20 + i * 30}%`,
                   top: `${30 + i % 2 * 40}%`,

@@ -3,7 +3,7 @@ import React from 'react';
 import { Player } from "@/types/Player";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Trophy, Zap, UserPlus, Eye } from "lucide-react";
+import { Eye, UserPlus } from "lucide-react";
 
 interface PlayerCardProps {
   player: Player;
@@ -13,7 +13,7 @@ interface PlayerCardProps {
 
 export const PlayerCard = ({ player, onShowPlayerDetails, onAddFriend }: PlayerCardProps) => {
   return (
-    <Card className="p-4 bg-white/5 backdrop-blur-lg border-white/10 hover:bg-white/10 transition-colors">
+    <Card className="p-4 bg-white/5 backdrop-blur-lg border-white/10 hover:bg-white/10 transition-all duration-300">
       <div className="flex items-center gap-4 mb-4">
         {/* Rank Number */}
         <div className="flex items-center justify-center w-12 h-12 bg-orange-500/20 rounded-lg border border-orange-500/30">
@@ -22,9 +22,13 @@ export const PlayerCard = ({ player, onShowPlayerDetails, onAddFriend }: PlayerC
 
         {/* Avatar */}
         <img
-          src={player.avatar}
+          src={player.avatar || '/placeholder.svg'}
           alt={player.nickname}
           className="w-12 h-12 rounded-lg border border-white/20"
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            target.src = '/placeholder.svg';
+          }}
         />
 
         {/* Player Info */}
@@ -33,10 +37,10 @@ export const PlayerCard = ({ player, onShowPlayerDetails, onAddFriend }: PlayerC
             {player.nickname}
           </h3>
           <div className="flex items-center gap-2 text-sm text-slate-300">
-            <span>Level {player.level}</span>
+            <span>Level {player.level || 0}</span>
             <span className="text-orange-400">•</span>
             <span className="text-orange-400 font-medium">
-              {player.elo} ELO
+              {player.elo || 0} ELO
             </span>
           </div>
         </div>
@@ -60,7 +64,7 @@ export const PlayerCard = ({ player, onShowPlayerDetails, onAddFriend }: PlayerC
           onClick={() => onShowPlayerDetails(player)}
           variant="outline" 
           size="sm"
-          className="flex-1 bg-transparent border-slate-600 text-slate-300 hover:bg-slate-700/50 hover:text-white"
+          className="flex-1 bg-transparent border-slate-600 text-slate-300 hover:bg-slate-700/50 hover:text-white transition-colors"
         >
           <Eye size={14} className="mr-1" />
           View
@@ -68,7 +72,7 @@ export const PlayerCard = ({ player, onShowPlayerDetails, onAddFriend }: PlayerC
         <Button
           onClick={() => onAddFriend(player)}
           size="sm"
-          className="flex-1 bg-orange-600 hover:bg-orange-700 text-white"
+          className="flex-1 bg-orange-600 hover:bg-orange-700 text-white transition-colors"
         >
           <UserPlus size={14} className="mr-1" />
           Add
