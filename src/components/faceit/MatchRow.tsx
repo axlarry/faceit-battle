@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Player, Match } from "@/types/Player";
-import { Trophy, Calendar, Clock, Target, TrendingUp, TrendingDown, Minus, Zap, Crosshair, Radio, Download, Map } from "lucide-react";
+import { Trophy, Calendar, Clock, Target, TrendingUp, TrendingDown, Minus, Zap, Crosshair, Radio, Download, Map, ExternalLink } from "lucide-react";
 import { formatDate, formatMatchDuration, getMatchResult, getMatchScore, getMapInfo } from "@/utils/matchUtils";
 import { getEloChange } from "@/utils/eloUtils";
 import { getPlayerStatsFromMatch, getKDA } from "@/utils/playerDataUtils";
@@ -10,6 +10,7 @@ import { getKDRatio, getHeadshotPercentage, getADR } from "@/utils/statsUtils";
 import { useLcryptApi } from "@/hooks/useLcryptApi";
 import { parseLcryptReport, findMatchEloChange } from "@/utils/lcryptUtils";
 import { useState } from "react";
+
 interface MatchRowProps {
   match: Match & {
     isLiveMatch?: boolean;
@@ -22,6 +23,7 @@ interface MatchRowProps {
   onMatchClick: (match: Match) => void;
   matchIndex: number;
 }
+
 export const MatchRow = ({
   match,
   player,
@@ -115,12 +117,24 @@ export const MatchRow = ({
     window.open(demoUrl, '_blank');
   };
 
+  const handleMatchRoomClick = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent row click
+
+    // Create the match room URL for live match
+    const matchRoomUrl = `https://www.faceit.com/en/cs2/room/${match.match_id}`;
+
+    // Open in new tab
+    window.open(matchRoomUrl, '_blank');
+  };
+
   // Handle live match differently
   if (match.isLiveMatch) {
     const liveScore = match.liveMatchDetails?.score || 'În Desfășurare';
     const liveElo = match.liveMatchDetails?.elo || match.liveMatchDetails?.elo_change;
     const liveMapName = match.liveMatchDetails?.voting?.map?.pick?.[0] || mapName || 'TBD';
-    return <TableRow key={match.match_id} className="border-white/10 bg-green-500/10 hover:bg-green-500/20 transition-colors">
+    
+    return (
+      <TableRow key={match.match_id} className="border-white/10 bg-green-500/10 hover:bg-green-500/20 transition-colors">
         {/* Result - Live indicator */}
         <TableCell>
           <Badge className="bg-green-500/20 text-green-400 border-green-500/30 border font-semibold">
@@ -163,9 +177,13 @@ export const MatchRow = ({
 
         {/* ELO Change - Show live ELO if available */}
         <TableCell>
-          {liveElo ? <span className="text-yellow-400 font-bold">
+          {liveElo ? (
+            <span className="text-yellow-400 font-bold">
               {liveElo}
-            </span> : <span className="text-gray-400">Pending</span>}
+            </span>
+          ) : (
+            <span className="text-gray-400">Pending</span>
+          )}
         </TableCell>
 
         {/* Date */}
@@ -178,9 +196,17 @@ export const MatchRow = ({
           </div>
         </TableCell>
 
-        {/* Demo Download - Not available for live matches */}
+        {/* Demo Download - MatchRoom button for live matches */}
         <TableCell>
-          <span className="text-gray-400 text-sm">N/A</span>
+          <Button
+            onClick={handleMatchRoomClick}
+            size="sm"
+            variant="outline"
+            className="bg-green-500/10 border-green-500/30 text-green-400 hover:bg-green-500/20 hover:text-green-300 transition-colors"
+          >
+            <ExternalLink className="w-3 h-3 mr-1" />
+            MatchRoom
+          </Button>
         </TableCell>
 
         {/* Duration */}
@@ -192,7 +218,8 @@ export const MatchRow = ({
             </span>
           </div>
         </TableCell>
-      </TableRow>;
+      </TableRow>
+    );
   }
 
   // Regular match row
