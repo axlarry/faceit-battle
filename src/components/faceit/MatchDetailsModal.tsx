@@ -87,16 +87,19 @@ export const MatchDetailsModal = ({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="relative border-2 border-orange-500/30 text-white w-[95vw] max-w-6xl h-[90vh] max-h-[90vh] overflow-hidden shadow-2xl shadow-orange-500/20 rounded-2xl">
-        {/* Background Image */}
+        {/* Background Image - Better positioning and sizing */}
         <div 
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat rounded-2xl"
           style={{
             backgroundImage: `url(/faceit-icons/img_detalii_match.png)`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center center',
+            backgroundAttachment: 'fixed'
           }}
         />
         
-        {/* Dark Overlay for better text readability */}
-        <div className="absolute inset-0 bg-black/60" />
+        {/* Dark Overlay with gradient for better readability */}
+        <div className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/50 to-black/70 rounded-2xl" />
         
         {/* Content */}
         <div className="relative z-10 flex-1 overflow-y-auto px-4 md:px-6 pb-6 pt-6 space-y-4 md:space-y-6 scrollbar-hide">
