@@ -86,8 +86,20 @@ export const MatchDetailsModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 border-2 border-orange-500/30 text-white w-[95vw] max-w-6xl h-[90vh] max-h-[90vh] overflow-hidden shadow-2xl shadow-orange-500/20 rounded-2xl">
-        <div className="flex-1 overflow-y-auto px-4 md:px-6 pb-6 pt-6 space-y-4 md:space-y-6 scrollbar-hide">
+      <DialogContent className="relative border-2 border-orange-500/30 text-white w-[95vw] max-w-6xl h-[90vh] max-h-[90vh] overflow-hidden shadow-2xl shadow-orange-500/20 rounded-2xl">
+        {/* Background Image */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+          style={{
+            backgroundImage: `url(/faceit-icons/img_detalii_match.png)`,
+          }}
+        />
+        
+        {/* Dark Overlay for better text readability */}
+        <div className="absolute inset-0 bg-black/60" />
+        
+        {/* Content */}
+        <div className="relative z-10 flex-1 overflow-y-auto px-4 md:px-6 pb-6 pt-6 space-y-4 md:space-y-6 scrollbar-hide">
           {/* Match Header - Team vs Team with Map Background */}
           <MatchHeader 
             team1Name={team1Name}
