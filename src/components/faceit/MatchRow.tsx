@@ -41,10 +41,34 @@ export const MatchRow = ({
     data: lcryptData
   } = useLcryptApi(player.nickname);
   const [imageLoadErrors, setImageLoadErrors] = useState<Set<string>>(new Set());
+  const [liveMatchUrl, setLiveMatchUrl] = useState<string | null>(null);
 
   // Parse lcrypt report and find ELO change for this match
   const lcryptMatches = lcryptData?.report ? parseLcryptReport(lcryptData.report) : [];
   const lcryptEloChange = findMatchEloChange(match, lcryptMatches, matchIndex);
+
+  // Check for live match URL when it's a live match
+  React.useEffect(() => {
+    if (match.isLiveMatch && player.player_id) {
+      const checkLiveMatch = async () => {
+        try {
+          const { liveMatchService } = await import('@/services/liveMatchService');
+          const liveInfo = await liveMatchService.getPlayerLiveMatch(player.player_id);
+          if (liveInfo && liveInfo.matchRoomUrl) {
+            setLiveMatchUrl(liveInfo.matchRoomUrl);
+          } else {
+            // Fallback to constructing URL from match ID
+            setLiveMatchUrl(`https://www.faceit.com/en/cs2/room/${match.match_id}`);
+          }
+        } catch (error) {
+          console.error('Error getting live match URL:', error);
+          // Fallback to constructing URL from match ID
+          setLiveMatchUrl(`https://www.faceit.com/en/cs2/room/${match.match_id}`);
+        }
+      };
+      checkLiveMatch();
+    }
+  }, [match.isLiveMatch, match.match_id, player.player_id]);
 
   // Function to get map icon URL from local assets
   const getMapIconUrl = (mapName: string) => {
@@ -120,8 +144,8 @@ export const MatchRow = ({
   const handleMatchRoomClick = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent row click
 
-    // Create the match room URL for live match
-    const matchRoomUrl = `https://www.faceit.com/en/cs2/room/${match.match_id}`;
+    // Use the fetched live match URL or fallback
+    const matchRoomUrl = liveMatchUrl || `https://www.faceit.com/en/cs2/room/${match.match_id}`;
 
     // Open in new tab
     window.open(matchRoomUrl, '_blank');
@@ -196,7 +220,7 @@ export const MatchRow = ({
           </div>
         </TableCell>
 
-        {/* Demo Download - MatchRoom button for live matches */}
+        {/* MatchRoom button for live matches */}
         <TableCell>
           <Button
             onClick={handleMatchRoomClick}

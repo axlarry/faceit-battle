@@ -9,7 +9,7 @@ const ScrollArea = React.forwardRef<
   React.ComponentPropsWithoutRef<typeof ScrollAreaPrimitive.Root> & {
     hideScrollbar?: boolean;
   }
->(({ className, children, hideScrollbar = false, ...props }, ref) => (
+>(({ className, children, hideScrollbar = true, ...props }, ref) => (
   <ScrollAreaPrimitive.Root
     ref={ref}
     className={cn("relative overflow-hidden", className)}
@@ -17,7 +17,7 @@ const ScrollArea = React.forwardRef<
   >
     <ScrollAreaPrimitive.Viewport className={cn(
       "h-full w-full rounded-[inherit]",
-      hideScrollbar && "scrollbar-hide"
+      hideScrollbar ? "scrollbar-hide" : "modern-scroll"
     )}>
       {children}
     </ScrollAreaPrimitive.Viewport>
