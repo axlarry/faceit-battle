@@ -1,19 +1,19 @@
-
 import React from 'react';
 import { Player } from "@/types/Player";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Eye, UserPlus } from "lucide-react";
-
 interface PlayerCardProps {
   player: Player;
   onShowPlayerDetails: (player: Player) => void;
   onAddFriend: (player: Player) => void;
 }
-
-export const PlayerCard = ({ player, onShowPlayerDetails, onAddFriend }: PlayerCardProps) => {
-  return (
-    <Card className="p-4 bg-gray-800/60 border-gray-700/50 hover:bg-gray-700/60 transition-colors">
+export const PlayerCard = ({
+  player,
+  onShowPlayerDetails,
+  onAddFriend
+}: PlayerCardProps) => {
+  return <Card className="p-4 bg-gray-800/60 border-gray-700/50 hover:bg-gray-700/60 transition-colors">
       <div className="flex items-center gap-4">
         {/* Rank Number */}
         <div className="flex items-center justify-center w-10 h-10 bg-orange-500/20 rounded-lg border border-orange-500/30">
@@ -21,15 +21,10 @@ export const PlayerCard = ({ player, onShowPlayerDetails, onAddFriend }: PlayerC
         </div>
 
         {/* Avatar */}
-        <img
-          src={player.avatar || '/placeholder.svg'}
-          alt={player.nickname}
-          className="w-12 h-12 rounded-lg border border-gray-600"
-          onError={(e) => {
-            const target = e.target as HTMLImageElement;
-            target.src = '/placeholder.svg';
-          }}
-        />
+        <img src={player.avatar || '/placeholder.svg'} alt={player.nickname} className="w-12 h-12 rounded-lg border border-gray-600" onError={e => {
+        const target = e.target as HTMLImageElement;
+        target.src = '/placeholder.svg';
+      }} />
 
         {/* Player Info */}
         <div className="flex-1 min-w-0">
@@ -59,25 +54,12 @@ export const PlayerCard = ({ player, onShowPlayerDetails, onAddFriend }: PlayerC
 
         {/* Action Buttons */}
         <div className="flex gap-2">
-          <Button
-            onClick={() => onShowPlayerDetails(player)}
-            variant="outline" 
-            size="sm"
-            className="bg-transparent border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white"
-          >
+          <Button onClick={() => onShowPlayerDetails(player)} variant="outline" size="sm" className="bg-transparent border-gray-600 text-gray-300 hover:bg-gray-700 hover:text-white">
             <Eye size={14} className="mr-1" />
             Detalii
           </Button>
-          <Button
-            onClick={() => onAddFriend(player)}
-            size="sm"
-            className="bg-orange-600 hover:bg-orange-700 text-white"
-          >
-            <UserPlus size={14} className="mr-1" />
-            Adaugă
-          </Button>
+          
         </div>
       </div>
-    </Card>
-  );
+    </Card>;
 };
