@@ -1,4 +1,3 @@
-
 import {
   Dialog,
   DialogContent,
@@ -86,23 +85,22 @@ export const MatchDetailsModal = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="relative border-2 border-orange-500/30 text-white w-[95vw] max-w-6xl h-[90vh] max-h-[90vh] overflow-hidden shadow-2xl shadow-orange-500/20 rounded-2xl">
-        {/* Background Image - Better positioning and sizing */}
+      <DialogContent className="relative border-2 border-orange-500/30 text-white w-[90vw] max-w-5xl h-[85vh] max-h-[85vh] overflow-hidden shadow-2xl shadow-orange-500/20 rounded-xl">
+        {/* Background Image - Fixed positioning */}
         <div 
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat rounded-2xl"
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat rounded-xl"
           style={{
             backgroundImage: `url(/faceit-icons/img_detalii_match.png)`,
             backgroundSize: 'cover',
-            backgroundPosition: 'center center',
-            backgroundAttachment: 'fixed'
+            backgroundPosition: 'center top',
           }}
         />
         
         {/* Dark Overlay with gradient for better readability */}
-        <div className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/50 to-black/70 rounded-2xl" />
+        <div className="absolute inset-0 bg-gradient-to-br from-black/75 via-black/60 to-black/75 rounded-xl" />
         
         {/* Content */}
-        <div className="relative z-10 flex-1 overflow-y-auto px-4 md:px-6 pb-6 pt-6 space-y-4 md:space-y-6 scrollbar-hide">
+        <div className="relative z-10 flex-1 overflow-y-auto px-3 md:px-4 pb-4 pt-4 space-y-3 md:space-y-4 scrollbar-hide">
           {/* Match Header - Team vs Team with Map Background */}
           <MatchHeader 
             team1Name={team1Name}
@@ -122,7 +120,7 @@ export const MatchDetailsModal = ({
           />
 
           {/* Players Section */}
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-6">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-3 md:gap-4">
             {/* Team 1 Players */}
             {team1Players.length > 0 && (
               <TeamPlayersSection 
