@@ -9,7 +9,7 @@ import { getPlayerStatsFromMatch, getKDA } from "@/utils/playerDataUtils";
 import { getKDRatio, getHeadshotPercentage, getADR } from "@/utils/statsUtils";
 import { useLcryptApi } from "@/hooks/useLcryptApi";
 import { parseLcryptReport, findMatchEloChange } from "@/utils/lcryptUtils";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 interface MatchRowProps {
   match: Match & {
@@ -48,7 +48,7 @@ export const MatchRow = ({
   const lcryptEloChange = findMatchEloChange(match, lcryptMatches, matchIndex);
 
   // Check for live match URL when it's a live match
-  React.useEffect(() => {
+  useEffect(() => {
     if (match.isLiveMatch && player.player_id) {
       const checkLiveMatch = async () => {
         try {

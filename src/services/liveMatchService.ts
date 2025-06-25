@@ -47,10 +47,10 @@ export class LiveMatchService {
         if (searchResponse && searchResponse.items) {
           // Look for the player in ongoing matches
           for (const match of searchResponse.items) {
-            if (match.teams) {
+            if (match.teams && typeof match.teams === 'object') {
               for (const team of Object.values(match.teams)) {
-                if (team.players) {
-                  const playerFound = team.players.find(p => p.player_id === playerId);
+                if (team && typeof team === 'object' && 'players' in team && Array.isArray(team.players)) {
+                  const playerFound = team.players.find((p: any) => p.player_id === playerId);
                   if (playerFound) {
                     console.log(`✅ Found player in live match: ${match.match_id}`);
                     return {
