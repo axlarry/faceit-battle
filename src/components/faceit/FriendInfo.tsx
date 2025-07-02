@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Badge } from "@/components/ui/badge";
 import { EloChangeIndicator } from './EloChangeIndicator';
+import { calculateLevelFromElo } from '@/utils/levelUtils';
 
 interface FriendInfoProps {
   nickname: string;
@@ -29,9 +30,12 @@ const getLevelIcon = (level: number) => {
 
 export const FriendInfo = ({ nickname, level, elo, lcryptData }: FriendInfoProps) => {
   const [levelIconError, setLevelIconError] = useState(false);
+  
+  // Calculează nivelul dinamic din ELO
+  const calculatedLevel = calculateLevelFromElo(elo);
 
   const handleLevelIconError = () => {
-    console.error(`Failed to load level icon: ${getLevelIcon(level || 1)}`);
+    console.error(`Failed to load level icon: ${getLevelIcon(calculatedLevel)}`);
     setLevelIconError(true);
   };
 
@@ -41,14 +45,14 @@ export const FriendInfo = ({ nickname, level, elo, lcryptData }: FriendInfoProps
       <div className="flex items-center gap-1">
         {!levelIconError ? (
           <img
-            src={getLevelIcon(level || 1)}
-            alt={`Skill Level ${level}`}
+            src={getLevelIcon(calculatedLevel)}
+            alt={`Skill Level ${calculatedLevel}`}
             className="w-6 h-6"
             onError={handleLevelIconError}
           />
         ) : (
           <Badge className="bg-gradient-to-r from-gray-500 to-gray-600 text-white border-0 px-1 py-0 text-xs">
-            {level}
+            {calculatedLevel}
           </Badge>
         )}
       </div>
