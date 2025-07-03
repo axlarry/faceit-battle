@@ -43,7 +43,7 @@ export const LiveMatchDetails = ({ isLive, liveMatchDetails }: LiveMatchDetailsP
                 liveMatchDetails.result === 'losing' ? 'text-red-300 bg-red-500/15' : 
                 'text-yellow-300 bg-yellow-500/15'
               }`}>
-                {liveMatchDetails.result === 'drawing' ? 'Starting match' : liveMatchDetails.result}
+                {liveMatchDetails.result === 'drawing' && liveMatchDetails.score === ':' ? 'Starting match' : liveMatchDetails.result}
               </div>
             )}
           </div>
