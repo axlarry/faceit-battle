@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Badge } from "@/components/ui/badge";
 import { EloChangeIndicator } from './EloChangeIndicator';
+import { TrendIndicator } from './TrendIndicator';
 import { calculateLevelFromElo } from '@/utils/levelUtils';
 
 interface FriendInfoProps {
@@ -40,7 +41,7 @@ export const FriendInfo = ({ nickname, level, elo, lcryptData }: FriendInfoProps
   };
 
   return (
-    <>
+    <div className="flex items-center gap-3">
       {/* Level Icon - Compact */}
       <div className="flex items-center gap-1">
         {!levelIconError ? (
@@ -57,11 +58,14 @@ export const FriendInfo = ({ nickname, level, elo, lcryptData }: FriendInfoProps
         )}
       </div>
       
-      {/* ELO */}
-      <span className="text-[#ff6500] font-bold text-sm">{elo} ELO</span>
+      {/* ELO Display */}
+      <div className="flex flex-col gap-1">
+        <span className="text-[#ff6500] font-bold text-sm">{elo} ELO</span>
+        <TrendIndicator trend={lcryptData?.trend} />
+      </div>
       
       {/* ELO Change Indicator */}
       <EloChangeIndicator lcryptData={lcryptData} />
-    </>
+    </div>
   );
 };

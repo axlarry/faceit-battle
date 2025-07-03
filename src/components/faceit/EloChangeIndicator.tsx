@@ -28,7 +28,12 @@ export const EloChangeIndicator = React.memo(({ lcryptData }: EloChangeIndicator
   if (eloChange === 0) {
     console.log('ELO change is 0, showing as "0 today"');
     return (
-      <div className="text-red-500 font-bold text-sm flex items-center gap-1">
+      <div 
+        className="text-red-500 font-bold text-base flex items-center gap-1"
+        style={{
+          animation: 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+        }}
+      >
         <span>0 today</span>
       </div>
     );
@@ -43,7 +48,7 @@ export const EloChangeIndicator = React.memo(({ lcryptData }: EloChangeIndicator
   
   return (
     <div 
-      className={`${color} font-bold text-sm flex items-center gap-1`} 
+      className={`${color} font-bold text-base flex items-center gap-1`} 
       style={{
         animation: 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite'
       }}
