@@ -35,15 +35,6 @@ export const FriendsSectionHeader = React.memo(({
           )}
         </div>
         
-        <Button
-          onClick={onUpdateAll}
-          disabled={isUpdating}
-          size="sm"
-          className="bg-transparent border-2 border-[#ff6500] text-[#ff6500] hover:bg-[#ff6500] hover:text-white rounded-lg h-8 px-3 font-bold text-sm"
-        >
-          <RefreshCw size={14} className={`mr-2 ${isUpdating ? 'animate-spin' : ''}`} />
-          {isUpdating ? 'Actualizare...' : 'Actualizează'}
-        </Button>
       </div>
     </div>
   );

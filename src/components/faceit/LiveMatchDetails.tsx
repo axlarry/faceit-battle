@@ -34,7 +34,7 @@ export const LiveMatchDetails = ({ isLive, liveMatchDetails }: LiveMatchDetailsP
           <div className="flex items-center gap-1.5 flex-shrink-0">
             {liveMatchDetails.score && (
               <div className="bg-gray-800/40 px-2 py-0.5 rounded text-white font-bold text-xs">
-                {liveMatchDetails.score}
+                {liveMatchDetails.score === ':' && liveMatchDetails.result === 'drawing' ? '0:0' : liveMatchDetails.score}
               </div>
             )}
             {liveMatchDetails.result && (
@@ -43,7 +43,7 @@ export const LiveMatchDetails = ({ isLive, liveMatchDetails }: LiveMatchDetailsP
                 liveMatchDetails.result === 'losing' ? 'text-red-300 bg-red-500/15' : 
                 'text-yellow-300 bg-yellow-500/15'
               }`}>
-                {liveMatchDetails.result}
+                {liveMatchDetails.result === 'drawing' ? 'Starting match' : liveMatchDetails.result}
               </div>
             )}
           </div>
