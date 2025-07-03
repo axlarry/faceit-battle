@@ -24,9 +24,14 @@ export const EloChangeIndicator = React.memo(({ lcryptData }: EloChangeIndicator
   
   console.log('ELO change from today.elo:', eloChange);
   
+  // Show "0 today" in red when ELO change is 0 but player has played today
   if (eloChange === 0) {
-    console.log('ELO change is 0, not showing');
-    return null;
+    console.log('ELO change is 0, showing as "0 today"');
+    return (
+      <div className="text-red-500 font-bold text-sm flex items-center gap-1">
+        <span>0 today</span>
+      </div>
+    );
   }
   
   const isPositive = eloChange > 0;
