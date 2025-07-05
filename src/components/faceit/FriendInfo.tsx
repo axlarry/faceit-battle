@@ -60,10 +60,8 @@ export const FriendInfo = ({ nickname, level, elo, lcryptData }: FriendInfoProps
       
       {/* ELO Display */}
       <div className="flex flex-col gap-1">
-        <div className="flex items-center gap-2">
-          <span className="text-[#ff6500] font-bold text-sm">{elo} ELO</span>
-          <TrendIndicator trend={lcryptData?.trend || "LWWLW"} />
-        </div>
+        <span className="text-[#ff6500] font-bold text-sm">{elo} ELO</span>
+        <TrendIndicator trend={lcryptData?.trend} />
       </div>
       
       {/* ELO Change Indicator */}
