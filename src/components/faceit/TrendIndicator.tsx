@@ -33,12 +33,15 @@ export const TrendIndicator = React.memo(({ trend, report }: TrendIndicatorProps
   
   if (!actualTrend) return null;
 
+  // Inversează ordinea pentru a afișa de la cel mai vechi la cel mai recent
+  const reversedTrend = actualTrend.split('').reverse().join('');
+
   return (
     <div className="flex items-center gap-0.5">
-      {actualTrend.split('').map((letter, index) => (
+      {reversedTrend.split('').map((letter, index) => (
         <span
           key={index}
-          className={`font-bold text-sm ${
+          className={`font-bold text-xs ${
             letter.toLowerCase() === 'w' ? 'text-green-400' : 'text-red-400'
           }`}
         >
