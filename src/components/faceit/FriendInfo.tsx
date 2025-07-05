@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Badge } from "@/components/ui/badge";
 import { EloChangeIndicator } from './EloChangeIndicator';
 import { TrendIndicator } from './TrendIndicator';
@@ -35,12 +35,6 @@ export const FriendInfo = ({ nickname, level, elo, lcryptData }: FriendInfoProps
   // Calculează nivelul dinamic din ELO
   const calculatedLevel = calculateLevelFromElo(elo);
 
-  // Debug logging pentru trend
-  useEffect(() => {
-    console.log('Debug - lcryptData pentru', nickname, ':', lcryptData);
-    console.log('Debug - trend pentru', nickname, ':', lcryptData?.trend);
-  }, [lcryptData, nickname]);
-
   const handleLevelIconError = () => {
     console.error(`Failed to load level icon: ${getLevelIcon(calculatedLevel)}`);
     setLevelIconError(true);
@@ -67,7 +61,7 @@ export const FriendInfo = ({ nickname, level, elo, lcryptData }: FriendInfoProps
       {/* ELO Display */}
       <div className="flex flex-col gap-1">
         <span className="text-[#ff6500] font-bold text-sm">{elo} ELO</span>
-        <TrendIndicator trend={lcryptData?.trend || "LWWLW"} />
+        <TrendIndicator trend={lcryptData?.trend} report={lcryptData?.report} />
       </div>
       
       {/* ELO Change Indicator */}
