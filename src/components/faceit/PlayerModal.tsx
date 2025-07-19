@@ -115,13 +115,16 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
           
           if (Array.isArray(match.teams)) {
             // Mock data format - teams as array
+            console.log('🎯 Processing mock data format (teams as array)');
             playerTeam = match.teams?.find((team: any) => 
               team.players?.some((p: any) => p.player_id === player.player_id)
             );
             opponentTeam = match.teams?.find((team: any) => team.faction_id !== playerTeam?.faction_id);
             playerStats = playerTeam?.players?.find((p: any) => p.player_id === player.player_id)?.player_stats;
+            console.log('🎯 Mock - Player stats found:', playerStats);
           } else if (match.teams && typeof match.teams === 'object') {
             // Real API format - teams as object with faction1/faction2
+            console.log('🎯 Processing real API format (teams as object)');
             const teamsArray = Object.values(match.teams);
             playerTeam = teamsArray.find((team: any) => 
               team.players?.some((p: any) => p.player_id === player.player_id)
@@ -131,6 +134,7 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
             // For real API data, we need to get stats differently
             const playerData = playerTeam?.players?.find((p: any) => p.player_id === player.player_id);
             playerStats = playerData?.player_stats || {};
+            console.log('🎯 API - Player stats found:', playerStats);
           }
           
           // Get scores - handle both formats

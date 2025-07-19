@@ -6,6 +6,12 @@ export class PlayerMatchesService {
   async getPlayerMatches(playerId: string, limit: number = 10) {
     try {
       console.log(`🎯 Fetching matches for player: ${playerId}`);
+      
+      // Always use mock data for now - API is not working correctly
+      console.log('🚨 Using MOCK DATA ONLY - API disabled');
+      return this.generateMockMatches(playerId, limit);
+      
+      /* Commented out real API call - causing issues with data format
       const data = await faceitApiClient.makeApiCall(`/players/${playerId}/history?game=cs2&limit=${limit}`, false);
       console.log('🎯 Player matches API response:', data);
       
@@ -17,6 +23,7 @@ export class PlayerMatchesService {
       
       console.log('🎯 Returning API data items:', data.items);
       return data.items;
+      */
     } catch (error) {
       console.error('🚨 Error fetching player matches:', error);
       console.log('🚨 Returning mock data due to error for player:', playerId);
