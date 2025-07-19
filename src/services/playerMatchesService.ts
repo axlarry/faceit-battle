@@ -10,174 +10,85 @@ export class PlayerMatchesService {
       console.log('🎯 Player matches API response:', data);
       
       if (!data || !data.items) {
-        console.log('🚨 No items in API response, returning mock data');
-        // Return mock match data for testing
-        return [
-          {
-            match_id: "mock-match-1",
-            started_at: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
-            finished_at: new Date(Date.now() - 2400000).toISOString(), // 40 min ago
-            teams: [
-              {
-                faction_id: "faction1",
-                team_stats: {
-                  "Final Score": "13"
-                },
-                players: [
-                  {
-                    player_id: playerId,
-                    player_stats: {
-                      "Kills": "22",
-                      "Deaths": "14", 
-                      "Assists": "8",
-                      "K/D Ratio": "1.57",
-                      "Headshots": "12",
-                      "Headshots %": "54",
-                      "ADR": "82.4"
-                    }
-                  }
-                ]
-              },
-              {
-                faction_id: "faction2", 
-                team_stats: {
-                  "Final Score": "7"
-                }
-              }
-            ],
-            voting: {
-              map: {
-                pick: ["de_mirage"]
-              }
-            }
-          },
-          {
-            match_id: "mock-match-2",
-            started_at: new Date(Date.now() - 7200000).toISOString(), // 2 hours ago
-            finished_at: new Date(Date.now() - 5400000).toISOString(), // 1.5 hours ago
-            teams: [
-              {
-                faction_id: "faction1",
-                team_stats: {
-                  "Final Score": "11"
-                },
-                players: [
-                  {
-                    player_id: playerId,
-                    player_stats: {
-                      "Kills": "18",
-                      "Deaths": "16",
-                      "Assists": "6",
-                      "K/D Ratio": "1.12",
-                      "Headshots": "8",
-                      "Headshots %": "44",
-                      "ADR": "74.2"
-                    }
-                  }
-                ]
-              },
-              {
-                faction_id: "faction2",
-                team_stats: {
-                  "Final Score": "16"
-                }
-              }
-            ],
-            voting: {
-              map: {
-                pick: ["de_dust2"]
-              }
-            }
-          },
-          {
-            match_id: "mock-match-3", 
-            started_at: new Date(Date.now() - 10800000).toISOString(), // 3 hours ago
-            finished_at: new Date(Date.now() - 9000000).toISOString(), // 2.5 hours ago
-            teams: [
-              {
-                faction_id: "faction1",
-                team_stats: {
-                  "Final Score": "16"
-                },
-                players: [
-                  {
-                    player_id: playerId,
-                    player_stats: {
-                      "Kills": "24",
-                      "Deaths": "12",
-                      "Assists": "7",
-                      "K/D Ratio": "2.00",
-                      "Headshots": "15",
-                      "Headshots %": "62",
-                      "ADR": "89.1"
-                    }
-                  }
-                ]
-              },
-              {
-                faction_id: "faction2",
-                team_stats: {
-                  "Final Score": "8"
-                }
-              }
-            ],
-            voting: {
-              map: {
-                pick: ["de_inferno"]
-              }
-            }
-          }
-        ];
+        console.log('🚨 No items in API response, returning mock data for player:', playerId);
+        // Generate realistic mock match data based on player ID
+        return this.generateMockMatches(playerId, limit);
       }
       
       console.log('🎯 Returning API data items:', data.items);
       return data.items;
     } catch (error) {
       console.error('🚨 Error fetching player matches:', error);
-      console.log('🚨 Returning mock data due to error');
+      console.log('🚨 Returning mock data due to error for player:', playerId);
       
       // Return mock data as fallback
-      return [
-        {
-          match_id: "fallback-match-1",
-          started_at: new Date(Date.now() - 3600000).toISOString(),
-          finished_at: new Date(Date.now() - 2400000).toISOString(),
-          teams: [
-            {
-              faction_id: "faction1",
-              team_stats: {
-                "Final Score": "13"
-              },
-              players: [
-                {
-                  player_id: playerId,
-                  player_stats: {
-                    "Kills": "20",
-                    "Deaths": "15",
-                    "Assists": "9",
-                    "K/D Ratio": "1.33",
-                    "Headshots": "10",
-                    "Headshots %": "50",
-                    "ADR": "78.5"
-                  }
-                }
-              ]
+      return this.generateMockMatches(playerId, limit);
+    }
+  }
+
+  private generateMockMatches(playerId: string, limit: number = 10) {
+    const maps = ["de_mirage", "de_dust2", "de_inferno", "de_ancient", "de_vertigo", "de_anubis", "de_nuke"];
+    const matches = [];
+
+    for (let i = 0; i < Math.min(limit, 5); i++) {
+      const hoursAgo = (i + 1) * 2; // 2, 4, 6, 8, 10 hours ago
+      const map = maps[Math.floor(Math.random() * maps.length)];
+      
+      // Generate realistic scores
+      const playerScore = Math.floor(Math.random() * 16) + 1;
+      const opponentScore = Math.floor(Math.random() * 16) + 1;
+      
+      // Generate realistic player stats
+      const kills = Math.floor(Math.random() * 15) + 10; // 10-24 kills
+      const deaths = Math.floor(Math.random() * 12) + 8;  // 8-19 deaths
+      const assists = Math.floor(Math.random() * 8) + 2;  // 2-9 assists
+      const headshots = Math.floor(kills * (0.3 + Math.random() * 0.4)); // 30-70% HS rate
+      const hsPercent = Math.round((headshots / kills) * 100);
+      const kd = (kills / Math.max(deaths, 1)).toFixed(2);
+      const adr = Math.floor(60 + Math.random() * 40); // 60-100 ADR
+
+      matches.push({
+        match_id: `mock-match-${playerId}-${i}`,
+        started_at: new Date(Date.now() - hoursAgo * 3600000).toISOString(),
+        finished_at: new Date(Date.now() - (hoursAgo - 1) * 3600000).toISOString(),
+        teams: [
+          {
+            faction_id: "faction1",
+            team_stats: {
+              "Final Score": playerScore.toString()
             },
-            {
-              faction_id: "faction2",
-              team_stats: {
-                "Final Score": "10"
+            players: [
+              {
+                player_id: playerId,
+                player_stats: {
+                  "Kills": kills.toString(),
+                  "Deaths": deaths.toString(),
+                  "Assists": assists.toString(),
+                  "K/D Ratio": kd,
+                  "Headshots": headshots.toString(),
+                  "Headshots %": hsPercent.toString(),
+                  "ADR": adr.toString()
+                }
               }
-            }
-          ],
-          voting: {
-            map: {
-              pick: ["de_ancient"]
+            ]
+          },
+          {
+            faction_id: "faction2",
+            team_stats: {
+              "Final Score": opponentScore.toString()
             }
           }
+        ],
+        voting: {
+          map: {
+            pick: [map]
+          }
         }
-      ];
+      });
     }
+
+    console.log(`🎯 Generated ${matches.length} mock matches for player:`, playerId);
+    return matches;
   }
 }
 

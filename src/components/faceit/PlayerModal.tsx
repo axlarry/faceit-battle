@@ -97,44 +97,66 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
       const matchesData = await playerMatchesService.getPlayerMatches(player.player_id, 10);
       console.log('🎯 Matches data received from service:', matchesData);
 
+      if (!matchesData || matchesData.length === 0) {
+        console.log('🚨 No matches data received');
+        setMatches([]);
+        setMatchStats(null);
+        return;
+      }
+
       // Transform mock data to the format expected by MatchesTable
       const transformedMatches = matchesData.map((match: any) => {
-        const playerTeam = match.teams?.find((team: any) => 
-          team.players?.some((p: any) => p.player_id === player.player_id)
-        );
-        const opponentTeam = match.teams?.find((team: any) => team.faction_id !== playerTeam?.faction_id);
-        const playerStats = playerTeam?.players?.find((p: any) => p.player_id === player.player_id)?.player_stats;
-        
-        const playerScore = parseInt(playerTeam?.team_stats?.["Final Score"] || "0");
-        const opponentScore = parseInt(opponentTeam?.team_stats?.["Final Score"] || "0");
-        const won = playerScore > opponentScore;
-        
-        return {
-          match_id: match.match_id,
-          started_at: match.started_at,
-          finished_at: match.finished_at,
-          i18: won ? "1" : "0", // Win/Loss
-          i6: playerStats?.["Kills"] || "0", // Kills
-          i8: playerStats?.["Deaths"] || "0", // Deaths 
-          i7: playerStats?.["Assists"] || "0", // Assists
-          i10: playerStats?.["K/D Ratio"] || "0", // K/D Ratio
-          i13: playerStats?.["Headshots %"] || "0", // HS%
-          i14: playerStats?.["ADR"] || "0", // ADR
-          team_stats: {
-            team1: playerScore,
-            team2: opponentScore
-          },
-          map: match.voting?.map?.pick?.[0] || "de_unknown"
-        };
-      });
+        try {
+          const playerTeam = match.teams?.find((team: any) => 
+            team.players?.some((p: any) => p.player_id === player.player_id)
+          );
+          const opponentTeam = match.teams?.find((team: any) => team.faction_id !== playerTeam?.faction_id);
+          const playerStats = playerTeam?.players?.find((p: any) => p.player_id === player.player_id)?.player_stats;
+          
+          const playerScore = parseInt(playerTeam?.team_stats?.["Final Score"] || "0");
+          const opponentScore = parseInt(opponentTeam?.team_stats?.["Final Score"] || "0");
+          const won = playerScore > opponentScore;
+          
+          console.log('🎯 Processing match:', {
+            matchId: match.match_id,
+            playerScore,
+            opponentScore,
+            won,
+            playerStats,
+            map: match.voting?.map?.pick?.[0]
+          });
+          
+          return {
+            match_id: match.match_id,
+            started_at: match.started_at,
+            finished_at: match.finished_at,
+            i18: won ? "1" : "0", // Win/Loss
+            i6: playerStats?.["Kills"] || "0", // Kills
+            i8: playerStats?.["Deaths"] || "0", // Deaths 
+            i7: playerStats?.["Assists"] || "0", // Assists
+            i10: playerStats?.["K/D Ratio"] || "0", // K/D Ratio
+            i13: playerStats?.["Headshots %"] || "0", // HS%
+            i14: playerStats?.["ADR"] || "0", // ADR
+            team_stats: {
+              team1: playerScore,
+              team2: opponentScore
+            },
+            map: match.voting?.map?.pick?.[0] || "de_unknown"
+          };
+        } catch (error) {
+          console.error('🚨 Error transforming match:', error, match);
+          return null;
+        }
+      }).filter(Boolean); // Remove null entries
 
       console.log('🎯 Transformed matches:', transformedMatches);
 
       // Filter out the live match if it's already in history to avoid duplicates
-      const filteredMatches = liveInfo.isLive ? transformedMatches.filter((match: Match) => match.match_id !== liveInfo.matchId) : transformedMatches;
+      const filteredMatches = liveInfo.isLive ? transformedMatches.filter((match: any) => match.match_id !== liveInfo.matchId) : transformedMatches;
 
       // Combine live match with history
       allMatches = [...allMatches, ...filteredMatches];
+      console.log('🎯 Final matches array:', allMatches);
       setMatches(allMatches);
 
       // Calculate match statistics
