@@ -84,38 +84,52 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
 
   const loadPlayerMatches = async () => {
     if (!player) return;
+    
+    console.log('🎯 Starting loadPlayerMatches for:', player.nickname, player.player_id);
     setIsLoadingMatches(true);
+    
     try {
-      console.log('🎯 Loading matches for player:', player.player_id, player.nickname);
+      // Force using mock service only - don't call real Faceit API
+      console.log('🎯 Using playerMatchesService for mock data ONLY');
+      const matchesResponse = await playerMatchesService.getPlayerMatches(player.player_id, 5);
+      console.log('🎯 Raw service response:', matchesResponse);
 
-      // First check if player has a live match
-      const liveInfo = await checkPlayerLiveMatch(player.player_id);
-      let allMatches = [];
-
-      // If player is live, add the live match at the beginning
-      if (liveInfo.isLive && liveInfo.liveMatch) {
-        console.log('Adding live match to matches list:', liveInfo.liveMatch);
-        allMatches.push({
-          ...liveInfo.liveMatch,
-          isLiveMatch: true,
-          liveMatchDetails: liveInfo.matchDetails
-        });
-      }
-
-      // Load matches using the mock service since Faceit API is not working
-      console.log('🎯 Using playerMatchesService for mock data');
-      const matchesData = await playerMatchesService.getPlayerMatches(player.player_id, 5);
-      console.log('🎯 Matches data received from service:', matchesData);
-
-      if (!matchesData || !matchesData.items || matchesData.items.length === 0) {
-        console.log('🚨 No matches data received');
+      // Check if we got the expected structure
+      if (!matchesResponse) {
+        console.log('❌ No response from service');
         setMatches([]);
         setMatchStats(null);
         return;
       }
 
-      // Transform mock data to the format expected by MatchesTable
-      const transformedMatches = matchesData.items.map((match: any) => {
+      let matchesData = matchesResponse;
+      
+      // Handle both old format (direct array) and new format (with items property)
+      if (matchesResponse.items) {
+        matchesData = matchesResponse.items;
+      } else if (Array.isArray(matchesResponse)) {
+        matchesData = matchesResponse;
+      } else {
+        console.log('❌ Unexpected response format:', matchesResponse);
+        setMatches([]);
+        setMatchStats(null);
+        return;
+      }
+
+      console.log('🎯 Processing matches data:', matchesData);
+
+      if (!Array.isArray(matchesData) || matchesData.length === 0) {
+        console.log('❌ No valid matches in data');
+        setMatches([]);
+        setMatchStats(null);
+        return;
+      }
+
+      // Transform matches to the format expected by MatchesTable
+      console.log('🎯 Transforming', matchesData.length, 'matches');
+      const transformedMatches = matchesData.map((match: any, index: number) => {
+        console.log(`🎯 Processing match ${index}:`, match);
+        
         try {
           const playerTeam = match.teams?.find((team: any) => 
             team.players?.some((p: any) => p.player_id === player.player_id)
@@ -127,19 +141,24 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
           const opponentScore = parseInt(opponentTeam?.team_stats?.["Final Score"] || "0");
           const won = playerScore > opponentScore;
           
-          console.log('🎯 Processing match:', {
-            matchId: match.match_id,
-            playerScore,
-            opponentScore,
-            won,
-            playerStats,
-            map: match.voting?.map?.pick?.[0]
-          });
-          
-          return {
+          const transformed = {
             match_id: match.match_id,
             started_at: match.started_at,
             finished_at: match.finished_at,
+            competition_name: "Europe 5v5 Queue",
+            competition_type: "matchmaking",
+            game_mode: "5v5",
+            max_players: 10,
+            teams: match.teams || [],
+            teams_size: 5,
+            status: "finished",
+            results: {
+              winner: won ? "faction1" : "faction2",
+              score: {
+                faction1: playerScore,
+                faction2: opponentScore
+              }
+            },
             i18: won ? "1" : "0", // Win/Loss
             i6: playerStats?.["Kills"] || "0", // Kills
             i8: playerStats?.["Deaths"] || "0", // Deaths 
@@ -152,30 +171,26 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
               team2: opponentScore
             },
             map: match.voting?.map?.pick?.[0] || "de_unknown"
-          };
+          } as Match;
+          
+          console.log(`✅ Transformed match ${index}:`, transformed);
+          return transformed;
         } catch (error) {
           console.error('🚨 Error transforming match:', error, match);
           return null;
         }
       }).filter(Boolean); // Remove null entries
 
-      console.log('🎯 Transformed matches:', transformedMatches);
-
-      // Filter out the live match if it's already in history to avoid duplicates
-      const filteredMatches = liveInfo.isLive ? transformedMatches.filter((match: any) => match.match_id !== liveInfo.matchId) : transformedMatches;
-
-      // Combine live match with history
-      allMatches = [...allMatches, ...filteredMatches];
-      console.log('🎯 Final matches array:', allMatches);
-      setMatches(allMatches);
+      console.log('🎯 Final transformed matches:', transformedMatches);
+      setMatches(transformedMatches);
 
       // Calculate match statistics
-      if (allMatches.length > 0) {
+      if (transformedMatches.length > 0) {
         const stats = {
           wins: 0,
           losses: 0,
           draws: 0,
-          totalMatches: allMatches.length,
+          totalMatches: transformedMatches.length,
           winRate: 0,
           avgKills: 0,
           avgDeaths: 0,
@@ -190,9 +205,7 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
         let totalHS = 0;
         let validMatches = 0;
 
-        allMatches.forEach((match: any) => {
-          if (match.isLiveMatch) return; // Skip live matches for stats
-
+        transformedMatches.forEach((match: any) => {
           if (match.i18 === '1') stats.wins++;
           else if (match.i18 === '0') stats.losses++;
           else stats.draws++;
@@ -215,6 +228,7 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
         }
 
         stats.winRate = stats.totalMatches > 0 ? (stats.wins / stats.totalMatches) * 100 : 0;
+        console.log('📊 Match statistics:', stats);
         setMatchStats(stats);
       }
     } catch (error) {
