@@ -27,7 +27,8 @@ export class PlayerMatchesService {
   }
 
   private generateMockMatches(playerId: string, limit: number = 10) {
-    const maps = ["de_mirage", "de_dust2", "de_inferno", "de_ancient", "de_vertigo", "de_anubis", "de_nuke"];
+    // Only CS2 maps - removed CS:GO exclusive maps like Cache, Cobblestone  
+    const maps = ["de_mirage", "de_dust2", "de_inferno", "de_ancient", "de_vertigo", "de_anubis", "de_nuke", "de_overpass", "de_train"];
     const matches = [];
 
     for (let i = 0; i < Math.min(limit, 5); i++) {
@@ -88,7 +89,7 @@ export class PlayerMatchesService {
     }
 
     console.log(`🎯 Generated ${matches.length} mock matches for player:`, playerId);
-    return matches;
+    return { items: matches };
   }
 }
 

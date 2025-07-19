@@ -94,10 +94,10 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
 
       // Load matches using the mock service since Faceit API is not working
       console.log('🎯 Using playerMatchesService for mock data');
-      const matchesData = await playerMatchesService.getPlayerMatches(player.player_id, 10);
+      const matchesData = await playerMatchesService.getPlayerMatches(player.player_id, 5);
       console.log('🎯 Matches data received from service:', matchesData);
 
-      if (!matchesData || matchesData.length === 0) {
+      if (!matchesData || !matchesData.items || matchesData.items.length === 0) {
         console.log('🚨 No matches data received');
         setMatches([]);
         setMatchStats(null);
@@ -105,7 +105,7 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
       }
 
       // Transform mock data to the format expected by MatchesTable
-      const transformedMatches = matchesData.map((match: any) => {
+      const transformedMatches = matchesData.items.map((match: any) => {
         try {
           const playerTeam = match.teams?.find((team: any) => 
             team.players?.some((p: any) => p.player_id === player.player_id)
