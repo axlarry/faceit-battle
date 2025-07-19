@@ -72,6 +72,16 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
     }
   }, [player, isOpen]);
 
+  // Debug matches data
+  useEffect(() => {
+    console.log('🎯 Matches state updated:', { 
+      matchesCount: matches.length, 
+      matches: matches, 
+      isLoadingMatches,
+      player: player?.nickname 
+    });
+  }, [matches, isLoadingMatches]);
+
   const loadPlayerMatches = async () => {
     if (!player) return;
     setIsLoadingMatches(true);
