@@ -46,9 +46,10 @@ export const MatchesTable = ({ player, matches, matchesStats, loadingMatches }: 
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-400 mx-auto"></div>
           <div className="text-gray-400 mt-3">Se încarcă meciurile...</div>
         </div>
-      ) : matches.length === 0 ? (
+      ) : (!matches || matches.length === 0) ? (
         <div className="text-center py-8">
-          <div className="text-gray-400">Nu s-au găsit meciuri recente</div>
+          <div className="text-gray-400">Nu s-au găsit meciuri recente pentru {player.nickname}</div>
+          <div className="text-sm text-gray-500 mt-2">Datele de meciuri vor fi afișate aici când sunt disponibile</div>
         </div>
       ) : (
         <div className="bg-white/5 rounded-lg border border-white/10 overflow-hidden">
