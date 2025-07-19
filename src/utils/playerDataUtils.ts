@@ -1,12 +1,17 @@
 
 import { Player, Match } from "@/types/Player";
 
-export const getPlayerStatsFromMatch = (match: Match, player: Player, matchesStats: {[key: string]: any}) => {
+export const getPlayerStatsFromMatch = (match: Match, player: Player, matchesStats: {[key: string]: any} = {}) => {
+  if (!match || !player) {
+    console.log('❌ Invalid match or player data');
+    return null;
+  }
+  
   console.log('=== GETTING PLAYER STATS ===');
   console.log('Match ID:', match.match_id);
   
   // First try from match teams data
-  if (match.teams) {
+  if (match && match.teams && typeof match.teams === 'object') {
     for (const teamId of Object.keys(match.teams)) {
       const team = match.teams[teamId];
       const playerData = team.players?.find(p => p.player_id === player.player_id);
@@ -18,8 +23,8 @@ export const getPlayerStatsFromMatch = (match: Match, player: Player, matchesSta
   }
   
   // Try from match stats data
-  const matchStatsData = matchesStats[match.match_id];
-  if (matchStatsData) {
+  const matchStatsData = matchesStats && matchesStats[match.match_id];
+  if (matchStatsData && typeof matchStatsData === 'object') {
     if (matchStatsData.rounds && Array.isArray(matchStatsData.rounds)) {
       for (const round of matchStatsData.rounds) {
         if (round.teams) {

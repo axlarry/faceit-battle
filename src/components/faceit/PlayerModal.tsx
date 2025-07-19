@@ -186,7 +186,7 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
           <div className="flex flex-col h-full">
             {/* Header Section */}
             <div className="flex-shrink-0 p-6 border-b bg-gradient-to-r from-background to-muted/20">
-              <PlayerHeader player={player} liveMatchInfo={liveMatchInfo} />
+              <PlayerHeader player={player} />
               <div className="flex justify-between items-center mt-4">
                 <div className="flex items-center space-x-3">
                   {analyserData && (
@@ -253,8 +253,7 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
                       <div>
                         <PlayerStatsCards 
-                          player={player} 
-                          matchStats={matchStats}
+                          player={player}
                         />
                       </div>
                       <div>
@@ -292,8 +291,9 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
                   <TabsContent value="matches" className="h-full p-6 mt-0">
                     <MatchesTable 
                       matches={matches}
-                      isLoading={isLoadingMatches}
                       player={player}
+                      matchesStats={{}}
+                      loadingMatches={isLoadingMatches}
                     />
                   </TabsContent>
                 </div>
