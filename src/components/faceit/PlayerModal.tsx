@@ -89,12 +89,12 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
     setIsLoadingMatches(true);
     
     try {
-      // Force using mock service only - don't call real Faceit API
-      console.log('🎯 Using playerMatchesService for mock data ONLY');
+      // Use real API call first, fallback to mock if needed
+      console.log('🎯 Calling playerMatchesService for real data');
       const matchesData = await playerMatchesService.getPlayerMatches(player.player_id, 5);
       console.log('🎯 Raw service response:', matchesData);
 
-      // Check if we got the expected structure
+      // Check if we got the expected structure - API returns array directly
       if (!matchesData || !Array.isArray(matchesData) || matchesData.length === 0) {
         console.log('❌ No valid matches data received');
         setMatches([]);
