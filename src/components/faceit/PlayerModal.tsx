@@ -181,7 +181,7 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-7xl w-[95vw] h-[90vh] p-0 overflow-hidden">
+        <DialogContent className="max-w-7xl w-[95vw] h-[90vh] p-0 overflow-y-auto">
           <DialogTitle className="sr-only">Player Details</DialogTitle>
           <div className="flex flex-col h-full">
             {/* Header Section */}
@@ -249,7 +249,7 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
                 </div>
 
                 <div className="flex-1 overflow-y-auto">
-                  <TabsContent value="overview" className="h-full p-6 mt-0">
+                  <TabsContent value="overview" className="p-6 mt-0">
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
                       <div>
                         <PlayerStatsCards 
@@ -266,7 +266,7 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
                     </div>
                   </TabsContent>
 
-                  <TabsContent value="analytics" className="h-full p-6 mt-0">
+                  <TabsContent value="analytics" className="p-6 mt-0">
                     <PlayerAnalyticsTab 
                       player={player} 
                       analyserData={analyserData}
@@ -274,21 +274,21 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
                     />
                   </TabsContent>
 
-                  <TabsContent value="graphs" className="h-full p-6 mt-0">
+                  <TabsContent value="graphs" className="p-6 mt-0">
                     <PlayerGraphsTab 
                       analyserData={analyserData}
                       isLoading={isLoadingAnalyser}
                     />
                   </TabsContent>
 
-                  <TabsContent value="maps" className="h-full p-6 mt-0">
+                  <TabsContent value="maps" className="p-6 mt-0">
                     <PlayerMapStatsTab 
                       analyserData={analyserData}
                       isLoading={isLoadingAnalyser}
                     />
                   </TabsContent>
 
-                  <TabsContent value="matches" className="h-full p-6 mt-0">
+                  <TabsContent value="matches" className="p-6 mt-0">
                     <MatchesTable 
                       matches={matches}
                       player={player}
