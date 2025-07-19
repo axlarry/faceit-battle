@@ -11,7 +11,9 @@ serve(async (req) => {
   }
 
   try {
+    console.log('🚀 Edge Function called: get-faceit-analyser-data');
     const { playerId, dataType } = await req.json()
+    console.log('📥 Request data:', { playerId, dataType });
     
     if (!playerId || !dataType) {
       return new Response(

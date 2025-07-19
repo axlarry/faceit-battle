@@ -18,6 +18,7 @@ class FaceitAnalyserService {
       return null;
     }
 
+    console.log('📡 FaceitAnalyser API call:', { playerId, dataType });
     try {
       this.apiCallCount++;
       

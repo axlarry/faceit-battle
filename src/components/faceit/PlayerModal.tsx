@@ -62,6 +62,7 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
 
   // Use the new Faceit Analyser hook
   const { analyserData, isLoading: isLoadingAnalyser, error: analyserError, refetch } = useFaceitAnalyser(player);
+  console.log('🎯 PlayerModal: player data for analyser:', { playerId: player?.player_id, nickname: player?.nickname, isOpen });
 
   // Load matches when player changes and modal is open
   useEffect(() => {

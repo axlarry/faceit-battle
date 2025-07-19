@@ -14,7 +14,9 @@ export const useFaceitAnalyser = (player: Player | null) => {
       return;
     }
 
+    console.log('🔍 useFaceitAnalyser: Starting fetch for player:', player?.nickname, player?.player_id);
     const fetchAnalyserData = async () => {
+      console.log('🔍 useFaceitAnalyser: Starting fetch for player:', player?.nickname, player?.player_id);
       setIsLoading(true);
       setError(null);
 
