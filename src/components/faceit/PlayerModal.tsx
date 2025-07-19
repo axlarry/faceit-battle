@@ -110,27 +110,63 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
         console.log(`🎯 Processing match ${index}:`, match);
         
         try {
-          const playerTeam = match.teams?.find((team: any) => 
-            team.players?.some((p: any) => p.player_id === player.player_id)
-          );
-          const opponentTeam = match.teams?.find((team: any) => team.faction_id !== playerTeam?.faction_id);
-          const playerStats = playerTeam?.players?.find((p: any) => p.player_id === player.player_id)?.player_stats;
+          // Handle different team formats - either array or object
+          let playerTeam, opponentTeam, playerStats;
           
-          const playerScore = parseInt(playerTeam?.team_stats?.["Final Score"] || "0");
-          const opponentScore = parseInt(opponentTeam?.team_stats?.["Final Score"] || "0");
+          if (Array.isArray(match.teams)) {
+            // Mock data format - teams as array
+            playerTeam = match.teams?.find((team: any) => 
+              team.players?.some((p: any) => p.player_id === player.player_id)
+            );
+            opponentTeam = match.teams?.find((team: any) => team.faction_id !== playerTeam?.faction_id);
+            playerStats = playerTeam?.players?.find((p: any) => p.player_id === player.player_id)?.player_stats;
+          } else if (match.teams && typeof match.teams === 'object') {
+            // Real API format - teams as object with faction1/faction2
+            const teamsArray = Object.values(match.teams);
+            playerTeam = teamsArray.find((team: any) => 
+              team.players?.some((p: any) => p.player_id === player.player_id)
+            );
+            opponentTeam = teamsArray.find((team: any) => team !== playerTeam);
+            
+            // For real API data, we need to get stats differently
+            const playerData = playerTeam?.players?.find((p: any) => p.player_id === player.player_id);
+            playerStats = playerData?.player_stats || {};
+          }
+          
+          // Get scores - handle both formats
+          let playerScore = 0, opponentScore = 0;
+          
+          if (match.results?.score) {
+            // Real API format
+            const scores = Object.values(match.results.score);
+            const factionKey = Object.keys(match.teams || {}).find(key => 
+              (match.teams as any)[key].players?.some((p: any) => p.player_id === player.player_id)
+            );
+            
+            if (factionKey && match.results.score[factionKey] !== undefined) {
+              playerScore = match.results.score[factionKey];
+              const opponentKey = Object.keys(match.results.score).find(k => k !== factionKey);
+              opponentScore = opponentKey ? match.results.score[opponentKey] : 0;
+            }
+          } else {
+            // Mock format
+            playerScore = parseInt(playerTeam?.team_stats?.["Final Score"] || "0");
+            opponentScore = parseInt(opponentTeam?.team_stats?.["Final Score"] || "0");
+          }
+          
           const won = playerScore > opponentScore;
           
           const transformed = {
             match_id: match.match_id,
             started_at: match.started_at,
             finished_at: match.finished_at,
-            competition_name: "Europe 5v5 Queue",
-            competition_type: "matchmaking",
-            game_mode: "5v5",
-            max_players: 10,
+            competition_name: match.competition_name || "Europe 5v5 Queue",
+            competition_type: match.competition_type || "matchmaking",
+            game_mode: match.game_mode || "5v5",
+            max_players: match.max_players || 10,
             teams: match.teams || [],
-            teams_size: 5,
-            status: "finished",
+            teams_size: match.teams_size || 5,
+            status: match.status || "finished",
             results: {
               winner: won ? "faction1" : "faction2",
               score: {
@@ -139,17 +175,17 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
               }
             },
             i18: won ? "1" : "0", // Win/Loss
-            i6: playerStats?.["Kills"] || "0", // Kills
-            i8: playerStats?.["Deaths"] || "0", // Deaths 
-            i7: playerStats?.["Assists"] || "0", // Assists
-            i10: playerStats?.["K/D Ratio"] || "0", // K/D Ratio
-            i13: playerStats?.["Headshots %"] || "0", // HS%
-            i14: playerStats?.["ADR"] || "0", // ADR
+            i6: playerStats?.["Kills"] || playerStats?.kills || "0", // Kills
+            i8: playerStats?.["Deaths"] || playerStats?.deaths || "0", // Deaths 
+            i7: playerStats?.["Assists"] || playerStats?.assists || "0", // Assists
+            i10: playerStats?.["K/D Ratio"] || playerStats?.kd_ratio || "0", // K/D Ratio
+            i13: playerStats?.["Headshots %"] || playerStats?.headshots_percentage || "0", // HS%
+            i14: playerStats?.["ADR"] || playerStats?.adr || "0", // ADR
             team_stats: {
               team1: playerScore,
               team2: opponentScore
             },
-            map: match.voting?.map?.pick?.[0] || "de_unknown"
+            map: match.voting?.map?.pick?.[0] || match.i1 || "de_unknown"
           } as Match;
           
           console.log(`✅ Transformed match ${index}:`, transformed);
