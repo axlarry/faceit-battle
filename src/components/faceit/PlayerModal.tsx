@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { PasswordDialog } from './PasswordDialog';
 import { useFaceitApi } from '@/hooks/useFaceitApi';
 import { useFaceitAnalyser } from '@/hooks/useFaceitAnalyser';
+import { playerMatchesService } from '@/services/playerMatchesService';
 import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { RefreshCw } from 'lucide-react';
@@ -75,7 +76,7 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
     if (!player) return;
     setIsLoadingMatches(true);
     try {
-      console.log('Loading matches for player:', player.player_id);
+      console.log('🎯 Loading matches for player:', player.player_id, player.nickname);
 
       // First check if player has a live match
       const liveInfo = await checkPlayerLiveMatch(player.player_id);
@@ -91,12 +92,46 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
         });
       }
 
-      // Load regular match history
-      const matchesData = await getPlayerMatches(player.player_id, 10);
-      console.log('Matches data received:', matchesData);
+      // Load matches using the mock service since Faceit API is not working
+      console.log('🎯 Using playerMatchesService for mock data');
+      const matchesData = await playerMatchesService.getPlayerMatches(player.player_id, 10);
+      console.log('🎯 Matches data received from service:', matchesData);
+
+      // Transform mock data to the format expected by MatchesTable
+      const transformedMatches = matchesData.map((match: any) => {
+        const playerTeam = match.teams?.find((team: any) => 
+          team.players?.some((p: any) => p.player_id === player.player_id)
+        );
+        const opponentTeam = match.teams?.find((team: any) => team.faction_id !== playerTeam?.faction_id);
+        const playerStats = playerTeam?.players?.find((p: any) => p.player_id === player.player_id)?.player_stats;
+        
+        const playerScore = parseInt(playerTeam?.team_stats?.["Final Score"] || "0");
+        const opponentScore = parseInt(opponentTeam?.team_stats?.["Final Score"] || "0");
+        const won = playerScore > opponentScore;
+        
+        return {
+          match_id: match.match_id,
+          started_at: match.started_at,
+          finished_at: match.finished_at,
+          i18: won ? "1" : "0", // Win/Loss
+          i6: playerStats?.["Kills"] || "0", // Kills
+          i8: playerStats?.["Deaths"] || "0", // Deaths 
+          i7: playerStats?.["Assists"] || "0", // Assists
+          i10: playerStats?.["K/D Ratio"] || "0", // K/D Ratio
+          i13: playerStats?.["Headshots %"] || "0", // HS%
+          i14: playerStats?.["ADR"] || "0", // ADR
+          team_stats: {
+            team1: playerScore,
+            team2: opponentScore
+          },
+          map: match.voting?.map?.pick?.[0] || "de_unknown"
+        };
+      });
+
+      console.log('🎯 Transformed matches:', transformedMatches);
 
       // Filter out the live match if it's already in history to avoid duplicates
-      const filteredMatches = liveInfo.isLive ? matchesData.filter((match: Match) => match.match_id !== liveInfo.matchId) : matchesData;
+      const filteredMatches = liveInfo.isLive ? transformedMatches.filter((match: Match) => match.match_id !== liveInfo.matchId) : transformedMatches;
 
       // Combine live match with history
       allMatches = [...allMatches, ...filteredMatches];
@@ -236,13 +271,13 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
                 <div className="flex-shrink-0 px-6 pt-4 border-b">
                   <TabsList className="grid w-full grid-cols-5">
                     <TabsTrigger value="overview">Overview</TabsTrigger>
-                    <TabsTrigger value="analytics" disabled={!analyserData && !isLoadingAnalyser}>
+                    <TabsTrigger value="analytics">
                       Analytics
                     </TabsTrigger>
-                    <TabsTrigger value="graphs" disabled={!analyserData && !isLoadingAnalyser}>
+                    <TabsTrigger value="graphs">
                       Graphs
                     </TabsTrigger>
-                    <TabsTrigger value="maps" disabled={!analyserData && !isLoadingAnalyser}>
+                    <TabsTrigger value="maps">
                       Maps
                     </TabsTrigger>
                     <TabsTrigger value="matches">Matches</TabsTrigger>
