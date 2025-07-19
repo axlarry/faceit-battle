@@ -91,39 +91,18 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
     try {
       // Force using mock service only - don't call real Faceit API
       console.log('🎯 Using playerMatchesService for mock data ONLY');
-      const matchesResponse = await playerMatchesService.getPlayerMatches(player.player_id, 5);
-      console.log('🎯 Raw service response:', matchesResponse);
+      const matchesData = await playerMatchesService.getPlayerMatches(player.player_id, 5);
+      console.log('🎯 Raw service response:', matchesData);
 
       // Check if we got the expected structure
-      if (!matchesResponse) {
-        console.log('❌ No response from service');
-        setMatches([]);
-        setMatchStats(null);
-        return;
-      }
-
-      let matchesData = matchesResponse;
-      
-      // Handle both old format (direct array) and new format (with items property)
-      if (matchesResponse.items) {
-        matchesData = matchesResponse.items;
-      } else if (Array.isArray(matchesResponse)) {
-        matchesData = matchesResponse;
-      } else {
-        console.log('❌ Unexpected response format:', matchesResponse);
+      if (!matchesData || !Array.isArray(matchesData) || matchesData.length === 0) {
+        console.log('❌ No valid matches data received');
         setMatches([]);
         setMatchStats(null);
         return;
       }
 
       console.log('🎯 Processing matches data:', matchesData);
-
-      if (!Array.isArray(matchesData) || matchesData.length === 0) {
-        console.log('❌ No valid matches in data');
-        setMatches([]);
-        setMatchStats(null);
-        return;
-      }
 
       // Transform matches to the format expected by MatchesTable
       console.log('🎯 Transforming', matchesData.length, 'matches');

@@ -89,7 +89,7 @@ export class PlayerMatchesService {
     }
 
     console.log(`🎯 Generated ${matches.length} mock matches for player:`, playerId);
-    return { items: matches };
+    return matches; // Return array directly, not wrapped in object
   }
 }
 
