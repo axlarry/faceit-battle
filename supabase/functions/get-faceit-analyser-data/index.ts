@@ -23,6 +23,7 @@ serve(async (req) => {
     }
 
     const faceitAnalyserApiKey = Deno.env.get('FACEIT_ANALYSER_API_KEY')
+    console.log('🔑 API Key exists:', !!faceitAnalyserApiKey);
     if (!faceitAnalyserApiKey) {
       return new Response(
         JSON.stringify({ error: 'Faceit Analyser API key not configured' }),
@@ -30,16 +31,17 @@ serve(async (req) => {
       )
     }
 
+    // Try different API endpoints to find the correct one
     let apiUrl = ''
     switch (dataType) {
       case 'player_stats':
-        apiUrl = `https://api.faceitanalyser.com/api/player/${playerId}/stats`
+        apiUrl = `https://faceitanalyser.com/api/player/${playerId}/stats`
         break
       case 'player_graphs':
-        apiUrl = `https://api.faceitanalyser.com/api/player/${playerId}/graphs`
+        apiUrl = `https://faceitanalyser.com/api/player/${playerId}/graphs`
         break
       case 'match_analysis':
-        apiUrl = `https://api.faceitanalyser.com/api/match/${playerId}/analysis`
+        apiUrl = `https://faceitanalyser.com/api/match/${playerId}/analysis`
         break
       default:
         return new Response(
@@ -48,12 +50,17 @@ serve(async (req) => {
         )
     }
 
+    console.log('🌐 Making request to:', apiUrl);
+
     const response = await fetch(apiUrl, {
       headers: {
         'Authorization': `Bearer ${faceitAnalyserApiKey}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'User-Agent': 'Faceit-Tool/1.0'
       }
     })
+
+    console.log('📡 Response status:', response.status);
 
     if (!response.ok) {
       const errorText = await response.text()

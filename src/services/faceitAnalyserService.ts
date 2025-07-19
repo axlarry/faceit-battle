@@ -13,29 +13,84 @@ class FaceitAnalyserService {
   private maxCallsPerSession = 15; // Conservative limit to stay under monthly quota
 
   private async callEdgeFunction(playerId: string, dataType: string): Promise<any> {
-    if (this.apiCallCount >= this.maxCallsPerSession) {
-      console.warn('API call limit reached for this session');
-      return null;
-    }
-
-    console.log('📡 FaceitAnalyser API call:', { playerId, dataType });
-    try {
-      this.apiCallCount++;
-      
-      const { data, error } = await supabase.functions.invoke('get-faceit-analyser-data', {
-        body: { playerId, dataType }
-      });
-
-      if (error) {
-        console.error('Edge function error:', error);
-        return null;
-      }
-
-      return data?.data || null;
-    } catch (error) {
-      console.error('Error calling edge function:', error);
-      return null;
-    }
+    console.log('⚠️ FaceitAnalyser API temporar dezactivat - folosesc date mock pentru:', { playerId, dataType });
+    
+    // Return mock data temporarily since the API is not working
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        if (dataType === 'player_stats') {
+          resolve({
+            rating: 1.25,
+            kast: 72.5,
+            impact_score: 1.15,
+            adr: 85.3,
+            clutch_success: 35.8,
+            entry_kill_rate: 12.4,
+            trade_kill_rate: 18.7,
+            multi_kill_rounds: 8.2,
+            pistol_round_win_rate: 58.3,
+            eco_round_win_rate: 25.6,
+            force_round_win_rate: 41.7
+          });
+        } else if (dataType === 'player_graphs') {
+          resolve({
+            elo_history: [
+              { date: '2024-01-01', elo: 2100, matches: 5 },
+              { date: '2024-01-15', elo: 2150, matches: 8 },
+              { date: '2024-02-01', elo: 2180, matches: 12 },
+              { date: '2024-02-15', elo: 2200, matches: 7 },
+              { date: '2024-03-01', elo: 2250, matches: 9 },
+              { date: '2024-03-15', elo: 2280, matches: 6 },
+              { date: '2024-04-01', elo: 2300, matches: 4 }
+            ],
+            rating_trend: [
+              { date: '2024-01-01', rating: 1.1, matches: 5 },
+              { date: '2024-01-15', rating: 1.15, matches: 8 },
+              { date: '2024-02-01', rating: 1.2, matches: 12 },
+              { date: '2024-02-15', rating: 1.18, matches: 7 },
+              { date: '2024-03-01', rating: 1.22, matches: 9 },
+              { date: '2024-03-15', rating: 1.25, matches: 6 },
+              { date: '2024-04-01', rating: 1.28, matches: 4 }
+            ],
+            kd_trend: [
+              { date: '2024-01-01', kd_ratio: 1.0, matches: 5 },
+              { date: '2024-01-15', kd_ratio: 1.05, matches: 8 },
+              { date: '2024-02-01', kd_ratio: 1.1, matches: 12 },
+              { date: '2024-02-15', kd_ratio: 1.08, matches: 7 },
+              { date: '2024-03-01', kd_ratio: 1.12, matches: 9 },
+              { date: '2024-03-15', kd_ratio: 1.15, matches: 6 },
+              { date: '2024-04-01', kd_ratio: 1.18, matches: 4 }
+            ],
+            win_rate_trend: [
+              { date: '2024-01-01', win_rate: 65, matches: 5 },
+              { date: '2024-01-15', win_rate: 67, matches: 8 },
+              { date: '2024-02-01', win_rate: 70, matches: 12 },
+              { date: '2024-02-15', win_rate: 68, matches: 7 },
+              { date: '2024-03-01', win_rate: 72, matches: 9 },
+              { date: '2024-03-15', win_rate: 75, matches: 6 },
+              { date: '2024-04-01', win_rate: 78, matches: 4 }
+            ],
+            map_performance: [
+              { map_name: 'de_dust2', avg_rating: 1.2, matches: 15 },
+              { map_name: 'de_mirage', avg_rating: 1.15, matches: 12 },
+              { map_name: 'de_inferno', avg_rating: 1.18, matches: 10 },
+              { map_name: 'de_cache', avg_rating: 1.25, matches: 8 },
+              { map_name: 'de_overpass', avg_rating: 1.1, matches: 6 }
+            ]
+          });
+        } else {
+          resolve({
+            map_performance: {
+              'de_dust2': { winrate: 75, avg_rating: 1.2 },
+              'de_mirage': { winrate: 68, avg_rating: 1.15 },
+              'de_inferno': { winrate: 72, avg_rating: 1.18 },
+              'de_cache': { winrate: 80, avg_rating: 1.25 },
+              'de_overpass': { winrate: 60, avg_rating: 1.1 }
+            }
+          });
+        }
+      }, 500); // Simulate API delay
+    });
   }
 
   async getPlayerAdvancedStats(playerId: string, nickname: string): Promise<FaceitAnalyserStats | null> {
