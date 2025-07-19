@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -89,11 +90,16 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
     setIsLoadingMatches(true);
     
     try {
-      // Use real API call first, fallback to mock if needed
-      console.log('🎯 Calling playerMatchesService for real data');
-      const matchesData = await playerMatchesService.getPlayerMatches(player.player_id, 5);
+      // Fetch 10 matches instead of 5
+      console.log('🎯 Calling playerMatchesService for 10 matches');
+      const matchesData = await playerMatchesService.getPlayerMatches(player.player_id, 10);
       console.log('🎯 Raw service response:', matchesData);
       console.log('🎯 First match structure:', matchesData?.[0]);
+      console.log('🎯 Response type and length:', { 
+        isArray: Array.isArray(matchesData), 
+        length: matchesData?.length,
+        type: typeof matchesData 
+      });
 
       // Check if we got the expected structure - API returns array directly
       if (!matchesData || !Array.isArray(matchesData) || matchesData.length === 0) {
@@ -103,15 +109,13 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
         return;
       }
 
-      console.log('🎯 Processing matches data:', matchesData);
+      console.log('🎯 Processing matches data:', matchesData.length, 'matches');
 
       // Transform matches to the format expected by MatchesTable
-      console.log('🎯 Transforming', matchesData.length, 'matches');
       const transformedMatches = matchesData.map((match: any, index: number) => {
         console.log(`🎯 Processing match ${index}:`, match);
         
         try {
-          // Handle different team formats - either array or object
           let playerTeam, opponentTeam, playerStats;
           
           if (Array.isArray(match.teams)) {
@@ -188,7 +192,7 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
                 faction2: opponentScore
               }
             },
-            // Include specific player data in the transformed match
+            // Include specific player data in the transformed match for easy access
             playerStats: playerStats,
             // For compatibility with MatchRow utils
             i18: won ? "1" : "0", // Win/Loss
@@ -213,7 +217,7 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
         }
       }).filter(Boolean); // Remove null entries
 
-      console.log('🎯 Final transformed matches:', transformedMatches);
+      console.log('🎯 Final transformed matches:', transformedMatches.length, 'matches');
       setMatches(transformedMatches);
 
       // Calculate match statistics
@@ -349,34 +353,70 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
                 <div className="flex-shrink-0 px-6 pt-4 border-b">
                   <TabsList className="grid w-full grid-cols-5">
                     <TabsTrigger value="overview">Overview</TabsTrigger>
-                    <TabsTrigger value="analytics">
-                      Analytics
-                    </TabsTrigger>
-                    <TabsTrigger value="graphs">
-                      Graphs
-                    </TabsTrigger>
-                    <TabsTrigger value="maps">
-                      Maps
-                    </TabsTrigger>
+                    <TabsTrigger value="analytics">Analytics</TabsTrigger>
+                    <TabsTrigger value="graphs">Graphs</TabsTrigger>
+                    <TabsTrigger value="maps">Maps</TabsTrigger>
                     <TabsTrigger value="matches">Matches</TabsTrigger>
                   </TabsList>
                 </div>
 
                 <div className="flex-1 overflow-y-auto">
                   <TabsContent value="overview" className="p-6 mt-0">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-full">
+                    <div className="space-y-6">
+                      {/* Quick Stats Cards */}
                       <div>
-                        <PlayerStatsCards 
-                          player={player}
-                        />
+                        <h3 className="text-lg font-bold text-white mb-4">Quick Stats Overview</h3>
+                        <PlayerStatsCards player={player} />
                       </div>
-                      <div>
-                        <PlayerAnalyticsTab 
-                          player={player} 
-                          analyserData={analyserData}
-                          isLoading={isLoadingAnalyser}
-                        />
-                      </div>
+                      
+                      {/* Recent Performance Summary */}
+                      {matchStats && (
+                        <div className="bg-white/5 rounded-lg p-4 border border-white/10">
+                          <h4 className="text-md font-semibold text-white mb-3">Recent Performance ({matchStats.totalMatches} matches)</h4>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            <div className="text-center">
+                              <div className="text-2xl font-bold text-green-400">{matchStats.wins}</div>
+                              <div className="text-sm text-gray-400">Wins</div>
+                            </div>
+                            <div className="text-center">
+                              <div className="text-2xl font-bold text-red-400">{matchStats.losses}</div>
+                              <div className="text-sm text-gray-400">Losses</div>
+                            </div>
+                            <div className="text-center">
+                              <div className="text-2xl font-bold text-blue-400">{matchStats.winRate.toFixed(1)}%</div>
+                              <div className="text-sm text-gray-400">Win Rate</div>
+                            </div>
+                            <div className="text-center">
+                              <div className="text-2xl font-bold text-purple-400">{matchStats.avgKDRatio.toFixed(2)}</div>
+                              <div className="text-sm text-gray-400">Avg K/D</div>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Recent Matches Preview (show last 3-5) */}
+                      {matches.length > 0 && (
+                        <div>
+                          <h4 className="text-md font-semibold text-white mb-3">Recent Matches Preview</h4>
+                          <MatchesTable 
+                            matches={matches.slice(0, 5)}
+                            player={player}
+                            matchesStats={{}}
+                            loadingMatches={isLoadingMatches}
+                          />
+                          {matches.length > 5 && (
+                            <div className="text-center mt-4">
+                              <Button 
+                                variant="outline" 
+                                size="sm"
+                                onClick={() => setActiveTab('matches')}
+                              >
+                                View All {matches.length} Matches
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </TabsContent>
 

@@ -5,34 +5,38 @@ import { toast } from '@/hooks/use-toast';
 export class PlayerMatchesService {
   async getPlayerMatches(playerId: string, limit: number = 10) {
     try {
-      console.log(`🎯 Fetching matches for player: ${playerId}`);
+      console.log(`🎯 Fetching matches for player: ${playerId} with limit: ${limit}`);
       const data = await faceitApiClient.makeApiCall(`/players/${playerId}/history?game=cs2&limit=${limit}`, false);
       console.log('🎯 Player matches API response:', data);
+      console.log('🎯 API response structure:', {
+        hasItems: !!data?.items,
+        itemsLength: data?.items?.length,
+        firstItem: data?.items?.[0]
+      });
       
-      if (!data || !data.items) {
-        console.log('🚨 No items in API response, returning mock data for player:', playerId);
-        // Generate realistic mock match data based on player ID
+      if (!data || !data.items || !Array.isArray(data.items)) {
+        console.log('🚨 No valid API data, returning mock data for player:', playerId);
         return this.generateMockMatches(playerId, limit);
       }
       
-      console.log('🎯 Returning API data items:', data.items);
+      console.log(`🎯 Returning ${data.items.length} real API matches`);
       return data.items;
     } catch (error) {
       console.error('🚨 Error fetching player matches:', error);
       console.log('🚨 Returning mock data due to error for player:', playerId);
       
-      // Return mock data as fallback
       return this.generateMockMatches(playerId, limit);
     }
   }
 
   private generateMockMatches(playerId: string, limit: number = 10) {
-    // Only CS2 maps - removed CS:GO exclusive maps like Cache, Cobblestone  
+    // CS2 maps only
     const maps = ["de_mirage", "de_dust2", "de_inferno", "de_ancient", "de_vertigo", "de_anubis", "de_nuke", "de_overpass", "de_train"];
     const matches = [];
 
-    for (let i = 0; i < Math.min(limit, 5); i++) {
-      const hoursAgo = (i + 1) * 2; // 2, 4, 6, 8, 10 hours ago
+    // Generate up to the full limit, not just 5
+    for (let i = 0; i < limit; i++) {
+      const hoursAgo = (i + 1) * 2; // 2, 4, 6, 8, 10+ hours ago
       const map = maps[Math.floor(Math.random() * maps.length)];
       
       // Generate realistic scores
@@ -52,6 +56,19 @@ export class PlayerMatchesService {
         match_id: `mock-match-${playerId}-${i}`,
         started_at: new Date(Date.now() - hoursAgo * 3600000).toISOString(),
         finished_at: new Date(Date.now() - (hoursAgo - 1) * 3600000).toISOString(),
+        competition_name: "Europe 5v5 Queue",
+        competition_type: "matchmaking",
+        game_mode: "5v5",
+        max_players: 10,
+        teams_size: 5,
+        status: "finished",
+        results: {
+          winner: playerScore > opponentScore ? "faction1" : "faction2",
+          score: {
+            faction1: playerScore,
+            faction2: opponentScore
+          }
+        },
         teams: [
           {
             faction_id: "faction1",
@@ -61,6 +78,7 @@ export class PlayerMatchesService {
             players: [
               {
                 player_id: playerId,
+                nickname: "Player",
                 player_stats: {
                   "Kills": kills.toString(),
                   "Deaths": deaths.toString(),
@@ -77,7 +95,8 @@ export class PlayerMatchesService {
             faction_id: "faction2",
             team_stats: {
               "Final Score": opponentScore.toString()
-            }
+            },
+            players: []
           }
         ],
         voting: {
@@ -89,7 +108,7 @@ export class PlayerMatchesService {
     }
 
     console.log(`🎯 Generated ${matches.length} mock matches for player:`, playerId);
-    return matches; // Return array directly, not wrapped in object
+    return matches;
   }
 }
 
