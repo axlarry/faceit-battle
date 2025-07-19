@@ -10,11 +10,17 @@ export const getPlayerStatsFromMatch = (match: Match, player: Player, matchesSta
   console.log('=== GETTING PLAYER STATS ===');
   console.log('Match ID:', match.match_id);
   
-  // First try from match teams data
+  // First check if we have playerStats directly in the match (from transformation)
+  if ((match as any).playerStats) {
+    console.log('✅ Found player stats in transformed match:', (match as any).playerStats);
+    return (match as any).playerStats;
+  }
+  
+  // Then try from match teams data
   if (match && match.teams && typeof match.teams === 'object') {
     for (const teamId of Object.keys(match.teams)) {
-      const team = match.teams[teamId];
-      const playerData = team.players?.find(p => p.player_id === player.player_id);
+      const team = (match.teams as any)[teamId];
+      const playerData = team.players?.find((p: any) => p.player_id === player.player_id);
       if (playerData && playerData.player_stats) {
         console.log('✅ Found player stats in teams:', playerData.player_stats);
         return playerData.player_stats;

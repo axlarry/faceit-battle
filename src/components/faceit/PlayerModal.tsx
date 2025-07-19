@@ -174,6 +174,9 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
                 faction2: opponentScore
               }
             },
+            // Include specific player data in the transformed match
+            playerStats: playerStats,
+            // For compatibility with MatchRow utils
             i18: won ? "1" : "0", // Win/Loss
             i6: playerStats?.["Kills"] || playerStats?.kills || "0", // Kills
             i8: playerStats?.["Deaths"] || playerStats?.deaths || "0", // Deaths 

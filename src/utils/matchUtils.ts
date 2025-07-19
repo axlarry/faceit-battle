@@ -168,6 +168,12 @@ export const getMatchScore = (match: Match, matchesStats: {[key: string]: any}, 
 export const getMapInfo = (match: Match, matchesStats: {[key: string]: any}) => {
   console.log('Getting map info for:', match.match_id);
   
+  // First check if we have map directly in the match (from transformation)
+  if ((match as any).map && (match as any).map !== 'de_unknown') {
+    console.log('Found map in transformed match:', (match as any).map);
+    return (match as any).map;
+  }
+  
   const matchStatsData = matchesStats[match.match_id];
   if (matchStatsData) {
     console.log('Checking match stats for map:', matchStatsData);
