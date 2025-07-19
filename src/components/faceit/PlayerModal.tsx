@@ -93,6 +93,7 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
       console.log('🎯 Calling playerMatchesService for real data');
       const matchesData = await playerMatchesService.getPlayerMatches(player.player_id, 5);
       console.log('🎯 Raw service response:', matchesData);
+      console.log('🎯 First match structure:', matchesData?.[0]);
 
       // Check if we got the expected structure - API returns array directly
       if (!matchesData || !Array.isArray(matchesData) || matchesData.length === 0) {
@@ -125,16 +126,25 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
           } else if (match.teams && typeof match.teams === 'object') {
             // Real API format - teams as object with faction1/faction2
             console.log('🎯 Processing real API format (teams as object)');
+            console.log('🎯 Match teams structure:', match.teams);
+            
             const teamsArray = Object.values(match.teams);
+            console.log('🎯 Teams array:', teamsArray);
+            
             playerTeam = teamsArray.find((team: any) => 
               team.players?.some((p: any) => p.player_id === player.player_id)
             );
+            console.log('🎯 Found player team:', playerTeam);
+            
             opponentTeam = teamsArray.find((team: any) => team !== playerTeam);
             
             // For real API data, we need to get stats differently
             const playerData = playerTeam?.players?.find((p: any) => p.player_id === player.player_id);
+            console.log('🎯 Found player data:', playerData);
+            
             playerStats = playerData?.player_stats || {};
             console.log('🎯 API - Player stats found:', playerStats);
+            console.log('🎯 API - Player stats keys:', Object.keys(playerStats));
           }
           
           // Get scores - handle both formats
