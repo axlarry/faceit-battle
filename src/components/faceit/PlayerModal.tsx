@@ -217,16 +217,27 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
         }
       }).filter(Boolean); // Remove null entries
 
-      console.log('🎯 Final transformed matches:', transformedMatches.length, 'matches');
-      setMatches(transformedMatches);
+      // Filter out matches with obsolete maps that are no longer in CS2
+      const obsoleteMaps = ['de_cache', 'de_cobblestone', 'de_cbble', 'cs_office', 'cs_agency', 'cs_italy'];
+      const filteredMatches = transformedMatches.filter((match: any) => {
+        const mapName = match.map || match.voting?.map?.pick?.[0] || match.i1 || '';
+        const isObsolete = obsoleteMaps.includes(mapName?.toLowerCase());
+        if (isObsolete) {
+          console.log('❌ Filtering out match with obsolete map:', mapName, 'Match ID:', match.match_id);
+        }
+        return !isObsolete;
+      });
 
-      // Calculate match statistics
-      if (transformedMatches.length > 0) {
+      console.log('🎯 Final filtered matches:', filteredMatches.length, 'matches (filtered from', transformedMatches.length, ')');
+      setMatches(filteredMatches);
+
+      // Calculate match statistics on filtered matches
+      if (filteredMatches.length > 0) {
         const stats = {
           wins: 0,
           losses: 0,
           draws: 0,
-          totalMatches: transformedMatches.length,
+          totalMatches: filteredMatches.length,
           winRate: 0,
           avgKills: 0,
           avgDeaths: 0,
@@ -241,7 +252,7 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
         let totalHS = 0;
         let validMatches = 0;
 
-        transformedMatches.forEach((match: any) => {
+        filteredMatches.forEach((match: any) => {
           if (match.i18 === '1') stats.wins++;
           else if (match.i18 === '0') stats.losses++;
           else stats.draws++;
