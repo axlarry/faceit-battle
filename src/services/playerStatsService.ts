@@ -6,13 +6,20 @@ export class PlayerStatsService {
   async getPlayerStats(playerId: string) {
     try {
       const data = await faceitApiClient.makeApiCall(`/players/${playerId}/stats/cs2`, false);
-      console.log('Player stats response:', data);
+      console.log('🎯 Real player stats response:', data);
+      
+      // Only return real data from Faceit API
+      if (!data || !data.segments) {
+        console.log('⚠️ No real stats data available from Faceit API');
+        return null;
+      }
+      
       return data;
     } catch (error) {
-      console.error('Error fetching player stats:', error);
+      console.error('🚨 Error fetching real player stats:', error);
       toast({
         title: "Eroare la încărcarea statisticilor",
-        description: "Nu s-au putut încărca statisticile jucătorului.",
+        description: "Nu s-au putut încărca statisticile reale de la Faceit.",
         variant: "destructive",
       });
       return null;

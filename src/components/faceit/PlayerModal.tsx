@@ -90,10 +90,10 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
     setIsLoadingMatches(true);
     
     try {
-      // Fetch 10 matches instead of 5
-      console.log('🎯 Calling playerMatchesService for 10 matches');
+      // Fetch real matches from Faceit API only
+      console.log('🎯 Calling playerMatchesService for 10 real matches');
       const matchesData = await playerMatchesService.getPlayerMatches(player.player_id, 10);
-      console.log('🎯 Raw service response:', matchesData);
+      console.log('🎯 Raw real API response:', matchesData);
       console.log('🎯 First match structure:', matchesData?.[0]);
       console.log('🎯 Response type and length:', { 
         isArray: Array.isArray(matchesData), 
@@ -101,9 +101,9 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
         type: typeof matchesData 
       });
 
-      // Check if we got the expected structure - API returns array directly
+      // Only process real API data - no fallback to mock data
       if (!matchesData || !Array.isArray(matchesData) || matchesData.length === 0) {
-        console.log('❌ No valid matches data received');
+        console.log('⚠️ No real matches data available from Faceit API');
         setMatches([]);
         setMatchStats(null);
         return;
@@ -118,18 +118,9 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
         try {
           let playerTeam, opponentTeam, playerStats;
           
-          if (Array.isArray(match.teams)) {
-            // Mock data format - teams as array
-            console.log('🎯 Processing mock data format (teams as array)');
-            playerTeam = match.teams?.find((team: any) => 
-              team.players?.some((p: any) => p.player_id === player.player_id)
-            );
-            opponentTeam = match.teams?.find((team: any) => team.faction_id !== playerTeam?.faction_id);
-            playerStats = playerTeam?.players?.find((p: any) => p.player_id === player.player_id)?.player_stats;
-            console.log('🎯 Mock - Player stats found:', playerStats);
-          } else if (match.teams && typeof match.teams === 'object') {
-            // Real API format - teams as object with faction1/faction2
-            console.log('🎯 Processing real API format (teams as object)');
+          // Only process real Faceit API format - teams as object with faction1/faction2
+          if (match.teams && typeof match.teams === 'object') {
+            console.log('🎯 Processing real Faceit API format (teams as object)');
             console.log('🎯 Match teams structure:', match.teams);
             
             const teamsArray = Object.values(match.teams);
@@ -142,13 +133,16 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
             
             opponentTeam = teamsArray.find((team: any) => team !== playerTeam);
             
-            // For real API data, we need to get stats differently
+            // For real API data, get player stats
             const playerData = playerTeam?.players?.find((p: any) => p.player_id === player.player_id);
             console.log('🎯 Found player data:', playerData);
             
             playerStats = playerData?.player_stats || {};
-            console.log('🎯 API - Player stats found:', playerStats);
-            console.log('🎯 API - Player stats keys:', Object.keys(playerStats));
+            console.log('🎯 Real API - Player stats found:', playerStats);
+            console.log('🎯 Real API - Player stats keys:', Object.keys(playerStats));
+          } else {
+            console.log('⚠️ Skipping match with invalid or non-API team structure');
+            return null; // Skip matches that don't have proper API structure
           }
           
           // Get scores - handle both formats
