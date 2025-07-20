@@ -74,8 +74,10 @@ class FaceitAnalyserService {
               { map_name: 'de_dust2', avg_rating: 1.2, matches: 15 },
               { map_name: 'de_mirage', avg_rating: 1.15, matches: 12 },
               { map_name: 'de_inferno', avg_rating: 1.18, matches: 10 },
-              { map_name: 'de_cache', avg_rating: 1.25, matches: 8 },
-              { map_name: 'de_overpass', avg_rating: 1.1, matches: 6 }
+              { map_name: 'de_ancient', avg_rating: 1.25, matches: 8 },
+              { map_name: 'de_overpass', avg_rating: 1.1, matches: 6 },
+              { map_name: 'de_train', avg_rating: 1.12, matches: 5 },
+              { map_name: 'de_nuke', avg_rating: 1.08, matches: 4 }
             ]
           });
         } else {
@@ -84,8 +86,10 @@ class FaceitAnalyserService {
               'de_dust2': { winrate: 75, avg_rating: 1.2 },
               'de_mirage': { winrate: 68, avg_rating: 1.15 },
               'de_inferno': { winrate: 72, avg_rating: 1.18 },
-              'de_cache': { winrate: 80, avg_rating: 1.25 },
-              'de_overpass': { winrate: 60, avg_rating: 1.1 }
+              'de_ancient': { winrate: 80, avg_rating: 1.25 },
+              'de_overpass': { winrate: 60, avg_rating: 1.1 },
+              'de_train': { winrate: 65, avg_rating: 1.12 },
+              'de_nuke': { winrate: 58, avg_rating: 1.08 }
             }
           });
         }
