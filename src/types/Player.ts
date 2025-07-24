@@ -21,21 +21,21 @@ export interface Player {
 
 export interface Match {
   match_id: string;
-  competition_name: string;
-  competition_type: string;
-  game_mode: string;
-  max_players: number;
-  teams_size: number;
+  competition_name?: string;
+  competition_type?: string;
+  game_mode?: string;
+  max_players?: number;
+  teams_size?: number;
   started_at: number;
-  finished_at: number;
+  finished_at?: number;
   status: string;
-  results: {
+  results?: {
     winner: string;
     score: {
       [key: string]: number;
     };
   };
-  teams: {
+  teams?: {
     [key: string]: {
       team_id: string;
       nickname: string;
@@ -68,4 +68,32 @@ export interface Match {
   // New properties for live matches
   isLiveMatch?: boolean;
   liveMatchDetails?: any;
+  
+  // FaceitAnalyser API fields
+  playerStats?: {
+    kills: number;
+    deaths: number;
+    assists: number;
+    headshots: number;
+    mvps: number;
+    rounds: number;
+    kdr: number;
+    krr: number;
+    headshotPercent: number;
+    hltv: number;
+  };
+  
+  // Raw FaceitAnalyser match data fields
+  k?: string | number;
+  d?: string | number;
+  a?: string | number;
+  kdr?: string | number;
+  i6?: string;
+  i7?: string;
+  i8?: string;
+  i9?: string;
+  i13?: string;
+  c2?: string;
+  c3?: string;
+  c4?: string;
 }

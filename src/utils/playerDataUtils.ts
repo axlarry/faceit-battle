@@ -5,7 +5,30 @@ export const getPlayerStatsFromMatch = (match: Match, player: Player, matchesSta
   console.log('=== GETTING PLAYER STATS ===');
   console.log('Match ID:', match.match_id);
   
-  // First try from match teams data
+  // For FaceitAnalyser API, stats are directly in the match object
+  if (match.playerStats) {
+    console.log('✅ Found player stats directly in match:', match.playerStats);
+    return match.playerStats;
+  }
+  
+  // Check if stats are directly in the match object (FaceitAnalyser format)
+  if (match.k !== undefined || match.i6 !== undefined) {
+    const stats = {
+      Kills: match.k || match.i6 || '0',
+      Deaths: match.d || match.i8 || '0', 
+      Assists: match.a || match.i7 || '0',
+      Headshots: match.i13 || '0',
+      'MVPs': match.i9 || '0',
+      'K/D Ratio': match.kdr || match.c3 || '0',
+      'K/R Ratio': match.c2 || '0',
+      'Headshots %': match.c4 || '0',
+      'Average Damage per Round': '0', // Not available in FaceitAnalyser
+    };
+    console.log('✅ Found player stats in match data (FaceitAnalyser):', stats);
+    return stats;
+  }
+  
+  // First try from match teams data (original Faceit API format)
   if (match.teams) {
     for (const teamId of Object.keys(match.teams)) {
       const team = match.teams[teamId];
