@@ -67,6 +67,7 @@ const Index = () => {
           onAddFriend={addFriend}
           onRemoveFriend={removeFriend}
           isFriend={selectedPlayer ? friends.some(f => f.player_id === selectedPlayer.player_id) : false}
+          liveMatchInfo={selectedPlayer?.liveMatchDetails}
         />
         
       </div>

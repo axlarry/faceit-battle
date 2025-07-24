@@ -1,8 +1,8 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Player, Match } from '@/types/Player';
+import { Player } from '@/types/Player';
 import { PlayerHeader } from './PlayerHeader';
 import { PlayerStatsCards } from './PlayerStatsCards';
 import { MatchesTable } from './MatchesTable';
@@ -11,10 +11,8 @@ import { PlayerGraphsTab } from './PlayerGraphsTab';
 import { PlayerMapStatsTab } from './PlayerMapStatsTab';
 import { Button } from '@/components/ui/button';
 import { PasswordDialog } from './PasswordDialog';
-import { useFaceitApi } from '@/hooks/useFaceitApi';
 import { useFaceitAnalyser } from '@/hooks/useFaceitAnalyser';
-import { playerMatchesService } from '@/services/playerMatchesService';
-import { toast } from 'sonner';
+import { usePlayerMatches } from '@/hooks/usePlayerMatches';
 import { Badge } from '@/components/ui/badge';
 import { RefreshCw } from 'lucide-react';
 
@@ -39,246 +37,16 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
 }) => {
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [pendingAction, setPendingAction] = useState<'add' | 'remove' | null>(null);
-  const [matches, setMatches] = useState<Match[]>([]);
-  const [isLoadingMatches, setIsLoadingMatches] = useState(false);
   const [activeTab, setActiveTab] = useState('overview');
-  const [matchStats, setMatchStats] = useState<{
-    wins: number;
-    losses: number;
-    draws: number;
-    totalMatches: number;
-    winRate: number;
-    avgKills: number;
-    avgDeaths: number;
-    avgAssists: number;
-    avgKDRatio: number;
-    avgHSPercentage: number;
-  } | null>(null);
-
-  const {
-    getPlayerMatches,
-    getMatchDetails,
-    getMatchStats,
-    checkPlayerLiveMatch
-  } = useFaceitApi();
 
   // Use the new Faceit Analyser hook
   const { analyserData, isLoading: isLoadingAnalyser, error: analyserError, refetch } = useFaceitAnalyser(player);
+  
+  // Use the new player matches hook
+  const { matches, isLoadingMatches, matchStats, playerStats, isLoadingStats, reloadMatches } = usePlayerMatches(player, isOpen);
+  
   console.log('🎯 PlayerModal: player data for analyser:', { playerId: player?.player_id, nickname: player?.nickname, isOpen });
 
-  // Load matches when player changes and modal is open
-  useEffect(() => {
-    if (player && isOpen) {
-      loadPlayerMatches();
-    }
-  }, [player, isOpen]);
-
-  // Debug matches data
-  useEffect(() => {
-    console.log('🎯 Matches state updated:', { 
-      matchesCount: matches.length, 
-      matches: matches, 
-      isLoadingMatches,
-      player: player?.nickname 
-    });
-  }, [matches, isLoadingMatches]);
-
-  const loadPlayerMatches = async () => {
-    if (!player) return;
-    
-    console.log('🎯 Starting loadPlayerMatches for:', player.nickname, player.player_id);
-    setIsLoadingMatches(true);
-    
-    try {
-      // Fetch real matches from Faceit API only
-      console.log('🎯 Calling playerMatchesService for 10 real matches');
-      const matchesData = await playerMatchesService.getPlayerMatches(player.player_id, 10);
-      console.log('🎯 Raw real API response:', matchesData);
-      console.log('🎯 First match structure:', matchesData?.[0]);
-      console.log('🎯 Response type and length:', { 
-        isArray: Array.isArray(matchesData), 
-        length: matchesData?.length,
-        type: typeof matchesData 
-      });
-
-      // Only process real API data - no fallback to mock data
-      if (!matchesData || !Array.isArray(matchesData) || matchesData.length === 0) {
-        console.log('⚠️ No real matches data available from Faceit API');
-        setMatches([]);
-        setMatchStats(null);
-        return;
-      }
-
-      console.log('🎯 Processing matches data:', matchesData.length, 'matches');
-
-      // Transform matches to the format expected by MatchesTable
-      const transformedMatches = matchesData.map((match: any, index: number) => {
-        console.log(`🎯 Processing match ${index}:`, match);
-        
-        try {
-          let playerTeam, opponentTeam, playerStats;
-          
-          // Only process real Faceit API format - teams as object with faction1/faction2
-          if (match.teams && typeof match.teams === 'object') {
-            console.log('🎯 Processing real Faceit API format (teams as object)');
-            console.log('🎯 Match teams structure:', match.teams);
-            
-            const teamsArray = Object.values(match.teams);
-            console.log('🎯 Teams array:', teamsArray);
-            
-            playerTeam = teamsArray.find((team: any) => 
-              team.players?.some((p: any) => p.player_id === player.player_id)
-            );
-            console.log('🎯 Found player team:', playerTeam);
-            
-            opponentTeam = teamsArray.find((team: any) => team !== playerTeam);
-            
-            // For real API data, get player stats
-            const playerData = playerTeam?.players?.find((p: any) => p.player_id === player.player_id);
-            console.log('🎯 Found player data:', playerData);
-            
-            playerStats = playerData?.player_stats || {};
-            console.log('🎯 Real API - Player stats found:', playerStats);
-            console.log('🎯 Real API - Player stats keys:', Object.keys(playerStats));
-          } else {
-            console.log('⚠️ Skipping match with invalid or non-API team structure');
-            return null; // Skip matches that don't have proper API structure
-          }
-          
-          // Get scores - handle both formats
-          let playerScore = 0, opponentScore = 0;
-          
-          if (match.results?.score) {
-            // Real API format
-            const scores = Object.values(match.results.score);
-            const factionKey = Object.keys(match.teams || {}).find(key => 
-              (match.teams as any)[key].players?.some((p: any) => p.player_id === player.player_id)
-            );
-            
-            if (factionKey && match.results.score[factionKey] !== undefined) {
-              playerScore = match.results.score[factionKey];
-              const opponentKey = Object.keys(match.results.score).find(k => k !== factionKey);
-              opponentScore = opponentKey ? match.results.score[opponentKey] : 0;
-            }
-          } else {
-            // Mock format
-            playerScore = parseInt(playerTeam?.team_stats?.["Final Score"] || "0");
-            opponentScore = parseInt(opponentTeam?.team_stats?.["Final Score"] || "0");
-          }
-          
-          const won = playerScore > opponentScore;
-          
-          const transformed = {
-            match_id: match.match_id,
-            started_at: match.started_at,
-            finished_at: match.finished_at,
-            competition_name: match.competition_name || "Europe 5v5 Queue",
-            competition_type: match.competition_type || "matchmaking",
-            game_mode: match.game_mode || "5v5",
-            max_players: match.max_players || 10,
-            teams: match.teams || [],
-            teams_size: match.teams_size || 5,
-            status: match.status || "finished",
-            results: {
-              winner: won ? "faction1" : "faction2",
-              score: {
-                faction1: playerScore,
-                faction2: opponentScore
-              }
-            },
-            // Include specific player data in the transformed match for easy access
-            playerStats: playerStats,
-            // For compatibility with MatchRow utils
-            i18: won ? "1" : "0", // Win/Loss
-            i6: playerStats?.["Kills"] || playerStats?.kills || "0", // Kills
-            i8: playerStats?.["Deaths"] || playerStats?.deaths || "0", // Deaths 
-            i7: playerStats?.["Assists"] || playerStats?.assists || "0", // Assists
-            i10: playerStats?.["K/D Ratio"] || playerStats?.kd_ratio || "0", // K/D Ratio
-            i13: playerStats?.["Headshots %"] || playerStats?.headshots_percentage || "0", // HS%
-            i14: playerStats?.["ADR"] || playerStats?.adr || "0", // ADR
-            team_stats: {
-              team1: playerScore,
-              team2: opponentScore
-            },
-            map: match.voting?.map?.pick?.[0] || match.i1 || "de_unknown"
-          } as Match;
-          
-          console.log(`✅ Transformed match ${index}:`, transformed);
-          return transformed;
-        } catch (error) {
-          console.error('🚨 Error transforming match:', error, match);
-          return null;
-        }
-      }).filter(Boolean); // Remove null entries
-
-      // Filter out matches with obsolete maps that are no longer in CS2
-      const obsoleteMaps = ['de_cache', 'de_cobblestone', 'de_cbble', 'cs_office', 'cs_agency', 'cs_italy'];
-      const filteredMatches = transformedMatches.filter((match: any) => {
-        const mapName = match.map || match.voting?.map?.pick?.[0] || match.i1 || '';
-        const isObsolete = obsoleteMaps.includes(mapName?.toLowerCase());
-        if (isObsolete) {
-          console.log('❌ Filtering out match with obsolete map:', mapName, 'Match ID:', match.match_id);
-        }
-        return !isObsolete;
-      });
-
-      console.log('🎯 Final filtered matches:', filteredMatches.length, 'matches (filtered from', transformedMatches.length, ')');
-      setMatches(filteredMatches);
-
-      // Calculate match statistics on filtered matches
-      if (filteredMatches.length > 0) {
-        const stats = {
-          wins: 0,
-          losses: 0,
-          draws: 0,
-          totalMatches: filteredMatches.length,
-          winRate: 0,
-          avgKills: 0,
-          avgDeaths: 0,
-          avgAssists: 0,
-          avgKDRatio: 0,
-          avgHSPercentage: 0
-        };
-
-        let totalKills = 0;
-        let totalDeaths = 0;
-        let totalAssists = 0;
-        let totalHS = 0;
-        let validMatches = 0;
-
-        filteredMatches.forEach((match: any) => {
-          if (match.i18 === '1') stats.wins++;
-          else if (match.i18 === '0') stats.losses++;
-          else stats.draws++;
-
-          if (match.i6) {
-            totalKills += parseInt(match.i6) || 0;
-            validMatches++;
-          }
-          if (match.i8) totalDeaths += parseInt(match.i8) || 0;
-          if (match.i7) totalAssists += parseInt(match.i7) || 0;
-          if (match.i13) totalHS += parseFloat(match.i13) || 0;
-        });
-
-        if (validMatches > 0) {
-          stats.avgKills = totalKills / validMatches;
-          stats.avgDeaths = totalDeaths / validMatches;
-          stats.avgAssists = totalAssists / validMatches;
-          stats.avgKDRatio = totalDeaths > 0 ? totalKills / totalDeaths : totalKills;
-          stats.avgHSPercentage = totalHS / validMatches;
-        }
-
-        stats.winRate = stats.totalMatches > 0 ? (stats.wins / stats.totalMatches) * 100 : 0;
-        console.log('📊 Match statistics:', stats);
-        setMatchStats(stats);
-      }
-    } catch (error) {
-      console.error('Error loading matches:', error);
-      toast.error('Failed to load player matches');
-    } finally {
-      setIsLoadingMatches(false);
-    }
-  };
 
   if (!player) return null;
 
@@ -331,15 +99,18 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
                 </div>
                 <div className="flex items-center space-x-2">
                   {analyserData && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={refetch}
-                      disabled={isLoadingAnalyser}
-                    >
-                      <RefreshCw className={`w-4 h-4 mr-2 ${isLoadingAnalyser ? 'animate-spin' : ''}`} />
-                      Refresh Analytics
-                    </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      refetch();
+                      reloadMatches();
+                    }}
+                    disabled={isLoadingAnalyser || isLoadingMatches}
+                  >
+                    <RefreshCw className={`w-4 h-4 mr-2 ${isLoadingAnalyser || isLoadingMatches ? 'animate-spin' : ''}`} />
+                    Refresh Data
+                  </Button>
                   )}
                   <Button
                     variant={isFriend ? "destructive" : "default"}
@@ -371,7 +142,7 @@ export const PlayerModal: React.FC<PlayerModalProps> = ({
                       {/* Quick Stats Cards */}
                       <div>
                         <h3 className="text-lg font-bold text-white mb-4">Quick Stats Overview</h3>
-                        <PlayerStatsCards player={player} />
+                        <PlayerStatsCards player={player} playerStats={playerStats} isLoading={isLoadingStats} />
                       </div>
                       
                       {/* Recent Performance Summary */}
