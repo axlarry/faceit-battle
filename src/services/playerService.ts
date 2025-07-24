@@ -3,7 +3,6 @@ import { lcryptLiveService } from './lcryptLiveService';
 import { playerStatsService } from './playerStatsService';
 import { playerMatchesService } from './playerMatchesService';
 import { playerSearchService } from './playerSearchService';
-import { faceitAnalyserApiClient } from './faceitAnalyserApiClient';
 
 export class PlayerService {
   async checkPlayerLiveMatch(playerId: string) {
@@ -34,12 +33,8 @@ export class PlayerService {
 
   private async getPlayerBasicData(playerId: string) {
     try {
-      const data = await faceitAnalyserApiClient.getPlayerOverview(playerId);
-      return {
-        nickname: data?.nickname || playerId,
-        player_id: data?.playerId || playerId,
-        ...data
-      };
+      const { faceitApiClient } = await import('./faceitApiClient');
+      return await faceitApiClient.makeApiCall(`/players/${playerId}`, false);
     } catch (error) {
       console.warn(`Error fetching basic player data for ${playerId}:`, error);
       return null;
@@ -49,11 +44,17 @@ export class PlayerService {
   async getPlayerCoverImage(nickname: string) {
     try {
       console.log(`🖼️ Fetching cover image for player: ${nickname}`);
-      const playerData = await faceitAnalyserApiClient.getPlayerOverview(nickname);
+      const { faceitApiClient } = await import('./faceitApiClient');
       
-      // FaceitAnalyser API doesn't provide cover images, return placeholder
-      console.log(`❌ No cover image available from FaceitAnalyser for ${nickname}`);
-      return null;
+      const playerData = await faceitApiClient.makeApiCall(`/players?nickname=${nickname}`, false);
+      
+      if (playerData && playerData.cover_image) {
+        console.log(`✅ Found cover image for ${nickname}: ${playerData.cover_image}`);
+        return playerData.cover_image;
+      } else {
+        console.log(`❌ No cover image found for ${nickname}`);
+        return null;
+      }
     } catch (error) {
       console.warn(`⚠️ Error fetching cover image for ${nickname}:`, error);
       return null;

@@ -1,42 +1,12 @@
-import { faceitAnalyserApiClient } from './faceitAnalyserApiClient';
+import { faceitApiClient } from './faceitApiClient';
 import { toast } from '@/hooks/use-toast';
 
 export class PlayerSearchService {
   async searchPlayer(nickname: string) {
     try {
       console.log(`Searching for player: ${nickname}`);
-      
-      // First try FaceitAnalyser API for overview (if it works)
-      try {
-        const data = await faceitAnalyserApiClient.getPlayerOverview(nickname);
-        console.log('Player search response from FaceitAnalyser:', data);
-        
-        if (data && data.playerId) {
-          return [{
-            player_id: data.playerId,
-            nickname: data.nickname || nickname,
-            avatar: '',
-            country: '',
-            skill_level: Math.round((data.current_elo || 0) / 200),
-            faceit_elo: data.current_elo || 0,
-            cover_image: '',
-            cover_featured_image: '',
-            games: {
-              cs2: {
-                skill_level: Math.round((data.current_elo || 0) / 200),
-                faceit_elo: data.current_elo || 0
-              }
-            }
-          }];
-        }
-      } catch (analyserError) {
-        console.warn('FaceitAnalyser search failed, falling back to Faceit API:', analyserError);
-      }
-      
-      // Fallback to original Faceit API
-      const { faceitApiClient } = await import('./faceitApiClient');
       const data = await faceitApiClient.makeApiCall(`/search/players?nickname=${encodeURIComponent(nickname)}&game=cs2`, false);
-      console.log('Player search response from Faceit API:', data);
+      console.log('Player search response:', data);
       
       if (data.items && data.items.length > 0) {
         return data.items.map((player: any) => ({

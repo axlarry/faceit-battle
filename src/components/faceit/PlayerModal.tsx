@@ -67,99 +67,62 @@ export const PlayerModal = ({
         });
       }
 
-      // Load regular match history from FaceitAnalyser
+      // Load regular match history
       const matchesData = await getPlayerMatches(player.player_id, 10);
       console.log('Matches data received:', matchesData);
 
-      // Transform FaceitAnalyser match data to our format
-      const transformedMatches = matchesData.map((match: any) => ({
-        match_id: match.matchId || match._id?.matchId,
-        status: match.status || 'finished',
-        started_at: match.date ? new Date(match.date).getTime() : Date.now(),
-        finished_at: match.updated_at || Date.now(),
-        
-        // Add FaceitAnalyser fields directly to match object
-        k: match.k || match.i6,
-        d: match.d || match.i8,
-        a: match.a || match.i7,
-        kdr: match.kdr || match.c3,
-        i6: match.i6, // kills
-        i7: match.i7, // assists  
-        i8: match.i8, // deaths
-        i9: match.i9, // mvps
-        i13: match.i13, // headshots
-        c2: match.c2, // krr
-        c3: match.c3, // kdr
-        c4: match.c4, // headshot %
-        
-        // Map data
-        match_details: {
-          map: match.map || match.i1,
-          score_team1: parseInt(match.i3 || '0'),
-          score_team2: parseInt(match.i4 || '0'),
-          rounds_played: parseInt(match.i12 || '0')
-        },
-        
-        // ELO data
-        elo_change: {
-          player_id: player.player_id,
-          elo_before: 0,
-          elo_after: 0,
-          elo_change: parseInt(match.elod || '0')
-        }
-      }));
-
       // Filter out the live match if it's already in history to avoid duplicates
-      const filteredMatches = liveInfo.isLive ? transformedMatches.filter((match: Match) => match.match_id !== liveInfo.matchId) : transformedMatches;
+      const filteredMatches = liveInfo.isLive ? matchesData.filter((match: Match) => match.match_id !== liveInfo.matchId) : matchesData;
 
       // Combine live match with history
       allMatches = [...allMatches, ...filteredMatches];
       setMatches(allMatches);
 
-      // For FaceitAnalyser, we already have the stats in the match data
-      // No need to make additional API calls for match stats
-      const combinedStats = allMatches.reduce((acc, match) => {
-        if (match.isLiveMatch) {
-          return {
-            ...acc,
-            [match.match_id]: {
-              isLive: true,
-              ...match.liveMatchDetails
-            }
-          };
-        }
-        
-        // Create stats object from FaceitAnalyser match data
-        return {
-          ...acc,
-          [match.match_id]: {
-            // Mock stats object that matches expected format
-            rounds: [{
-              teams: {
-                team1: {
-                  players: [{
-                    player_id: player.player_id,
-                    player_stats: {
-                      Kills: match.k || match.i6 || '0',
-                      Deaths: match.d || match.i8 || '0',
-                      Assists: match.a || match.i7 || '0',
-                      'K/D Ratio': match.kdr || match.c3 || '0',
-                      'K/R Ratio': match.c2 || '0',
-                      'Headshots %': match.c4 || '0',
-                      Headshots: match.i13 || '0',
-                      MVPs: match.i9 || '0',
-                      'Average Damage per Round': '0' // Not available in FaceitAnalyser
-                    }
-                  }]
-                }
+      // Load detailed stats for each match (skip live match for stats)
+      if (allMatches.length > 0) {
+        const statsPromises = allMatches.map(async (match: Match, index: number) => {
+          // Skip loading stats for live match as it doesn't have complete stats yet
+          if (match.isLiveMatch) {
+            return {
+              [match.match_id]: {
+                isLive: true,
+                ...match.liveMatchDetails
               }
-            }]
+            };
           }
-        };
-      }, {});
-      
-      console.log('Combined match stats from FaceitAnalyser:', combinedStats);
-      setMatchesStats(combinedStats);
+          try {
+            console.log('Loading stats for match:', match.match_id);
+
+            // Try to get match stats first
+            const matchStats = await getMatchStats(match.match_id);
+            if (matchStats) {
+              console.log('Match stats response:', matchStats);
+              return {
+                [match.match_id]: matchStats
+              };
+            }
+
+            // Fallback to match details
+            const matchDetail = await getMatchDetails(match.match_id);
+            if (matchDetail) {
+              console.log('Match detail response:', matchDetail);
+              return {
+                [match.match_id]: matchDetail
+              };
+            }
+          } catch (error) {
+            console.error('Error loading match data:', error);
+          }
+          return {};
+        });
+        const statsResults = await Promise.all(statsPromises);
+        const combinedStats = statsResults.reduce((acc, curr) => ({
+          ...acc,
+          ...curr
+        }), {});
+        console.log('Combined match stats:', combinedStats);
+        setMatchesStats(combinedStats);
+      }
     } catch (error) {
       console.error('Error loading matches:', error);
     } finally {
