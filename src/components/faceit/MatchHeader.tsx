@@ -25,12 +25,15 @@ export const MatchHeader = ({
       'de_dust2': '/faceit-icons/de_dust2.png',
       'de_mirage': '/faceit-icons/de_mirage.png',
       'de_inferno': '/faceit-icons/de_inferno.png',
+      'de_cache': '/faceit-icons/de_cache.png',
       'de_overpass': '/faceit-icons/de_overpass.png',
       'de_train': '/faceit-icons/de_train.png',
       'de_nuke': '/faceit-icons/de_nuke.png',
       'de_vertigo': '/faceit-icons/de_vertigo.png',
       'de_ancient': '/faceit-icons/de_ancient.png',
-      'de_anubis': '/faceit-icons/de_anubis.png'
+      'de_anubis': '/faceit-icons/de_anubis.png',
+      'cs_office': '/faceit-icons/cs_office.png',
+      'cs_agency': '/faceit-icons/cs_agency.png'
     };
     
     return mapImages[mapName.toLowerCase()] || '/faceit-icons/background.webp';

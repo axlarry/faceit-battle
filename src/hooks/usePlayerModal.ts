@@ -7,7 +7,6 @@ export const usePlayerModal = () => {
   const [showModal, setShowModal] = useState(false);
 
   const showPlayerDetails = (player: Player) => {
-    console.log('🎯 usePlayerModal: showing player details for:', player.nickname);
     setSelectedPlayer(player);
     setShowModal(true);
   };

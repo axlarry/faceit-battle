@@ -13,7 +13,6 @@ const Index = () => {
   const [currentRegion, setCurrentRegion] = useState('FRIENDS');
   const { friends, addFriend, updateFriend, removeFriend, loadFriendsFromDatabase } = useFriends();
   const { selectedPlayer, showModal, showPlayerDetails, closeModal } = usePlayerModal();
-  console.log('🎯 Index: PlayerModal props:', { selectedPlayer: selectedPlayer?.nickname, showModal });
 
   return (
     <div className="min-h-screen bg-[#0d1117] relative">
@@ -67,9 +66,7 @@ const Index = () => {
           onAddFriend={addFriend}
           onRemoveFriend={removeFriend}
           isFriend={selectedPlayer ? friends.some(f => f.player_id === selectedPlayer.player_id) : false}
-          liveMatchInfo={selectedPlayer?.liveMatchDetails}
         />
-        
       </div>
     </div>
   );

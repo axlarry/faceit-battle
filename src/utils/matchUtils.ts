@@ -1,16 +1,8 @@
 
 import { Player, Match } from "@/types/Player";
 
-export const formatDate = (timestamp: string | number) => {
-  // Handle both string and number timestamps
-  let dateObj;
-  if (typeof timestamp === 'string') {
-    dateObj = new Date(timestamp);
-  } else {
-    dateObj = new Date(timestamp * 1000);
-  }
-  
-  return dateObj.toLocaleDateString('ro-RO', {
+export const formatDate = (timestamp: number) => {
+  return new Date(timestamp * 1000).toLocaleDateString('ro-RO', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
@@ -19,12 +11,8 @@ export const formatDate = (timestamp: string | number) => {
   });
 };
 
-export const formatMatchDuration = (startTime: string | number, endTime: string | number) => {
-  // Convert timestamps to numbers if they're strings
-  let start = typeof startTime === 'string' ? new Date(startTime).getTime() / 1000 : startTime;
-  let end = typeof endTime === 'string' ? new Date(endTime).getTime() / 1000 : endTime;
-  
-  const duration = end - start;
+export const formatMatchDuration = (startTime: number, endTime: number) => {
+  const duration = endTime - startTime;
   const minutes = Math.floor(duration / 60);
   return `${minutes}m`;
 };
@@ -179,12 +167,6 @@ export const getMatchScore = (match: Match, matchesStats: {[key: string]: any}, 
 
 export const getMapInfo = (match: Match, matchesStats: {[key: string]: any}) => {
   console.log('Getting map info for:', match.match_id);
-  
-  // First check if we have map directly in the match (from transformation)
-  if ((match as any).map && (match as any).map !== 'de_unknown') {
-    console.log('Found map in transformed match:', (match as any).map);
-    return (match as any).map;
-  }
   
   const matchStatsData = matchesStats[match.match_id];
   if (matchStatsData) {

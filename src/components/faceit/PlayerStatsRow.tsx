@@ -22,7 +22,7 @@ export const PlayerStatsRow = ({ playerData, teamSide }: PlayerStatsRowProps) =>
             ? 'bg-orange-500 text-white' 
             : 'bg-slate-600 text-slate-200'
         }`}>
-          {(playerData.nickname || '?').charAt(0).toUpperCase()}
+          {playerData.nickname.charAt(0).toUpperCase()}
         </div>
         <div>
           <div className={`font-semibold text-sm flex items-center gap-1 ${

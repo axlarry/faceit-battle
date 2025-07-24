@@ -34,8 +34,13 @@ export const MatchInfo = ({ mapName, startedAt, finishedAt, eloChange }: MatchIn
       'mirage': 'icon_de_mirage.png',
       'de_inferno': 'icon_de_inferno.png',
       'inferno': 'icon_de_inferno.png',
+      'de_cache': 'icon_de_cache.png',
+      'cache': 'icon_de_cache.png',
       'de_overpass': 'icon_de_overpass.png',
       'overpass': 'icon_de_overpass.png',
+      'de_cobblestone': 'icon_de_cbble.png',
+      'cobblestone': 'icon_de_cbble.png',
+      'de_cbble': 'icon_de_cbble.png',
       'de_train': 'icon_de_train.png',
       'train': 'icon_de_train.png',
       'de_nuke': 'icon_de_nuke.png',
@@ -45,7 +50,13 @@ export const MatchInfo = ({ mapName, startedAt, finishedAt, eloChange }: MatchIn
       'de_ancient': 'icon_de_ancient.png',
       'ancient': 'icon_de_ancient.png',
       'de_anubis': 'icon_de_anubis.png',
-      'anubis': 'icon_de_anubis.png'
+      'anubis': 'icon_de_anubis.png',
+      'cs_office': 'icon_cs_office.png',
+      'office': 'icon_cs_office.png',
+      'cs_agency': 'icon_cs_agency.png',
+      'agency': 'icon_cs_agency.png',
+      'cs_italy': 'icon_cs_italy.png',
+      'italy': 'icon_cs_italy.png'
     };
     
     const iconFileName = mapMappings[cleanMapName];
