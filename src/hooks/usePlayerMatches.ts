@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Player, Match } from '@/types/Player';
 import { playerMatchesService } from '@/services/playerMatchesService';
 import { playerStatsService } from '@/services/playerStatsService';
+import { matchService } from '@/services/matchService';
 
 interface PlayerMatchesResult {
   matches: Match[];
@@ -48,7 +49,7 @@ export const usePlayerMatches = (player: Player | null, isOpen: boolean): Player
     setIsLoadingMatches(true);
     
     try {
-      const matchesData = await playerMatchesService.getPlayerMatches(player.player_id, 20);
+      const matchesData = await playerMatchesService.getPlayerMatches(player.player_id, 10);
       console.log('🎯 usePlayerMatches: Raw matches data:', matchesData);
 
       if (!matchesData || !Array.isArray(matchesData) || matchesData.length === 0) {
@@ -58,16 +59,49 @@ export const usePlayerMatches = (player: Player | null, isOpen: boolean): Player
         return;
       }
 
-      // Transform matches with improved data processing
+      console.log('🎯 usePlayerMatches: Fetching detailed stats for each match...');
+      
+      // Fetch detailed match stats for each match in parallel
+      const matchStatsPromises = matchesData.map(async (match: any) => {
+        try {
+          const matchStats = await matchService.getMatchStats(match.match_id);
+          return { matchId: match.match_id, stats: matchStats };
+        } catch (error) {
+          console.error(`Failed to fetch stats for match ${match.match_id}:`, error);
+          return { matchId: match.match_id, stats: null };
+        }
+      });
+
+      const matchStatsResults = await Promise.all(matchStatsPromises);
+      const matchStatsMap = new Map(matchStatsResults.map(result => [result.matchId, result.stats]));
+
+      // Transform matches with detailed stats
       const transformedMatches = matchesData.map((match: any, index: number) => {
         console.log(`🎯 usePlayerMatches: Processing match ${index}:`, match);
         
         try {
-          let playerTeam, opponentTeam, playerStats = {};
+          const matchStats = matchStatsMap.get(match.match_id);
+          let playerStats = {};
+          let detailedPlayerStats = {};
           
-          // Handle teams data (both object and array formats)
+          // Extract player stats from detailed match stats
+          if (matchStats && matchStats.teams) {
+            for (const teamId of Object.keys(matchStats.teams)) {
+              const team = matchStats.teams[teamId];
+              if (team.players) {
+                const playerData = team.players.find((p: any) => p.player_id === player.player_id);
+                if (playerData) {
+                  detailedPlayerStats = playerData.player_stats || {};
+                  console.log(`🎯 Found detailed player stats:`, detailedPlayerStats);
+                  break;
+                }
+              }
+            }
+          }
+
+          // Handle teams data from basic match info
+          let playerTeam, opponentTeam;
           if (match.teams && typeof match.teams === 'object' && !Array.isArray(match.teams)) {
-            // Object format (real API)
             const teamsArray = Object.values(match.teams);
             playerTeam = teamsArray.find((team: any) => 
               team.players?.some((p: any) => p.player_id === player.player_id)
@@ -76,20 +110,10 @@ export const usePlayerMatches = (player: Player | null, isOpen: boolean): Player
             
             const playerData = playerTeam?.players?.find((p: any) => p.player_id === player.player_id);
             playerStats = playerData?.player_stats || {};
-          } else if (Array.isArray(match.teams)) {
-            // Array format
-            playerTeam = match.teams.find((team: any) => 
-              team.players?.some((p: any) => p.player_id === player.player_id)
-            );
-            opponentTeam = match.teams.find((team: any) => team !== playerTeam);
-            
-            const playerData = playerTeam?.players?.find((p: any) => p.player_id === player.player_id);
-            playerStats = playerData?.player_stats || {};
           }
           
           // Calculate scores
           let playerScore = 0, opponentScore = 0;
-          
           if (match.results?.score) {
             const factionKey = Object.keys(match.teams || {}).find(key => 
               (match.teams as any)[key].players?.some((p: any) => p.player_id === player.player_id)
@@ -105,8 +129,21 @@ export const usePlayerMatches = (player: Player | null, isOpen: boolean): Player
           const won = playerScore > opponentScore;
           
           // Get map name
-          const mapName = match.voting?.map?.pick?.[0] || match.map || 'Unknown';
+          const mapName = match.voting?.map?.pick?.[0] || matchStats?.voting?.map?.pick?.[0] || match.map || 'Unknown';
           
+          // Use detailed stats if available, fallback to basic stats
+          const finalPlayerStats = Object.keys(detailedPlayerStats).length > 0 ? detailedPlayerStats : playerStats;
+          
+          // Extract stats with multiple possible keys
+          const kills = (finalPlayerStats as any)?.["Kills"] || (finalPlayerStats as any)?.kills || (finalPlayerStats as any)?.K || "0";
+          const deaths = (finalPlayerStats as any)?.["Deaths"] || (finalPlayerStats as any)?.deaths || (finalPlayerStats as any)?.D || "0";
+          const assists = (finalPlayerStats as any)?.["Assists"] || (finalPlayerStats as any)?.assists || (finalPlayerStats as any)?.A || "0";
+          const kdRatio = (finalPlayerStats as any)?.["K/D Ratio"] || (finalPlayerStats as any)?.kd_ratio || (finalPlayerStats as any)?.["KD Ratio"] || "0";
+          const hsPercentage = (finalPlayerStats as any)?.["Headshots %"] || (finalPlayerStats as any)?.headshots_percentage || (finalPlayerStats as any)?.["Headshot %"] || "0";
+          const adr = (finalPlayerStats as any)?.["ADR"] || (finalPlayerStats as any)?.adr || (finalPlayerStats as any)?.["Average Damage per Round"] || "0";
+
+          console.log(`🎯 Match ${match.match_id} stats - K:${kills} D:${deaths} A:${assists} KD:${kdRatio} HS:${hsPercentage} ADR:${adr}`);
+
           return {
             match_id: match.match_id,
             started_at: match.started_at,
@@ -125,15 +162,15 @@ export const usePlayerMatches = (player: Player | null, isOpen: boolean): Player
                 faction2: opponentScore
               }
             },
-            playerStats: playerStats,
-            // Compatibility fields for MatchRow
+            playerStats: finalPlayerStats,
+            // Compatibility fields for MatchRow with real data
             i18: won ? "1" : "0", // Win/Loss
-            i6: (playerStats as any)?.["Kills"] || (playerStats as any)?.kills || (playerStats as any)?.K || "0", // Kills
-            i8: (playerStats as any)?.["Deaths"] || (playerStats as any)?.deaths || (playerStats as any)?.D || "0", // Deaths 
-            i7: (playerStats as any)?.["Assists"] || (playerStats as any)?.assists || (playerStats as any)?.A || "0", // Assists
-            i10: (playerStats as any)?.["K/D Ratio"] || (playerStats as any)?.kd_ratio || "0", // K/D Ratio
-            i13: (playerStats as any)?.["Headshots %"] || (playerStats as any)?.headshots_percentage || "0", // HS%
-            i14: (playerStats as any)?.["ADR"] || (playerStats as any)?.adr || (playerStats as any)?.average_damage || "0", // ADR
+            i6: String(kills), // Kills
+            i8: String(deaths), // Deaths 
+            i7: String(assists), // Assists
+            i10: String(kdRatio), // K/D Ratio
+            i13: String(hsPercentage), // HS%
+            i14: String(adr), // ADR
             team_stats: {
               team1: playerScore,
               team2: opponentScore
@@ -160,7 +197,7 @@ export const usePlayerMatches = (player: Player | null, isOpen: boolean): Player
       console.log('🎯 usePlayerMatches: Final matches count:', filteredMatches.length);
       setMatches(filteredMatches);
 
-      // Calculate match statistics
+      // Calculate match statistics from real data
       if (filteredMatches.length > 0) {
         const stats = {
           wins: 0,
@@ -175,7 +212,7 @@ export const usePlayerMatches = (player: Player | null, isOpen: boolean): Player
           avgHSPercentage: 0
         };
 
-        let totalKills = 0, totalDeaths = 0, totalAssists = 0, totalHS = 0;
+        let totalKills = 0, totalDeaths = 0, totalAssists = 0, totalHS = 0, totalADR = 0;
         let validMatches = 0;
 
         filteredMatches.forEach((match: any) => {
@@ -183,13 +220,18 @@ export const usePlayerMatches = (player: Player | null, isOpen: boolean): Player
           else if (match.i18 === '0') stats.losses++;
           else stats.draws++;
 
-          if (match.i6) {
-            totalKills += parseInt(match.i6) || 0;
+          const kills = parseInt(match.i6) || 0;
+          const deaths = parseInt(match.i8) || 0;
+          const assists = parseInt(match.i7) || 0;
+          const hs = parseFloat(match.i13) || 0;
+
+          if (kills > 0 || deaths > 0) {
+            totalKills += kills;
+            totalDeaths += deaths;
+            totalAssists += assists;
+            totalHS += hs;
             validMatches++;
           }
-          if (match.i8) totalDeaths += parseInt(match.i8) || 0;
-          if (match.i7) totalAssists += parseInt(match.i7) || 0;
-          if (match.i13) totalHS += parseFloat(match.i13) || 0;
         });
 
         if (validMatches > 0) {
