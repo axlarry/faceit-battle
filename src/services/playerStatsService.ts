@@ -1,11 +1,11 @@
 
-import { faceitAnalyserApiClient } from './faceitAnalyserApiClient';
+import { faceitApiClient } from './faceitApiClient';
 import { toast } from '@/hooks/use-toast';
 
 export class PlayerStatsService {
   async getPlayerStats(playerId: string) {
     try {
-      const data = await faceitAnalyserApiClient.getPlayerStats(playerId);
+      const data = await faceitApiClient.makeApiCall(`/players/${playerId}/stats/cs2`, false);
       console.log('Player stats response:', data);
       return data;
     } catch (error) {

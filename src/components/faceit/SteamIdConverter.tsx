@@ -1,4 +1,6 @@
+
 import { useState, useEffect } from 'react';
+import { useFaceitApi } from "@/hooks/useFaceitApi";
 
 // Convert Steam ID to Steam ID64
 const convertSteamIdToSteamId64 = (steamId: string): string => {
@@ -19,13 +21,12 @@ const convertSteamIdToSteamId64 = (steamId: string): string => {
 export const useSteamIdConverter = (playerId: string) => {
   const [steamId, setSteamId] = useState<string | null>(null);
   const [steamId64, setSteamId64] = useState<string | null>(null);
+  const { makeApiCall } = useFaceitApi();
 
   useEffect(() => {
     const fetchSteamId = async () => {
       try {
-        // Use the original Faceit API for Steam platform data since FaceitAnalyser doesn't provide this
-        const { faceitApiClient } = await import('@/services/faceitApiClient');
-        const playerData = await faceitApiClient.makeApiCall(`/players/${playerId}`, false);
+        const playerData = await makeApiCall(`/players/${playerId}`);
         if (playerData?.platforms?.steam) {
           const steamIdRaw = playerData.platforms.steam;
           setSteamId(steamIdRaw);
@@ -37,10 +38,10 @@ export const useSteamIdConverter = (playerId: string) => {
       }
     };
 
-    if (!steamId && playerId) {
+    if (!steamId) {
       fetchSteamId();
     }
-  }, [playerId, steamId]);
+  }, [playerId, makeApiCall, steamId]);
 
   return { steamId, steamId64 };
 };
