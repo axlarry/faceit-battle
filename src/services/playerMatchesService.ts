@@ -1,14 +1,14 @@
 
-import { faceitApiClient } from './faceitApiClient';
+import { faceitAnalyserApiClient } from './faceitAnalyserApiClient';
 import { toast } from '@/hooks/use-toast';
 
 export class PlayerMatchesService {
   async getPlayerMatches(playerId: string, limit: number = 10) {
     try {
       console.log(`Fetching matches for player: ${playerId}`);
-      const data = await faceitApiClient.makeApiCall(`/players/${playerId}/history?game=cs2&limit=${limit}`, false);
+      const data = await faceitAnalyserApiClient.getPlayerMatches(playerId, { limit: limit.toString() });
       console.log('Player matches response:', data);
-      return data.items || [];
+      return data.segments || [];
     } catch (error) {
       console.error('Error fetching player matches:', error);
       toast({

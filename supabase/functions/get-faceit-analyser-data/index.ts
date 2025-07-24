@@ -23,16 +23,14 @@ serve(async (req) => {
       )
     }
 
-    // Build the URL
-    let url = `${FACEIT_ANALYSER_BASE_URL}/api/${endpoint}/${playerId}`;
+    // Build the URL with API key
+    let url = `${FACEIT_ANALYSER_BASE_URL}/api/${endpoint}/${playerId}?key=${FACEIT_ANALYSER_API_KEY}`;
     
     // Add filters as query parameters if provided
     if (filters && Object.keys(filters).length > 0) {
-      const params = new URLSearchParams();
       Object.entries(filters).forEach(([key, value]) => {
-        params.append(key, value as string);
+        url += `&${key}=${encodeURIComponent(value as string)}`;
       });
-      url += `?${params.toString()}`;
     }
 
     console.log('Making FaceitAnalyser API call to:', url);
@@ -40,7 +38,6 @@ serve(async (req) => {
     const response = await fetch(url, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${FACEIT_ANALYSER_API_KEY}`,
         'Content-Type': 'application/json',
         'User-Agent': 'FaceitTool/1.0'
       },
