@@ -1,27 +1,29 @@
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 export class FaceitAnalyserApiClient {
-  private baseUrl = 'https://faceitanalyser.com';
-  private apiKey = 'B9uwGBLLjCAoBrLJYph4TKvU2Doziue6Yq8svfvG';
-
-  async makeApiCall(endpoint: string): Promise<any> {
+  async makeApiCall(endpoint: string, playerId: string, filters?: Record<string, any>): Promise<any> {
     try {
-      const url = `${this.baseUrl}${endpoint}`;
-      console.log('Making FaceitAnalyser API call to:', url);
+      console.log('Making FaceitAnalyser API call via Supabase:', endpoint, playerId);
 
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json',
-        },
+      const { data, error } = await supabase.functions.invoke('get-faceit-analyser-data', {
+        body: { 
+          endpoint: endpoint.replace('/api/', ''), // Remove /api/ prefix since it's added in the function
+          playerId,
+          filters 
+        }
       });
 
-      if (!response.ok) {
-        throw new Error(`API call failed: ${response.status} ${response.statusText}`);
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw new Error(error.message);
       }
 
-      const data = await response.json();
+      if (data?.error) {
+        console.error('FaceitAnalyser API error:', data.error);
+        throw new Error(data.error);
+      }
+
       console.log('FaceitAnalyser API response:', data);
       return data;
     } catch (error) {
@@ -37,55 +39,47 @@ export class FaceitAnalyserApiClient {
 
   // Player overview
   async getPlayerOverview(playerId: string) {
-    return this.makeApiCall(`/api/overview/${playerId}`);
+    return this.makeApiCall('overview', playerId);
   }
 
   // Player stats
   async getPlayerStats(playerId: string) {
-    return this.makeApiCall(`/api/stats/${playerId}`);
+    return this.makeApiCall('stats', playerId);
   }
 
   // Player matches
   async getPlayerMatches(playerId: string, filters?: Record<string, any>) {
-    let endpoint = `/api/matches/${playerId}`;
-    if (filters) {
-      const params = new URLSearchParams();
-      Object.entries(filters).forEach(([key, value]) => {
-        params.append(key, value.toString());
-      });
-      endpoint += `?${params.toString()}`;
-    }
-    return this.makeApiCall(endpoint);
+    return this.makeApiCall('matches', playerId, filters);
   }
 
   // Player maps performance
   async getPlayerMaps(playerId: string) {
-    return this.makeApiCall(`/api/maps/${playerId}`);
+    return this.makeApiCall('maps', playerId);
   }
 
   // Player hubs
   async getPlayerHubs(playerId: string) {
-    return this.makeApiCall(`/api/hubs/${playerId}`);
+    return this.makeApiCall('hubs', playerId);
   }
 
   // Player insights
   async getPlayerInsights(playerId: string, segmentName: string) {
-    return this.makeApiCall(`/api/insights/${playerId}/${segmentName}`);
+    return this.makeApiCall(`insights/${segmentName}`, playerId);
   }
 
   // Player names
   async getPlayerNames(playerId: string) {
-    return this.makeApiCall(`/api/names/${playerId}`);
+    return this.makeApiCall('names', playerId);
   }
 
   // Player highlights
   async getPlayerHighlights(playerId: string) {
-    return this.makeApiCall(`/api/highlights/${playerId}`);
+    return this.makeApiCall('highlights', playerId);
   }
 
   // Player graphs
   async getPlayerGraphs(playerId: string) {
-    return this.makeApiCall(`/api/playerGraphs/${playerId}`);
+    return this.makeApiCall('playerGraphs', playerId);
   }
 }
 
