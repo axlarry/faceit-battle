@@ -7,6 +7,7 @@ const corsHeaders = {
 
 interface FaceitAnalyserRequest {
   nickname: string;
+  endpoint?: string;
 }
 
 Deno.serve(async (req) => {
@@ -16,16 +17,16 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { nickname }: FaceitAnalyserRequest = await req.json()
+    const { nickname, endpoint = 'stats' }: FaceitAnalyserRequest = await req.json()
     
     if (!nickname) {
       throw new Error('Nickname is required')
     }
 
-    console.log(`Fetching FaceitAnalyser data for: ${nickname}`)
+    console.log(`Fetching FaceitAnalyser ${endpoint} data for: ${nickname}`)
 
     // Make request to FaceitAnalyser API
-    const faceitAnalyserUrl = `https://faceitanalyser.com/api/stats/${encodeURIComponent(nickname)}?key=B9uwGBLLjCAoBrLJYph4TKvU2Doziue6Yq8svfvG`
+    const faceitAnalyserUrl = `https://faceitanalyser.com/api/${endpoint}/${encodeURIComponent(nickname)}?key=B9uwGBLLjCAoBrLJYph4TKvU2Doziue6Yq8svfvG`
     
     const response = await fetch(faceitAnalyserUrl, {
       method: 'GET',
