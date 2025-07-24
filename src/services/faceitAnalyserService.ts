@@ -42,12 +42,22 @@ export interface FaceitAnalyserData {
 }
 
 export class FaceitAnalyserService {
-  private baseUrl = 'https://faceitanalyser.com/api';
-  private apiKey = 'B9uwGBLLjCAoBrLJYph4TKvU2Doziue6Yq8svfvG';
+  private supabaseUrl = 'https://rwizxoeyatdtggrpnpmq.supabase.co';
+  private supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ3aXp4b2V5YXRkdGdncnBucG1xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2OTkwOTYsImV4cCI6MjA2NDI3NTA5Nn0.6Rpmb1a2iFqw2VZaHl-k-3otQlQuDpaxUPf28uOlLRU';
 
   async getPlayerStats(nickname: string): Promise<FaceitAnalyserData | null> {
     try {
-      const response = await fetch(`${this.baseUrl}/stats/${encodeURIComponent(nickname)}?key=${this.apiKey}`);
+      console.log('Fetching FaceitAnalyser data for:', nickname);
+      
+      const response = await fetch(`${this.supabaseUrl}/functions/v1/get-faceit-analyser-data`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.supabaseKey}`,
+          'apikey': this.supabaseKey,
+        },
+        body: JSON.stringify({ nickname }),
+      });
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -55,6 +65,11 @@ export class FaceitAnalyserService {
       
       const data = await response.json();
       console.log('FaceitAnalyser response:', data);
+      
+      // Check if response contains error
+      if (data.error) {
+        throw new Error(data.error);
+      }
       
       return data;
     } catch (error) {
