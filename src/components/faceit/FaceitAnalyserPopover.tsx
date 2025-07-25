@@ -78,40 +78,95 @@ export const FaceitAnalyserPopover = ({ player }: FaceitAnalyserPopoverProps) =>
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <Card className="bg-gradient-to-br from-green-500/20 to-green-600/20 border-green-500/30">
                           <CardContent className="p-4 text-center">
-                            <div className="text-2xl font-bold text-green-400">{data.overview.current_elo || 'N/A'}</div>
+                            <div className="text-2xl font-bold text-green-400">{data.overview.elo || 'N/A'}</div>
                             <div className="text-sm text-gray-400">ELO Current</div>
                           </CardContent>
                         </Card>
                         <Card className="bg-gradient-to-br from-blue-500/20 to-blue-600/20 border-blue-500/30">
                           <CardContent className="p-4 text-center">
-                            <div className="text-2xl font-bold text-blue-400">{data.overview.win_rate || 'N/A'}%</div>
-                            <div className="text-sm text-gray-400">Win Rate</div>
+                            <div className="text-2xl font-bold text-blue-400">{data.overview.lvl || 'N/A'}</div>
+                            <div className="text-sm text-gray-400">Level</div>
                           </CardContent>
                         </Card>
                         <Card className="bg-gradient-to-br from-purple-500/20 to-purple-600/20 border-purple-500/30">
                           <CardContent className="p-4 text-center">
-                            <div className="text-2xl font-bold text-purple-400">{data.overview.kd_ratio || 'N/A'}</div>
-                            <div className="text-sm text-gray-400">K/D Ratio</div>
+                            <div className="text-2xl font-bold text-purple-400">{data.overview.region || 'N/A'}</div>
+                            <div className="text-sm text-gray-400">Region</div>
                           </CardContent>
                         </Card>
                         <Card className="bg-gradient-to-br from-red-500/20 to-red-600/20 border-red-500/30">
                           <CardContent className="p-4 text-center">
-                            <div className="text-2xl font-bold text-red-400">{data.overview.headshot_percentage || 'N/A'}%</div>
-                            <div className="text-sm text-gray-400">Headshot %</div>
+                            <div className="text-2xl font-bold text-red-400">{data.overview.country || 'N/A'}</div>
+                            <div className="text-sm text-gray-400">Country</div>
                           </CardContent>
                         </Card>
                       </div>
-                      
-                      <Card className="bg-gray-800/50 border-gray-700">
-                        <CardHeader>
-                          <CardTitle className="text-lg text-orange-400">Overview General</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <pre className="text-sm text-gray-300 whitespace-pre-wrap overflow-auto">
-                            {JSON.stringify(data.overview, null, 2)}
-                          </pre>
-                        </CardContent>
-                      </Card>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <Card className="bg-gray-800/50 border-gray-700">
+                          <CardHeader>
+                            <CardTitle className="text-lg text-orange-400 flex items-center gap-2">
+                              <User className="h-5 w-5" />
+                              Informații Profil
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="space-y-3">
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Nume:</span>
+                              <span className="text-white">{data.overview.name}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Activ:</span>
+                              <Badge variant={data.overview.active ? "default" : "destructive"}>
+                                {data.overview.active ? "Activ" : "Inactiv"}
+                              </Badge>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Steam ID:</span>
+                              <span className="text-white text-sm">{data.overview.steam_id}</span>
+                            </div>
+                            {data.overview.streaming?.twitch_id && (
+                              <div className="flex justify-between">
+                                <span className="text-gray-400">Twitch:</span>
+                                <span className="text-purple-400">{data.overview.streaming.twitch_id}</span>
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+
+                        <Card className="bg-gray-800/50 border-gray-700">
+                          <CardHeader>
+                            <CardTitle className="text-lg text-orange-400 flex items-center gap-2">
+                              <Trophy className="h-5 w-5" />
+                              Bans & Status
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent className="space-y-3">
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">VAC Ban:</span>
+                              <Badge variant={data.overview.vac_ban ? "destructive" : "default"}>
+                                {data.overview.vac_ban ? "Da" : "Nu"}
+                              </Badge>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Game Ban:</span>
+                              <Badge variant={data.overview.game_ban ? "destructive" : "default"}>
+                                {data.overview.game_ban ? "Da" : "Nu"}
+                              </Badge>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Economy Ban:</span>
+                              <Badge variant={data.overview.economy_ban ? "destructive" : "default"}>
+                                {data.overview.economy_ban ? "Da" : "Nu"}
+                              </Badge>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-400">Total Bans:</span>
+                              <span className="text-white">{data.overview.bans?.length || 0}</span>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </div>
                     </div>
                   )}
                 </TabsContent>
@@ -177,7 +232,7 @@ export const FaceitAnalyserPopover = ({ player }: FaceitAnalyserPopoverProps) =>
 
                 {/* Matches Tab */}
                 <TabsContent value="matches" className="space-y-6 mt-6">
-                  {data.matches && data.matches.length > 0 ? (
+                  {data.matches && Array.isArray(data.matches) && data.matches.length > 0 ? (
                     <Card className="bg-gray-800/50 border-gray-700">
                       <CardHeader>
                         <CardTitle className="text-lg text-orange-400 flex items-center gap-2">
@@ -186,12 +241,48 @@ export const FaceitAnalyserPopover = ({ player }: FaceitAnalyserPopoverProps) =>
                         </CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <div className="space-y-2 max-h-96 overflow-y-auto">
-                          {data.matches.slice(0, 50).map((match: any, index: number) => (
-                            <div key={index} className="p-3 bg-gray-700/50 rounded border-l-4 border-orange-500/50">
-                              <pre className="text-sm text-gray-300 whitespace-pre-wrap">
-                                {JSON.stringify(match, null, 2)}
-                              </pre>
+                        <div className="space-y-3 max-h-96 overflow-y-auto">
+                          {data.matches.slice(0, 20).map((match: any, index: number) => (
+                            <div key={index} className="p-4 bg-gray-700/50 rounded border-l-4 border-orange-500/50">
+                              <div className="flex flex-wrap items-center justify-between mb-2">
+                                <div className="flex items-center gap-2">
+                                  <Badge variant={match.w === 1 ? "default" : "destructive"}>
+                                    {match.w === 1 ? "WIN" : "LOSE"}
+                                  </Badge>
+                                  <span className="text-white font-medium">{match.map}</span>
+                                  <span className="text-gray-400">({match.s})</span>
+                                </div>
+                                <div className="text-gray-400 text-sm">{match.date}</div>
+                              </div>
+                              
+                              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 text-sm">
+                                <div>
+                                  <span className="text-gray-400">K/D/A:</span>
+                                  <span className="text-white ml-1">{match.k}/{match.d}/{match.a}</span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-400">K/D:</span>
+                                  <span className="text-purple-400 ml-1">{formatDecimal(match.kdr)}</span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-400">HLTV:</span>
+                                  <span className="text-cyan-400 ml-1">{formatDecimal(match.hltv)}</span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-400">HS:</span>
+                                  <span className="text-yellow-400 ml-1">{match.hs}</span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-400">ELO:</span>
+                                  <span className={`ml-1 ${match.elod.includes('+') ? 'text-green-400' : 'text-red-400'}`}>
+                                    {match.elod}
+                                  </span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-400">Hub:</span>
+                                  <span className="text-orange-400 ml-1">{match.hn}</span>
+                                </div>
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -208,20 +299,76 @@ export const FaceitAnalyserPopover = ({ player }: FaceitAnalyserPopoverProps) =>
 
                 {/* Maps Tab */}
                 <TabsContent value="maps" className="space-y-6 mt-6">
-                  {data.maps ? (
-                    <Card className="bg-gray-800/50 border-gray-700">
-                      <CardHeader>
-                        <CardTitle className="text-lg text-orange-400 flex items-center gap-2">
-                          <MapPin className="h-5 w-5" />
-                          Statistici Hărți
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <pre className="text-sm text-gray-300 whitespace-pre-wrap overflow-auto max-h-96">
-                          {JSON.stringify(data.maps, null, 2)}
-                        </pre>
-                      </CardContent>
-                    </Card>
+                  {data.maps && Array.isArray(data.maps) && data.maps.length > 0 ? (
+                    <div className="space-y-4">
+                      {data.maps.map((mapData: any, index: number) => (
+                        <Card key={index} className="bg-gray-800/50 border-gray-700">
+                          <CardHeader>
+                            <CardTitle className="text-lg text-orange-400 flex items-center gap-2">
+                              <MapPin className="h-5 w-5" />
+                              {mapData.map || `Hartă ${index + 1}`}
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                              <div className="text-center">
+                                <div className="text-2xl font-bold text-white">{mapData.m}</div>
+                                <div className="text-sm text-gray-400">Meciuri</div>
+                              </div>
+                              <div className="text-center">
+                                <div className="text-2xl font-bold text-green-400">{mapData.w}</div>
+                                <div className="text-sm text-gray-400">Victorii</div>
+                              </div>
+                              <div className="text-center">
+                                <div className="text-2xl font-bold text-red-400">{mapData.l}</div>
+                                <div className="text-sm text-gray-400">Înfrângeri</div>
+                              </div>
+                              <div className="text-center">
+                                <div className="text-2xl font-bold text-blue-400">{formatDecimal(mapData.wr, 1)}%</div>
+                                <div className="text-sm text-gray-400">Win Rate</div>
+                              </div>
+                              <div className="text-center">
+                                <div className="text-2xl font-bold text-purple-400">{formatDecimal(mapData.real_kdr)}</div>
+                                <div className="text-sm text-gray-400">K/D</div>
+                              </div>
+                              <div className="text-center">
+                                <div className="text-2xl font-bold text-yellow-400">{formatDecimal(mapData.hsp, 1)}%</div>
+                                <div className="text-sm text-gray-400">HS%</div>
+                              </div>
+                            </div>
+                            
+                            <div className="mt-4 grid grid-cols-3 md:grid-cols-6 gap-2 text-sm">
+                              <div>
+                                <span className="text-gray-400">Kills:</span>
+                                <span className="text-green-400 ml-1">{formatNumber(mapData.k)}</span>
+                              </div>
+                              <div>
+                                <span className="text-gray-400">Deaths:</span>
+                                <span className="text-red-400 ml-1">{formatNumber(mapData.d)}</span>
+                              </div>
+                              <div>
+                                <span className="text-gray-400">Assists:</span>
+                                <span className="text-blue-400 ml-1">{formatNumber(mapData.a)}</span>
+                              </div>
+                              <div>
+                                <span className="text-gray-400">ELO Avg:</span>
+                                <span className="text-orange-400 ml-1">{formatNumber(mapData.avg_elo)}</span>
+                              </div>
+                              <div>
+                                <span className="text-gray-400">HLTV:</span>
+                                <span className="text-cyan-400 ml-1">{formatDecimal(mapData.avg_hltv)}</span>
+                              </div>
+                              <div>
+                                <span className="text-gray-400">Diff:</span>
+                                <span className={`ml-1 ${mapData.diff >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                  {mapData.diff >= 0 ? '+' : ''}{mapData.diff}
+                                </span>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
                   ) : (
                     <Card className="bg-gray-800/50 border-gray-700">
                       <CardContent className="p-8 text-center">
