@@ -5,7 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { TrendingUp, TrendingDown, Target, Zap, Trophy, Calendar, MapPin, Users, Star, History, User } from 'lucide-react';
+import { TrendingUp, TrendingDown, Target, Zap, Trophy, Calendar, MapPin, Users, Star, History, User, Clock } from 'lucide-react';
 import { faceitAnalyserService, FaceitAnalyserComplete } from '@/services/faceitAnalyserService';
 
 interface FaceitAnalyserPopoverProps {
@@ -232,37 +232,40 @@ export const FaceitAnalyserPopover = ({ player }: FaceitAnalyserPopoverProps) =>
 
                 {/* Matches Tab */}
                 <TabsContent value="matches" className="space-y-6 mt-6">
-                  {data.matches && Array.isArray(data.matches) && data.matches.length > 0 ? (
+                  {data.matches && (data.matches as any).segments && Array.isArray((data.matches as any).segments) && (data.matches as any).segments.length > 0 ? (
                     <Card className="bg-gray-800/50 border-gray-700">
                       <CardHeader>
                         <CardTitle className="text-lg text-orange-400 flex items-center gap-2">
                           <History className="h-5 w-5" />
-                          Istoric Meciuri ({data.matches.length})
+                          Istoric Meciuri ({(data.matches as any).segments.length})
                         </CardTitle>
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-3 max-h-96 overflow-y-auto">
-                          {data.matches.slice(0, 20).map((match: any, index: number) => (
-                            <div key={index} className="p-4 bg-gray-700/50 rounded border-l-4 border-orange-500/50">
+                          {(data.matches as any).segments.slice(0, 20).map((match: any, index: number) => (
+                            <div key={match.matchId || index} className="p-4 bg-gray-700/50 rounded border-l-4 border-orange-500/50">
                               <div className="flex flex-wrap items-center justify-between mb-2">
                                 <div className="flex items-center gap-2">
                                   <Badge variant={match.w === 1 ? "default" : "destructive"}>
                                     {match.w === 1 ? "WIN" : "LOSE"}
                                   </Badge>
-                                  <span className="text-white font-medium">{match.map}</span>
-                                  <span className="text-gray-400">({match.s})</span>
+                                  <span className="text-white font-medium">{match.map || match.i1}</span>
+                                  <span className="text-gray-400">({match.s || match.i18})</span>
                                 </div>
-                                <div className="text-gray-400 text-sm">{match.date}</div>
+                                <div className="text-gray-400 text-sm flex items-center gap-2">
+                                  <Clock className="h-3 w-3" />
+                                  {match.date} - {match.hour}:00
+                                </div>
                               </div>
                               
                               <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 text-sm">
                                 <div>
                                   <span className="text-gray-400">K/D/A:</span>
-                                  <span className="text-white ml-1">{match.k}/{match.d}/{match.a}</span>
+                                  <span className="text-white ml-1">{match.k || match.i6}/{match.d || match.i8}/{match.a || match.i7}</span>
                                 </div>
                                 <div>
                                   <span className="text-gray-400">K/D:</span>
-                                  <span className="text-purple-400 ml-1">{formatDecimal(match.kdr)}</span>
+                                  <span className="text-purple-400 ml-1">{formatDecimal(match.kdr || match.c2)}</span>
                                 </div>
                                 <div>
                                   <span className="text-gray-400">HLTV:</span>
@@ -270,19 +273,32 @@ export const FaceitAnalyserPopover = ({ player }: FaceitAnalyserPopoverProps) =>
                                 </div>
                                 <div>
                                   <span className="text-gray-400">HS:</span>
-                                  <span className="text-yellow-400 ml-1">{match.hs}</span>
+                                  <span className="text-yellow-400 ml-1">{match.hs || match.i13}</span>
                                 </div>
                                 <div>
                                   <span className="text-gray-400">ELO:</span>
-                                  <span className={`ml-1 ${match.elod.includes('+') ? 'text-green-400' : 'text-red-400'}`}>
-                                    {match.elod}
+                                  <span className={`ml-1 ${(match.elod && match.elod.includes('+')) ? 'text-green-400' : 'text-red-400'}`}>
+                                    {match.elod || `${match.elo || 'N/A'}`}
                                   </span>
                                 </div>
                                 <div>
                                   <span className="text-gray-400">Hub:</span>
-                                  <span className="text-orange-400 ml-1">{match.hn}</span>
+                                  <span className="text-orange-400 ml-1 text-xs">{(match.hn || match.id || 'N/A').slice(0, 15)}</span>
                                 </div>
                               </div>
+                              
+                              {match.url && (
+                                <div className="mt-2">
+                                  <a 
+                                    href={match.url} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="text-blue-400 hover:text-blue-300 text-xs underline"
+                                  >
+                                    Vezi meciul pe FACEIT
+                                  </a>
+                                </div>
+                              )}
                             </div>
                           ))}
                         </div>
@@ -299,28 +315,28 @@ export const FaceitAnalyserPopover = ({ player }: FaceitAnalyserPopoverProps) =>
 
                 {/* Maps Tab */}
                 <TabsContent value="maps" className="space-y-6 mt-6">
-                  {data.maps && Array.isArray(data.maps) && data.maps.length > 0 ? (
+                  {data.maps && (data.maps as any).segments && Array.isArray((data.maps as any).segments) && (data.maps as any).segments.length > 0 ? (
                     <div className="space-y-4">
-                      {data.maps.map((mapData: any, index: number) => (
+                      {(data.maps as any).segments.map((mapData: any, index: number) => (
                         <Card key={index} className="bg-gray-800/50 border-gray-700">
                           <CardHeader>
                             <CardTitle className="text-lg text-orange-400 flex items-center gap-2">
                               <MapPin className="h-5 w-5" />
-                              {mapData.map || `Hartă ${index + 1}`}
+                              {mapData.segment_value || mapData.map || `Hartă ${index + 1}`}
                             </CardTitle>
                           </CardHeader>
                           <CardContent>
                             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                               <div className="text-center">
-                                <div className="text-2xl font-bold text-white">{mapData.m}</div>
+                                <div className="text-2xl font-bold text-white">{formatNumber(mapData.m)}</div>
                                 <div className="text-sm text-gray-400">Meciuri</div>
                               </div>
                               <div className="text-center">
-                                <div className="text-2xl font-bold text-green-400">{mapData.w}</div>
+                                <div className="text-2xl font-bold text-green-400">{formatNumber(mapData.w)}</div>
                                 <div className="text-sm text-gray-400">Victorii</div>
                               </div>
                               <div className="text-center">
-                                <div className="text-2xl font-bold text-red-400">{mapData.l}</div>
+                                <div className="text-2xl font-bold text-red-400">{formatNumber(mapData.l)}</div>
                                 <div className="text-sm text-gray-400">Înfrângeri</div>
                               </div>
                               <div className="text-center">
@@ -361,8 +377,27 @@ export const FaceitAnalyserPopover = ({ player }: FaceitAnalyserPopoverProps) =>
                               <div>
                                 <span className="text-gray-400">Diff:</span>
                                 <span className={`ml-1 ${mapData.diff >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                  {mapData.diff >= 0 ? '+' : ''}{mapData.diff}
+                                  {mapData.diff >= 0 ? '+' : ''}{formatNumber(mapData.diff)}
                                 </span>
+                              </div>
+                            </div>
+
+                            <div className="mt-4 pt-3 border-t border-gray-600 grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                              <div>
+                                <span className="text-gray-400">ELO Înalt:</span>
+                                <span className="text-green-400 ml-1">{formatNumber(mapData.highest_elo)}</span>
+                              </div>
+                              <div>
+                                <span className="text-gray-400">ELO Scăzut:</span>
+                                <span className="text-red-400 ml-1">{formatNumber(mapData.lowest_elo)}</span>
+                              </div>
+                              <div>
+                                <span className="text-gray-400">Prima Dată:</span>
+                                <span className="text-white ml-1">{mapData.first_occurrence}</span>
+                              </div>
+                              <div>
+                                <span className="text-gray-400">Ultima Dată:</span>
+                                <span className="text-white ml-1">{mapData.last_occurrence}</span>
                               </div>
                             </div>
                           </CardContent>
@@ -380,26 +415,87 @@ export const FaceitAnalyserPopover = ({ player }: FaceitAnalyserPopoverProps) =>
 
                 {/* Hubs Tab */}
                 <TabsContent value="hubs" className="space-y-6 mt-6">
-                  {data.hubs && data.hubs.length > 0 ? (
-                    <Card className="bg-gray-800/50 border-gray-700">
-                      <CardHeader>
-                        <CardTitle className="text-lg text-orange-400 flex items-center gap-2">
-                          <Users className="h-5 w-5" />
-                          Hub-uri ({data.hubs.length})
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-96 overflow-y-auto">
-                          {data.hubs.map((hub: any, index: number) => (
-                            <div key={index} className="p-3 bg-gray-700/50 rounded">
-                              <pre className="text-sm text-gray-300 whitespace-pre-wrap">
-                                {JSON.stringify(hub, null, 2)}
-                              </pre>
+                  {data.hubs && (data.hubs as any).segments && Array.isArray((data.hubs as any).segments) && (data.hubs as any).segments.length > 0 ? (
+                    <div className="space-y-4">
+                      {(data.hubs as any).segments.map((hubData: any, index: number) => (
+                        <Card key={index} className="bg-gray-800/50 border-gray-700">
+                          <CardHeader>
+                            <CardTitle className="text-lg text-orange-400 flex items-center gap-2">
+                              <Users className="h-5 w-5" />
+                              {hubData.segment_value || hubData.hn || `Hub ${index + 1}`}
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                              <div className="text-center">
+                                <div className="text-2xl font-bold text-white">{formatNumber(hubData.m)}</div>
+                                <div className="text-sm text-gray-400">Meciuri</div>
+                              </div>
+                              <div className="text-center">
+                                <div className="text-2xl font-bold text-green-400">{formatNumber(hubData.w)}</div>
+                                <div className="text-sm text-gray-400">Victorii</div>
+                              </div>
+                              <div className="text-center">
+                                <div className="text-2xl font-bold text-red-400">{formatNumber(hubData.l)}</div>
+                                <div className="text-sm text-gray-400">Înfrângeri</div>
+                              </div>
+                              <div className="text-center">
+                                <div className="text-2xl font-bold text-blue-400">{formatDecimal(hubData.wr, 1)}%</div>
+                                <div className="text-sm text-gray-400">Win Rate</div>
+                              </div>
+                              <div className="text-center">
+                                <div className="text-2xl font-bold text-purple-400">{formatDecimal(hubData.real_kdr)}</div>
+                                <div className="text-sm text-gray-400">K/D</div>
+                              </div>
+                              <div className="text-center">
+                                <div className="text-2xl font-bold text-yellow-400">{formatDecimal(hubData.hsp, 1)}%</div>
+                                <div className="text-sm text-gray-400">HS%</div>
+                              </div>
                             </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
+                            
+                            <div className="mt-4 grid grid-cols-3 md:grid-cols-6 gap-2 text-sm">
+                              <div>
+                                <span className="text-gray-400">Kills:</span>
+                                <span className="text-green-400 ml-1">{formatNumber(hubData.k)}</span>
+                              </div>
+                              <div>
+                                <span className="text-gray-400">Deaths:</span>
+                                <span className="text-red-400 ml-1">{formatNumber(hubData.d)}</span>
+                              </div>
+                              <div>
+                                <span className="text-gray-400">Assists:</span>
+                                <span className="text-blue-400 ml-1">{formatNumber(hubData.a)}</span>
+                              </div>
+                              <div>
+                                <span className="text-gray-400">ELO Avg:</span>
+                                <span className="text-orange-400 ml-1">{formatNumber(hubData.avg_elo)}</span>
+                              </div>
+                              <div>
+                                <span className="text-gray-400">HLTV:</span>
+                                <span className="text-cyan-400 ml-1">{formatDecimal(hubData.avg_hltv)}</span>
+                              </div>
+                              <div>
+                                <span className="text-gray-400">Tip:</span>
+                                <span className="text-white ml-1">{hubData.ht || 'N/A'}</span>
+                              </div>
+                            </div>
+
+                            {hubData.ha && (
+                              <div className="mt-3 pt-3 border-t border-gray-600">
+                                <img 
+                                  src={hubData.ha} 
+                                  alt="Hub Avatar" 
+                                  className="w-16 h-16 rounded object-cover mx-auto"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                  }}
+                                />
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
                   ) : (
                     <Card className="bg-gray-800/50 border-gray-700">
                       <CardContent className="p-8 text-center">
@@ -411,26 +507,114 @@ export const FaceitAnalyserPopover = ({ player }: FaceitAnalyserPopoverProps) =>
 
                 {/* Highlights Tab */}
                 <TabsContent value="highlights" className="space-y-6 mt-6">
-                  {data.highlights && data.highlights.length > 0 ? (
-                    <Card className="bg-gray-800/50 border-gray-700">
-                      <CardHeader>
-                        <CardTitle className="text-lg text-orange-400 flex items-center gap-2">
-                          <Star className="h-5 w-5" />
-                          Highlights ({data.highlights.length})
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="space-y-4 max-h-96 overflow-y-auto">
-                          {data.highlights.map((highlight: any, index: number) => (
-                            <div key={index} className="p-3 bg-gray-700/50 rounded border-l-4 border-yellow-500/50">
-                              <pre className="text-sm text-gray-300 whitespace-pre-wrap">
-                                {JSON.stringify(highlight, null, 2)}
-                              </pre>
+                  {data.highlights && (data.highlights as any).k && Array.isArray((data.highlights as any).k) && (data.highlights as any).k.length > 0 ? (
+                    <div className="space-y-6">
+                      <Card className="bg-gray-800/50 border-gray-700">
+                        <CardHeader>
+                          <CardTitle className="text-lg text-orange-400 flex items-center gap-2">
+                            <Star className="h-5 w-5" />
+                            Top Kills Highlights ({(data.highlights as any).k.length})
+                          </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="space-y-3 max-h-80 overflow-y-auto">
+                            {(data.highlights as any).k.slice(0, 10).map((highlight: any, index: number) => (
+                              <div key={index} className="p-4 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 rounded border-l-4 border-yellow-500">
+                                <div className="flex flex-wrap items-center justify-between mb-2">
+                                  <div className="flex items-center gap-2">
+                                    <Badge variant={highlight.w === 1 ? "default" : "destructive"}>
+                                      {highlight.w === 1 ? "WIN" : "LOSE"}
+                                    </Badge>
+                                    <span className="text-white font-medium">{highlight.map}</span>
+                                    <span className="text-gray-400">({highlight.s})</span>
+                                  </div>
+                                  <div className="text-gray-400 text-sm">{highlight.date}</div>
+                                </div>
+                                
+                                <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
+                                  <div>
+                                    <span className="text-yellow-400 font-bold">K/D/A:</span>
+                                    <span className="text-white ml-1">{highlight.k}/{highlight.d}/{highlight.a}</span>
+                                  </div>
+                                  <div>
+                                    <span className="text-purple-400">K/D:</span>
+                                    <span className="text-white ml-1">{formatDecimal(highlight.kdr)}</span>
+                                  </div>
+                                  <div>
+                                    <span className="text-cyan-400">HLTV:</span>
+                                    <span className="text-white ml-1">{formatDecimal(highlight.hltv)}</span>
+                                  </div>
+                                  <div>
+                                    <span className="text-yellow-400">HS:</span>
+                                    <span className="text-white ml-1">{highlight.hs}</span>
+                                  </div>
+                                  <div>
+                                    <span className="text-orange-400">ELO:</span>
+                                    <span className={`ml-1 ${(highlight.elod && highlight.elod.includes('+')) ? 'text-green-400' : 'text-red-400'}`}>
+                                      {highlight.elod}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      {(data.highlights as any).kdr && Array.isArray((data.highlights as any).kdr) && (data.highlights as any).kdr.length > 0 && (
+                        <Card className="bg-gray-800/50 border-gray-700">
+                          <CardHeader>
+                            <CardTitle className="text-lg text-orange-400 flex items-center gap-2">
+                              <TrendingUp className="h-5 w-5" />
+                              Best K/D Highlights ({(data.highlights as any).kdr.length})
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-3 max-h-80 overflow-y-auto">
+                              {(data.highlights as any).kdr.slice(0, 10).map((highlight: any, index: number) => (
+                                <div key={index} className="p-4 bg-gradient-to-r from-purple-500/20 to-pink-500/20 rounded border-l-4 border-purple-500">
+                                  <div className="flex flex-wrap items-center justify-between mb-2">
+                                    <div className="flex items-center gap-2">
+                                      <Badge variant={highlight.w === 1 ? "default" : "destructive"}>
+                                        {highlight.w === 1 ? "WIN" : "LOSE"}
+                                      </Badge>
+                                      <span className="text-white font-medium">{highlight.map}</span>
+                                      <span className="text-gray-400">({highlight.s})</span>
+                                    </div>
+                                    <div className="text-gray-400 text-sm">{highlight.date}</div>
+                                  </div>
+                                  
+                                  <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
+                                    <div>
+                                      <span className="text-purple-400 font-bold">K/D:</span>
+                                      <span className="text-white ml-1">{formatDecimal(highlight.kdr)}</span>
+                                    </div>
+                                    <div>
+                                      <span className="text-green-400">K/D/A:</span>
+                                      <span className="text-white ml-1">{highlight.k}/{highlight.d}/{highlight.a}</span>
+                                    </div>
+                                    <div>
+                                      <span className="text-cyan-400">HLTV:</span>
+                                      <span className="text-white ml-1">{formatDecimal(highlight.hltv)}</span>
+                                    </div>
+                                    <div>
+                                      <span className="text-yellow-400">HS:</span>
+                                      <span className="text-white ml-1">{highlight.hs}</span>
+                                    </div>
+                                    <div>
+                                      <span className="text-orange-400">ELO:</span>
+                                      <span className={`ml-1 ${(highlight.elod && highlight.elod.includes('+')) ? 'text-green-400' : 'text-red-400'}`}>
+                                        {highlight.elod}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
                             </div>
-                          ))}
-                        </div>
-                      </CardContent>
-                    </Card>
+                          </CardContent>
+                        </Card>
+                      )}
+                    </div>
                   ) : (
                     <Card className="bg-gray-800/50 border-gray-700">
                       <CardContent className="p-8 text-center">
@@ -442,20 +626,30 @@ export const FaceitAnalyserPopover = ({ player }: FaceitAnalyserPopoverProps) =>
 
                 {/* Names Tab */}
                 <TabsContent value="names" className="space-y-6 mt-6">
-                  {data.names && data.names.length > 0 ? (
+                  {data.names && (data.names as any).segments && Array.isArray((data.names as any).segments) && (data.names as any).segments.length > 0 ? (
                     <Card className="bg-gray-800/50 border-gray-700">
                       <CardHeader>
                         <CardTitle className="text-lg text-orange-400 flex items-center gap-2">
                           <User className="h-5 w-5" />
-                          Istoric Nume ({data.names.length})
+                          Istoric Nume ({(data.names as any).segments.length})
                         </CardTitle>
                       </CardHeader>
                       <CardContent>
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 max-h-96 overflow-y-auto">
-                          {data.names.map((name: any, index: number) => (
-                            <div key={index} className="p-3 bg-gray-700/50 rounded text-center">
-                              <div className="text-white font-medium">{name.name || name}</div>
-                              <div className="text-sm text-gray-400">{name.date || 'Data necunoscută'}</div>
+                          {(data.names as any).segments.map((nameData: any, index: number) => (
+                            <div key={index} className="p-4 bg-gray-700/50 rounded text-center border border-gray-600">
+                              <div className="text-white font-medium text-lg">{nameData.segment_value || nameData.nickname}</div>
+                              <div className="text-sm text-gray-400 mt-1">
+                                {nameData.first_occurrence && (
+                                  <div>Prima dată: {nameData.first_occurrence}</div>
+                                )}
+                                {nameData.last_occurrence && (
+                                  <div>Ultima dată: {nameData.last_occurrence}</div>
+                                )}
+                              </div>
+                              <div className="mt-2 text-xs text-gray-500">
+                                {nameData.m && <span>Meciuri: {nameData.m}</span>}
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -472,20 +666,100 @@ export const FaceitAnalyserPopover = ({ player }: FaceitAnalyserPopoverProps) =>
 
                 {/* Graphs Tab */}
                 <TabsContent value="graphs" className="space-y-6 mt-6">
-                  {data.playerGraphs ? (
-                    <Card className="bg-gray-800/50 border-gray-700">
-                      <CardHeader>
-                        <CardTitle className="text-lg text-orange-400 flex items-center gap-2">
-                          <TrendingUp className="h-5 w-5" />
-                          Grafice Progres
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <pre className="text-sm text-gray-300 whitespace-pre-wrap overflow-auto max-h-96">
-                          {JSON.stringify(data.playerGraphs, null, 2)}
-                        </pre>
-                      </CardContent>
-                    </Card>
+                  {data.playerGraphs && (data.playerGraphs as any).graph_data ? (
+                    <div className="space-y-6">
+                      {(data.playerGraphs as any).graph_data.elo && (
+                        <Card className="bg-gray-800/50 border-gray-700">
+                          <CardHeader>
+                            <CardTitle className="text-lg text-orange-400 flex items-center gap-2">
+                              <TrendingUp className="h-5 w-5" />
+                              Progresie ELO
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                              <div className="text-center p-3 bg-gray-700/50 rounded">
+                                <div className="text-2xl font-bold text-green-400">{(data.playerGraphs as any).graph_data.elo.max}</div>
+                                <div className="text-sm text-gray-400">ELO Maxim</div>
+                              </div>
+                              <div className="text-center p-3 bg-gray-700/50 rounded">
+                                <div className="text-2xl font-bold text-red-400">{(data.playerGraphs as any).graph_data.elo.min}</div>
+                                <div className="text-sm text-gray-400">ELO Minim</div>
+                              </div>
+                              <div className="text-center p-3 bg-gray-700/50 rounded">
+                                <div className="text-2xl font-bold text-blue-400">{(data.playerGraphs as any).graph_data.elo.values?.length || 0}</div>
+                                <div className="text-sm text-gray-400">Total Puncte</div>
+                              </div>
+                              <div className="text-center p-3 bg-gray-700/50 rounded">
+                                <div className="text-2xl font-bold text-purple-400">
+                                  {(data.playerGraphs as any).graph_data.elo.values?.length > 0 ? 
+                                    formatNumber((data.playerGraphs as any).graph_data.elo.values[(data.playerGraphs as any).graph_data.elo.values.length - 1]) 
+                                    : 'N/A'}
+                                </div>
+                                <div className="text-sm text-gray-400">ELO Curent</div>
+                              </div>
+                            </div>
+                            
+                            <div className="text-sm text-gray-400 max-h-40 overflow-y-auto">
+                              <div className="mb-2 font-medium">Ultimele 10 valori ELO:</div>
+                              <div className="grid grid-cols-5 gap-2">
+                                {(data.playerGraphs as any).graph_data.elo.values?.slice(-10).map((value: number, index: number) => (
+                                  <div key={index} className="p-2 bg-gray-600/50 rounded text-center">
+                                    <div className="text-white">{formatNumber(value)}</div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+
+                      {(data.playerGraphs as any).graph_data.kdr && (
+                        <Card className="bg-gray-800/50 border-gray-700">
+                          <CardHeader>
+                            <CardTitle className="text-lg text-orange-400 flex items-center gap-2">
+                              <Target className="h-5 w-5" />
+                              Progresie K/D Ratio
+                            </CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                              <div className="text-center p-3 bg-gray-700/50 rounded">
+                                <div className="text-2xl font-bold text-green-400">{formatDecimal((data.playerGraphs as any).graph_data.kdr.max)}</div>
+                                <div className="text-sm text-gray-400">K/D Maxim</div>
+                              </div>
+                              <div className="text-center p-3 bg-gray-700/50 rounded">
+                                <div className="text-2xl font-bold text-red-400">{formatDecimal((data.playerGraphs as any).graph_data.kdr.min)}</div>
+                                <div className="text-sm text-gray-400">K/D Minim</div>
+                              </div>
+                              <div className="text-center p-3 bg-gray-700/50 rounded">
+                                <div className="text-2xl font-bold text-blue-400">{(data.playerGraphs as any).graph_data.kdr.values?.length || 0}</div>
+                                <div className="text-sm text-gray-400">Total Puncte</div>
+                              </div>
+                              <div className="text-center p-3 bg-gray-700/50 rounded">
+                                <div className="text-2xl font-bold text-purple-400">
+                                  {(data.playerGraphs as any).graph_data.kdr.values?.length > 0 ? 
+                                    formatDecimal((data.playerGraphs as any).graph_data.kdr.values[(data.playerGraphs as any).graph_data.kdr.values.length - 1]) 
+                                    : 'N/A'}
+                                </div>
+                                <div className="text-sm text-gray-400">K/D Curent</div>
+                              </div>
+                            </div>
+                            
+                            <div className="text-sm text-gray-400 max-h-40 overflow-y-auto">
+                              <div className="mb-2 font-medium">Ultimele 10 valori K/D:</div>
+                              <div className="grid grid-cols-5 gap-2">
+                                {(data.playerGraphs as any).graph_data.kdr.values?.slice(-10).map((value: number, index: number) => (
+                                  <div key={index} className="p-2 bg-gray-600/50 rounded text-center">
+                                    <div className="text-white">{formatDecimal(value)}</div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+                    </div>
                   ) : (
                     <Card className="bg-gray-800/50 border-gray-700">
                       <CardContent className="p-8 text-center">
