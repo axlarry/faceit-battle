@@ -129,17 +129,33 @@ export const ModernTodayCard = ({ player, lcryptData }: ModernTodayCardProps) =>
             {/* Today's matches stats */}
             {hasMatches && renderTodayStats()}
             
-            {/* Enhanced FA Today Stats */}
-            {faceitAnalyserData && hasMatches && (
-              <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-xl p-3 border border-purple-500/20">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <GamepadIcon className="text-purple-400 w-4 h-4" />
-                    <span className="text-purple-400 font-medium text-sm">Recent Performance</span>
+            {/* FaceitAnalyser Career Stats */}
+            {faceitAnalyserData && (
+              <div className="space-y-3">
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 rounded-lg p-2 border border-green-500/20">
+                    <div className="text-green-400 font-bold">{faceitAnalyserData.w?.toLocaleString() || 'N/A'}</div>
+                    <div className="text-gray-400">Wins</div>
                   </div>
-                  <div className="text-right">
-                    <div className="text-purple-400 font-bold">{faceitAnalyserData.avg_hltv}</div>
-                    <div className="text-xs text-gray-400">Avg HLTV</div>
+                  <div className="bg-gradient-to-r from-red-500/10 to-pink-500/10 rounded-lg p-2 border border-red-500/20">
+                    <div className="text-red-400 font-bold">{faceitAnalyserData.l?.toLocaleString() || 'N/A'}</div>
+                    <div className="text-gray-400">Losses</div>
+                  </div>
+                  <div className="bg-gradient-to-r from-orange-500/10 to-yellow-500/10 rounded-lg p-2 border border-orange-500/20">
+                    <div className="text-orange-400 font-bold">{faceitAnalyserData.lowest_elo?.toLocaleString() || 'N/A'}</div>
+                    <div className="text-gray-400">Lowest ELO</div>
+                  </div>
+                  <div className="bg-gradient-to-r from-purple-500/10 to-indigo-500/10 rounded-lg p-2 border border-purple-500/20">
+                    <div className="text-purple-400 font-bold">{faceitAnalyserData.avg_d?.toFixed(2) || 'N/A'}</div>
+                    <div className="text-gray-400">Avg Deaths</div>
+                  </div>
+                  <div className="bg-gradient-to-r from-cyan-500/10 to-blue-500/10 rounded-lg p-2 border border-cyan-500/20">
+                    <div className="text-cyan-400 font-bold">{faceitAnalyserData.d?.toLocaleString() || 'N/A'}</div>
+                    <div className="text-gray-400">Total Deaths</div>
+                  </div>
+                  <div className="bg-gradient-to-r from-blue-500/10 to-teal-500/10 rounded-lg p-2 border border-blue-500/20">
+                    <div className="text-blue-400 font-bold">{faceitAnalyserData.avg_elo?.toLocaleString() || 'N/A'}</div>
+                    <div className="text-gray-400">Avg ELO</div>
                   </div>
                 </div>
               </div>

@@ -159,10 +159,6 @@ export const PlayerModal = ({
               <PlayerStatsCards player={player} />
               <MatchesTable player={player} matches={matches} matchesStats={matchesStats} loadingMatches={loadingMatches} />
               
-              {/* FaceitAnalyser Section - Only for friends */}
-              {isFriend && (
-                <FaceitAnalyserPopover player={player} />
-              )}
               
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row justify-center gap-3 pt-4">

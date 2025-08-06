@@ -103,43 +103,34 @@ export const ModernSkillCard = ({ player, lcryptData }: ModernSkillCardProps) =>
           )}
         </div>
 
-        {/* Country & Region Rankings */}
-        {lcryptData && (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between bg-gradient-to-r from-orange-500/20 to-red-500/20 rounded-xl p-3 border border-orange-500/30">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">{lcryptData.country_flag}</span>
-                <div>
-                  <div className="text-orange-400 font-bold text-lg">#{lcryptData.country_ranking}</div>
-                  <div className="text-xs text-gray-400">Country Rank</div>
-                </div>
-              </div>
-            </div>
-            
-            {lcryptData.region_ranking && (
-              <div className="flex items-center justify-between bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-xl p-3 border border-blue-500/30">
-                <div className="flex items-center gap-3">
-                  <Target className="text-blue-400 w-6 h-6" />
-                  <div>
-                    <div className="text-blue-400 font-bold text-lg">#{lcryptData.region_ranking}</div>
-                    <div className="text-xs text-gray-400">Region Rank</div>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Additional FA Stats */}
+        {/* FaceitAnalyser Stats */}
         {faceitAnalyserData && (
-          <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
-            <div className="text-center">
-              <div className="text-green-400 font-bold">{faceitAnalyserData.wr}%</div>
-              <div className="text-gray-400">Win Rate</div>
-            </div>
-            <div className="text-center">
-              <div className="text-cyan-400 font-bold">{faceitAnalyserData.avg_k}</div>
-              <div className="text-gray-400">Avg Kills</div>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-lg p-2 border border-purple-500/20">
+                <div className="text-purple-400 font-bold">{faceitAnalyserData.avg_hltv?.toFixed(2) || 'N/A'}</div>
+                <div className="text-gray-400">HLTV Rating</div>
+              </div>
+              <div className="bg-gradient-to-r from-cyan-500/10 to-blue-500/10 rounded-lg p-2 border border-cyan-500/20">
+                <div className="text-cyan-400 font-bold">{faceitAnalyserData.avg_krr?.toFixed(2) || 'N/A'}</div>
+                <div className="text-gray-400">Avg KPR</div>
+              </div>
+              <div className="bg-gradient-to-r from-yellow-500/10 to-orange-500/10 rounded-lg p-2 border border-yellow-500/20">
+                <div className="text-yellow-400 font-bold">{faceitAnalyserData.m?.toLocaleString() || 'N/A'}</div>
+                <div className="text-gray-400">Matches</div>
+              </div>
+              <div className="bg-gradient-to-r from-red-500/10 to-pink-500/10 rounded-lg p-2 border border-red-500/20">
+                <div className="text-red-400 font-bold">{faceitAnalyserData.highest_elo?.toLocaleString() || 'N/A'}</div>
+                <div className="text-gray-400">Highest ELO</div>
+              </div>
+              <div className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 rounded-lg p-2 border border-green-500/20">
+                <div className="text-green-400 font-bold">{faceitAnalyserData.avg_k?.toFixed(2) || 'N/A'}</div>
+                <div className="text-gray-400">Avg Kills</div>
+              </div>
+              <div className="bg-gradient-to-r from-blue-500/10 to-indigo-500/10 rounded-lg p-2 border border-blue-500/20">
+                <div className="text-blue-400 font-bold">{faceitAnalyserData.k?.toLocaleString() || 'N/A'}</div>
+                <div className="text-gray-400">Total Kills</div>
+              </div>
             </div>
           </div>
         )}
