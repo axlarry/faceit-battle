@@ -3,7 +3,7 @@ import { Player } from "@/types/Player";
 import { useSteamIdConverter } from './SteamIdConverter';
 import { LoaderCircle, Zap, Crown } from 'lucide-react';
 import { PlayerAvatar } from './PlayerAvatar';
-import { ModernFriendInfo } from './ModernFriendInfo';
+import { PlayerInfo } from './PlayerInfo';
 import { PlayerStatsCompact } from './PlayerStatsCompact';
 import { PlayerActionsCompact } from './PlayerActionsCompact';
 import { LiveMatchDetails } from './LiveMatchDetails';
@@ -176,7 +176,13 @@ export const FriendListItem = React.memo(({
 
           {/* Player Info */}
           <div className="flex-1">
-            <ModernFriendInfo nickname={friend.nickname} level={friend.level} elo={friend.elo} lcryptData={friend.lcryptData} />
+            <PlayerInfo
+              nickname={friend.nickname}
+              level={friend.level}
+              elo={friend.elo}
+              lcryptData={friend.lcryptData}
+              isLive={isLive}
+            />
           </div>
         </div>
 
