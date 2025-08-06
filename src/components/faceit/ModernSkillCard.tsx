@@ -3,6 +3,7 @@ import { Badge } from "@/components/ui/badge";
 import { Trophy, Star, Target, TrendingUp, Sparkles } from 'lucide-react';
 import { Player } from '@/types/Player';
 import { faceitAnalyserService } from '@/services/faceitAnalyserService';
+import { calculateLevelFromElo } from '@/utils/levelUtils';
 
 interface ModernSkillCardProps {
   player: Player;
@@ -53,6 +54,13 @@ export const ModernSkillCard = ({ player, lcryptData }: ModernSkillCardProps) =>
     return 'from-gray-500 via-gray-400 to-slate-500';
   };
 
+  // Get the correct level - use lcryptData level if available, otherwise calculate from ELO
+  const currentLevel = lcryptData?.level ? parseInt(lcryptData.level) : 
+    (lcryptData?.elo ? calculateLevelFromElo(lcryptData.elo) : 
+    (player.elo ? calculateLevelFromElo(player.elo) : player.level || 1));
+  
+  const currentElo = lcryptData?.elo || player.elo || 0;
+
   // Calculate FA Rating
   const faRating = faceitAnalyserData ? 
     Math.round((faceitAnalyserData.avg_hltv * 100) * (faceitAnalyserData.wr / 100) * 10) / 10 : null;
@@ -60,7 +68,7 @@ export const ModernSkillCard = ({ player, lcryptData }: ModernSkillCardProps) =>
   return (
     <div className="relative group">
       {/* Glowing background effect */}
-      <div className={`absolute inset-0 bg-gradient-to-r ${getLevelGradient(player.level || 1)} rounded-2xl blur-xl opacity-20 group-hover:opacity-40 transition-all duration-500`} />
+      <div className={`absolute inset-0 bg-gradient-to-r ${getLevelGradient(currentLevel)} rounded-2xl blur-xl opacity-20 group-hover:opacity-40 transition-all duration-500`} />
       
       <div className="relative bg-gradient-to-br from-slate-800/90 via-slate-900/90 to-black/90 backdrop-blur-xl border border-white/10 rounded-2xl p-6 hover:border-orange-400/50 transition-all duration-500 transform hover:scale-[1.02] hover:shadow-2xl">
         {/* Header */}
@@ -68,14 +76,14 @@ export const ModernSkillCard = ({ player, lcryptData }: ModernSkillCardProps) =>
           <div className="flex items-center gap-3">
             <div className="relative">
               <img
-                src={getLevelIcon(player.level || 1)}
-                alt={`Skill Level ${player.level}`}
+                src={getLevelIcon(currentLevel)}
+                alt={`Skill Level ${currentLevel}`}
                 className="w-12 h-12 drop-shadow-2xl"
               />
               <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-r from-yellow-400 to-orange-400 rounded-full animate-pulse shadow-lg" />
             </div>
             <div>
-              <div className="text-2xl font-bold text-white">Level {player.level}</div>
+              <div className="text-2xl font-bold text-white">Level {currentLevel}</div>
               <div className="text-orange-400 text-sm font-medium">Skill Level</div>
             </div>
           </div>
@@ -86,7 +94,7 @@ export const ModernSkillCard = ({ player, lcryptData }: ModernSkillCardProps) =>
         <div className="grid grid-cols-2 gap-4 mb-4">
           <div className="bg-white/5 rounded-xl p-3 border border-white/10">
             <div className="flex items-center gap-2 mb-1">
-              <div className="text-2xl font-bold text-orange-400">{player.elo}</div>
+              <div className="text-2xl font-bold text-orange-400">{currentElo}</div>
               <TrendingUp className="text-green-400 w-4 h-4" />
             </div>
             <div className="text-xs text-gray-400">ELO Points</div>
