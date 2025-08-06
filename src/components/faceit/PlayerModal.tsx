@@ -159,12 +159,13 @@ export const PlayerModal = ({
               <PlayerStatsCards player={player} />
               <MatchesTable player={player} matches={matches} matchesStats={matchesStats} loadingMatches={loadingMatches} />
               
+              {/* FaceitAnalyser Section - Only for friends */}
+              {isFriend && (
+                <FaceitAnalyserPopover player={player} />
+              )}
+              
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row justify-center gap-3 pt-4">
-                {/* FaceitAnalyser Button - Only for friends */}
-                {isFriend && (
-                  <FaceitAnalyserPopover player={player} />
-                )}
                 
                 {/* Friend Action Button */}
                 <Button onClick={handleFriendAction} className={`px-4 sm:px-6 py-3 font-medium text-sm sm:text-base w-full sm:w-auto ${isFriend ? 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700' : 'bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600'} text-white border-0 rounded-xl shadow-lg transition-all duration-200 transform hover:scale-105`}>
