@@ -136,7 +136,7 @@ export const RegionTabs = ({ currentRegion, onRegionChange }: RegionTabsProps) =
             </PopoverTrigger>
 
             <PopoverContent 
-              className="w-[420px] p-0 bg-card/95 border-border shadow-2xl rounded-2xl overflow-hidden backdrop-blur-xl border"
+              className="w-[520px] md:w-[560px] p-0 bg-gradient-to-b from-background/80 to-background/60 border-border shadow-2xl rounded-2xl overflow-hidden backdrop-blur-xl border"
               align="center"
               side="bottom"
               sideOffset={12}
