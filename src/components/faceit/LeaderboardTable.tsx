@@ -158,7 +158,7 @@ export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: L
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <Card className="bg-white/5 backdrop-blur-lg border-white/10">
+      <Card className="glass-card border">
         <div className="p-3 sm:p-4 md:p-6">
           <LeaderboardHeader region={region} />
           

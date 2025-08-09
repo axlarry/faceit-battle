@@ -48,19 +48,19 @@ export const RegionTabs = ({ currentRegion, onRegionChange }: RegionTabsProps) =
       id: 'FRIENDS', 
       name: 'Prietenii Mei', 
       icon: Users, 
-      gradient: 'from-orange-500 to-red-500',
-      iconColor: 'text-white',
-      bgColor: 'bg-gradient-to-r from-orange-500 to-red-500',
-      hoverBg: 'hover:from-orange-600 hover:to-red-600'
+      gradient: 'from-accent to-primary',
+      iconColor: 'text-primary-foreground',
+      bgColor: 'bg-gradient-to-r from-accent to-primary',
+      hoverBg: 'hover:from-accent hover:to-primary'
     },
     { 
       id: 'FACEIT_TOOL', 
       name: 'FACEIT Tool', 
       icon: Search, 
-      gradient: 'from-purple-500 to-blue-500',
-      iconColor: 'text-white',
-      bgColor: 'bg-gradient-to-r from-purple-500 to-blue-500',
-      hoverBg: 'hover:from-purple-600 hover:to-blue-600'
+      gradient: 'from-primary to-secondary',
+      iconColor: 'text-primary-foreground',
+      bgColor: 'bg-gradient-to-r from-primary to-secondary',
+      hoverBg: 'hover:from-primary hover:to-secondary'
     },
   ];
 
@@ -85,13 +85,13 @@ export const RegionTabs = ({ currentRegion, onRegionChange }: RegionTabsProps) =
                   relative px-6 py-3 text-sm font-semibold transition-all duration-300 rounded-xl
                   transform hover:scale-105 hover:shadow-lg
                   ${isActive 
-                    ? `${tab.bgColor} text-white shadow-lg scale-105` 
-                    : `bg-white/10 backdrop-blur-sm text-slate-300 hover:text-white border border-white/20 ${tab.hoverBg}`
+                    ? `${tab.bgColor} text-primary-foreground shadow-lg scale-105` 
+                    : `bg-card/40 backdrop-blur-sm text-foreground/80 hover:text-foreground border border-border ${tab.hoverBg}`
                   }
                 `}
               >
                 <div className="flex items-center gap-3">
-                  <IconComponent size={18} className={isActive ? 'text-white' : tab.iconColor} />
+                  <IconComponent size={18} className={isActive ? 'text-primary-foreground' : tab.iconColor} />
                   <span className="hidden sm:inline">
                     {tab.name}
                   </span>
@@ -121,7 +121,7 @@ export const RegionTabs = ({ currentRegion, onRegionChange }: RegionTabsProps) =
                 <div className="flex items-center gap-3">
                   <Globe 
                     size={18} 
-                    className={`transition-all duration-300 ${isOpen ? 'rotate-180' : ''} ${regions.some(r => r.id === currentRegion) ? 'text-white' : 'text-indigo-400'}`} 
+                    className={`transition-all duration-300 ${isOpen ? 'rotate-180' : ''} ${regions.some(r => r.id === currentRegion) ? 'text-primary-foreground' : 'text-primary'}`} 
                   />
                   
                   <span>Rank Global</span>
@@ -135,7 +135,7 @@ export const RegionTabs = ({ currentRegion, onRegionChange }: RegionTabsProps) =
             </PopoverTrigger>
 
             <PopoverContent 
-              className="w-80 p-0 bg-slate-900/95 border-slate-700/50 shadow-2xl rounded-2xl overflow-hidden backdrop-blur-xl border"
+              className="w-80 p-0 bg-card/95 border-border shadow-2xl rounded-2xl overflow-hidden backdrop-blur-xl border"
               align="center"
               side="bottom"
               sideOffset={12}
@@ -171,19 +171,19 @@ export const RegionTabs = ({ currentRegion, onRegionChange }: RegionTabsProps) =
                       <div className="absolute inset-0 bg-black/10 rounded-xl"></div>
                       
                       <div className="relative z-10 text-center">
-                        <div className="text-white font-bold text-base mb-2 tracking-wide drop-shadow-lg">
+                         <div className="text-foreground font-bold text-base mb-2 tracking-wide drop-shadow-lg">
                           {region.name}
-                        </div>
-                        <div className="text-white/90 text-xs font-medium drop-shadow">
-                          {region.desc}
-                        </div>
+                         </div>
+                         <div className="text-foreground/80 text-xs font-medium drop-shadow">
+                           {region.desc}
+                         </div>
                       </div>
 
                       {/* Selected indicator */}
                       {currentRegion === region.id && (
-                        <div className="absolute top-3 right-3 w-3 h-3 bg-white rounded-full animate-pulse shadow-lg">
-                          <div className="absolute inset-0 bg-white rounded-full animate-ping"></div>
-                        </div>
+                         <div className="absolute top-3 right-3 w-3 h-3 bg-primary rounded-full animate-pulse shadow-lg">
+                           <div className="absolute inset-0 bg-primary rounded-full animate-ping"></div>
+                         </div>
                       )}
                     </button>
                   </div>
@@ -191,8 +191,8 @@ export const RegionTabs = ({ currentRegion, onRegionChange }: RegionTabsProps) =
               </div>
 
               {/* Footer */}
-              <div className="p-4 bg-slate-800/60 text-center border-t border-slate-700/50">
-                <p className="text-sm text-slate-400">Select any region to explore rankings</p>
+              <div className="p-4 bg-card/60 text-center border-t border-border">
+                <p className="text-sm text-muted-foreground">Select any region to explore rankings</p>
               </div>
             </PopoverContent>
           </Popover>
