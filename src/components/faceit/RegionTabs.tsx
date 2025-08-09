@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useState } from "react";
 import { Globe, ChevronDown, Users, Search } from "lucide-react";
+import { RegionSelectPopover } from "./RegionSelectPopover";
 
 interface RegionTabsProps {
   currentRegion: string;
@@ -135,65 +136,16 @@ export const RegionTabs = ({ currentRegion, onRegionChange }: RegionTabsProps) =
             </PopoverTrigger>
 
             <PopoverContent 
-              className="w-80 p-0 bg-card/95 border-border shadow-2xl rounded-2xl overflow-hidden backdrop-blur-xl border"
+              className="w-[420px] p-0 bg-card/95 border-border shadow-2xl rounded-2xl overflow-hidden backdrop-blur-xl border"
               align="center"
               side="bottom"
               sideOffset={12}
             >
-              {/* Regions Grid */}
-              <div className="p-6 grid grid-cols-2 gap-4">
-                {regions.map((region, index) => (
-                  <div
-                    key={region.id}
-                    className="relative group"
-                    style={{ animationDelay: `${index * 150}ms` }}
-                  >
-                    <button
-                      onClick={() => handleRegionSelect(region.id)}
-                      className={`
-                        relative w-full p-5 rounded-xl transition-all duration-300 transform hover:scale-105
-                        bg-gradient-to-br ${region.color} hover:shadow-xl overflow-hidden
-                        border-2 border-white/30 hover:border-white/50
-                        ${currentRegion === region.id ? 'ring-2 ring-white/70 scale-105 shadow-xl' : ''}
-                      `}
-                    >
-                      {/* Flag Background - Full visibility */}
-                      <div 
-                        className="absolute inset-0 opacity-90 bg-center bg-contain bg-no-repeat"
-                        style={{
-                          backgroundImage: `url(${region.flag})`,
-                          backgroundSize: '80%',
-                          backgroundPosition: 'center'
-                        }}
-                      />
-                      
-                      {/* Minimal overlay for text readability */}
-                      <div className="absolute inset-0 bg-black/10 rounded-xl"></div>
-                      
-                      <div className="relative z-10 text-center">
-                         <div className="text-foreground font-bold text-base mb-2 tracking-wide drop-shadow-lg">
-                          {region.name}
-                         </div>
-                         <div className="text-foreground/80 text-xs font-medium drop-shadow">
-                           {region.desc}
-                         </div>
-                      </div>
-
-                      {/* Selected indicator */}
-                      {currentRegion === region.id && (
-                         <div className="absolute top-3 right-3 w-3 h-3 bg-primary rounded-full animate-pulse shadow-lg">
-                           <div className="absolute inset-0 bg-primary rounded-full animate-ping"></div>
-                         </div>
-                      )}
-                    </button>
-                  </div>
-                ))}
-              </div>
-
-              {/* Footer */}
-              <div className="p-4 bg-card/60 text-center border-t border-border">
-                <p className="text-sm text-muted-foreground">Select any region to explore rankings</p>
-              </div>
+              <RegionSelectPopover
+                regions={regions}
+                currentRegion={currentRegion}
+                onSelect={handleRegionSelect}
+              />
             </PopoverContent>
           </Popover>
         </div>

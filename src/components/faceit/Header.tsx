@@ -63,10 +63,10 @@ export const Header = () => {
       </div>
 
       {/* Main Content */}
-      <div className="relative z-10 container mx-auto px-4 py-8 max-w-7xl">
-        <div className="text-center">
-          {/* Logo Section with Enhanced Animation */}
-          <div className="flex items-center justify-center gap-6 mb-6">
+      <div className="relative z-10 container mx-auto px-4 py-10 max-w-7xl">
+        <div className="flex flex-col items-center gap-8">
+          {/* Logo kept + new modern hero */}
+          <div className="flex items-center justify-center gap-6">
             {/* Animated Logo Container */}
             <div className="relative group">
               <div className="absolute inset-0 bg-gradient-to-r from-[#ff6500] to-[#ff8533] rounded-2xl blur-lg opacity-75 group-hover:opacity-100 transition-opacity duration-300 animate-pulse"></div>
@@ -83,75 +83,29 @@ export const Header = () => {
                 ) : (
                   <div className="relative z-10 text-white text-2xl font-bold">F</div>
                 )}
-                
                 {/* Orbital Ring */}
                 <div className="absolute inset-0 border-2 border-[#ff6500]/30 rounded-2xl animate-spin" style={{ animationDuration: '8s' }}></div>
               </div>
             </div>
 
-            {/* Title with Modern Typography */}
-            <div className="flex flex-col items-start">
-              <h1 className="text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-accent via-primary to-secondary mb-2 tracking-tight">
-                FACEIT
-                {!faceitIconError && (
-                  <img 
-                    src="/faceit-icons/faceit_icon.png" 
-                    alt="Faceit" 
-                    className="inline-block w-12 h-12 ml-3 animate-bounce" 
-                    onError={handleFaceitIconError} 
-                    onLoad={() => console.log('✅ Faceit icon loaded successfully from /faceit-icons/faceit_icon.png')} 
-                  />
-                )}
-              </h1>
-              
-              {/* Animated Subtitle */}
-              <div className="relative overflow-hidden">
-                <p className="text-xl text-muted-foreground font-medium transform translate-y-full animate-[slide-up_1s_ease-out_0.5s_forwards]">
-                  Clasament Global cu Prieteni
-                </p>
-                <div className="absolute bottom-0 left-0 w-full h-0.5 bg-gradient-to-r from-transparent via-accent to-transparent transform scale-x-0 animate-[scale-x_1s_ease-out_1s_forwards]"></div>
+            {/* New hero copy */}
+            <div className="flex flex-col items-start text-left">
+              <h2 className="text-4xl sm:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-accent via-primary to-secondary tracking-tight">
+                Analiză FACEIT, reinventată
+              </h2>
+              <p className="mt-2 text-base sm:text-lg text-muted-foreground">
+                O prezentare futuristă pentru clasamente, prieteni și meciuri.
+              </p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-xs border border-primary/20">Neon UI</span>
+                <span className="px-3 py-1 rounded-full bg-accent/10 text-accent text-xs border border-accent/20">Glassmorphism</span>
+                <span className="px-3 py-1 rounded-full bg-secondary/10 text-secondary text-xs border border-secondary/20">Responsive</span>
               </div>
             </div>
           </div>
 
-          {/* Enhanced Stats Cards */}
-          <div className="flex justify-center gap-6 mt-8">
-            <div className="glass-card rounded-xl p-4 border border-border backdrop-blur-sm transform hover:scale-105 transition-all duration-300 group">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-accent to-primary rounded-lg flex items-center justify-center">
-                  <Crown size={20} className="text-primary-foreground" />
-                </div>
-                <div className="text-left">
-                  <p className="text-xs text-muted-foreground uppercase tracking-wide">Competiție</p>
-                  <p className="text-sm font-bold text-foreground group-hover:text-accent transition-colors">Elite</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="glass-card rounded-xl p-4 border border-border backdrop-blur-sm transform hover:scale-105 transition-all duration-300 group">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-secondary to-primary rounded-lg flex items-center justify-center">
-                  <TrendingUp size={20} className="text-primary-foreground" />
-                </div>
-                <div className="text-left">
-                  <p className="text-xs text-muted-foreground uppercase tracking-wide">Status</p>
-                  <p className="text-sm font-bold text-foreground group-hover:text-secondary transition-colors">Live</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="glass-card rounded-xl p-4 border border-border backdrop-blur-sm transform hover:scale-105 transition-all duration-300 group">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center">
-                  <Users size={20} className="text-primary-foreground" />
-                </div>
-                <div className="text-left">
-                  <p className="text-xs text-muted-foreground uppercase tracking-wide">Prieteni</p>
-                  <p className="text-sm font-bold text-foreground group-hover:text-primary transition-colors">Activi</p>
-                </div>
-              </div>
-            </div>
-          </div>
+          {/* Divider Glow */}
+          <div className="h-px w-full max-w-3xl bg-gradient-to-r from-transparent via-accent to-transparent opacity-70"></div>
         </div>
       </div>
 
