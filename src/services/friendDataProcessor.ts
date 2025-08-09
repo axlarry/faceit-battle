@@ -3,6 +3,7 @@ import { Player } from '@/types/Player';
 import { lcryptOptimizedService } from '@/services/lcryptOptimizedService';
 import { playerService } from '@/services/playerService';
 import { FriendWithLcrypt, LiveMatchInfo } from '@/hooks/types/lcryptDataManagerTypes';
+import { faceitApiClient } from '@/services/faceitApiClient';
 
 export class FriendDataProcessor {
   private coverImageCache = new Map<string, string | null>();
@@ -22,25 +23,41 @@ export class FriendDataProcessor {
     try {
       console.log(`🚀 OPTIMIZED: Fetching complete data for ${friend.nickname}...`);
       
-      // UN SINGUR APEL API pentru datele Lcrypt
-      const optimizedData = await lcryptOptimizedService.getCompletePlayerData(friend.nickname);
+      // Actualizează datele de bază folosind player_id (stabile și unice)
+      let currentNickname = friend.nickname;
+      let basicData: any = null;
+      try {
+        basicData = await faceitApiClient.makeApiCall(`/players/${friend.player_id}`);
+        currentNickname = basicData?.nickname || friend.nickname;
+      } catch (e) {
+        console.warn(`⚠️ Could not refresh basic data for ${friend.nickname} by id ${friend.player_id}`, e);
+      }
+      
+      // APEL pentru datele Lcrypt folosind nickname-ul curent (sincronizat)
+      const optimizedData = await lcryptOptimizedService.getCompletePlayerData(currentNickname);
       
       // OPTIMIZED: Cover image doar dacă nu există în cache
       let coverImage = friend.cover_image;
-      if (!coverImage && !this.coverImageCache.has(friend.nickname)) {
-        console.log(`🖼️ OPTIMIZED: Fetching cover image for ${friend.nickname} (first time only)`);
-        coverImage = await playerService.getPlayerCoverImage(friend.nickname);
-        this.coverImageCache.set(friend.nickname, coverImage);
-      } else if (this.coverImageCache.has(friend.nickname)) {
-        coverImage = this.coverImageCache.get(friend.nickname) || friend.cover_image;
-        console.log(`📦 OPTIMIZED: Using cached cover image for ${friend.nickname}`);
+      if (!coverImage && !this.coverImageCache.has(currentNickname)) {
+        console.log(`🖼️ OPTIMIZED: Fetching cover image for ${currentNickname} (first time only)`);
+        coverImage = await playerService.getPlayerCoverImage(currentNickname);
+        this.coverImageCache.set(currentNickname, coverImage);
+      } else if (this.coverImageCache.has(currentNickname)) {
+        coverImage = this.coverImageCache.get(currentNickname) || friend.cover_image;
+        console.log(`📦 OPTIMIZED: Using cached cover image for ${currentNickname}`);
       }
       
-      // Construiește obiectul actualizat cu toate datele
+      // Construiește obiectul actualizat cu toate datele (identificare prin player_id, nu nickname)
+      const levelFromApi = basicData?.games?.cs2?.skill_level;
+      const eloFromApi = basicData?.games?.cs2?.faceit_elo;
+
       const updatedFriend: FriendWithLcrypt = {
         ...friend,
+        nickname: currentNickname,
+        avatar: basicData?.avatar || friend.avatar,
+        level: levelFromApi ?? friend.level ?? 0,
         lcryptData: optimizedData?.error ? null : optimizedData,
-        elo: optimizedData?.elo || friend.elo || 0,
+        elo: optimizedData?.elo ?? eloFromApi ?? friend.elo ?? 0,
         isLive: optimizedData?.isLive || false,
         liveMatchDetails: optimizedData?.liveInfo?.matchDetails,
         liveCompetition: optimizedData?.liveInfo?.competition,
