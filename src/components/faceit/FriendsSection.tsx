@@ -61,7 +61,7 @@ export const FriendsSection = ({
 
   return (
     <div className="space-y-4 px-4 md:px-0">
-      <Card className="bg-[#1a1d21] border-[#2a2f36] shadow-xl">
+      <Card className="glass-card border shadow-2xl">
         <div className="p-4 md:p-5">
           <FriendsSectionHeader 
             friendsCount={friends.length}

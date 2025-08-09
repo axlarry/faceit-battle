@@ -6,31 +6,42 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 3.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 3.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 3.9%;
-    --primary: 0 0% 9%;
-    --primary-foreground: 0 0% 98%;
-    --secondary: 0 0% 96.1%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 0 0% 96.1%;
-    --muted-foreground: 0 0% 45.1%;
-    --accent: 0 0% 96.1%;
-    --accent-foreground: 0 0% 9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 89.8%;
-    --input: 0 0% 89.8%;
-    --ring: 0 0% 3.9%;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
-    --radius: 0.5rem;
+    /* Futuristic Dark (default) */
+    --background: 222 47% 8%;         /* deep space */
+    --foreground: 210 20% 98%;        /* near-white */
+
+    --card: 220 25% 12%;
+    --card-foreground: 210 20% 98%;
+    --popover: 220 25% 12%;
+    --popover-foreground: 210 20% 98%;
+
+    --primary: 265 85% 62%;           /* neon violet */
+    --primary-foreground: 210 20% 98%;
+
+    --secondary: 200 90% 55%;         /* cyan */
+    --secondary-foreground: 210 20% 98%;
+
+    --muted: 220 14% 18%;
+    --muted-foreground: 215 15% 70%;
+
+    --accent: 24 100% 56%;            /* faceit orange */
+    --accent-foreground: 210 20% 98%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 20% 98%;
+
+    --border: 220 14% 22%;
+    --input: 220 14% 22%;
+    --ring: 265 85% 62%;
+
+    /* Charts */
+    --chart-1: 265 85% 62%;
+    --chart-2: 200 90% 55%;
+    --chart-3: 24 100% 56%;
+    --chart-4: 160 84% 39%;
+    --chart-5: 280 80% 65%;
+
+    --radius: 0.9rem;
   }
 
   .dark {
@@ -67,7 +78,7 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: "Inter", sans-serif;
+    font-family: "Space Grotesk", Inter, system-ui, sans-serif;
   }
 
   /* Hide default scrollbars */
@@ -184,3 +195,45 @@
     }
   }
 }
+
+/* Extra futuristic utilities */
+@layer utilities {
+  .glass-card {
+    background-color: hsl(var(--card) / 0.55);
+    border: 1px solid hsl(var(--border) / 0.6);
+    backdrop-filter: blur(10px) saturate(130%);
+    -webkit-backdrop-filter: blur(10px) saturate(130%);
+  }
+
+  .neon-border {
+    box-shadow:
+      0 0 0 1px hsl(var(--primary) / 0.4) inset,
+      0 0 20px hsl(var(--primary) / 0.25),
+      0 0 40px hsl(var(--primary) / 0.15);
+  }
+
+  .bg-grid {
+    background-image: linear-gradient(
+        to right,
+        hsl(var(--border) / 0.25) 1px,
+        transparent 1px
+      ),
+      linear-gradient(
+        to bottom,
+        hsl(var(--border) / 0.25) 1px,
+        transparent 1px
+      );
+    background-size: 24px 24px;
+    mask-image: radial-gradient(ellipse at 50% 0%, rgba(0,0,0,0.9), transparent 70%);
+  }
+
+  .app-aurora {
+    background:
+      radial-gradient(1000px 400px at 10% -10%, hsl(var(--primary) / 0.15), transparent 50%),
+      radial-gradient(800px 300px at 90% 0%, hsl(var(--secondary) / 0.12), transparent 50%),
+      radial-gradient(600px 250px at 50% 100%, hsl(var(--accent) / 0.08), transparent 60%);
+    filter: blur(40px);
+    transform: translateZ(0);
+  }
+}
+
