@@ -50,25 +50,6 @@ export const FriendSearchForm = React.memo(({
       searchPlayer();
     }
   };
-  return (
-    <div className="flex w-full items-center gap-2">
-      <Input
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        onKeyDown={handleKeyPress}
-        placeholder="Caută jucător FACEIT"
-        aria-label="Caută jucător FACEIT"
-        disabled={loading}
-      />
-      <Button
-        onClick={searchPlayer}
-        disabled={loading || !searchTerm.trim()}
-        aria-label="Adaugă prieten"
-      >
-        <UserPlus className="h-4 w-4 mr-2" />
-        {loading ? 'Caut...' : 'Adaugă'}
-      </Button>
-    </div>
-  );
+  return null;
 });
 FriendSearchForm.displayName = 'FriendSearchForm';
