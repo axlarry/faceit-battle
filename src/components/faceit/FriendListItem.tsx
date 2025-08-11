@@ -103,12 +103,12 @@ export const FriendListItem = React.memo(({
     animationDelay: `${index * 100}ms`
   }}>
       {/* Outer glow effect */}
-      <div className={`absolute inset-0 rounded-3xl ${playerStyles.glow} opacity-0 group-hover:opacity-100 transition-all duration-700 blur-xl scale-105`}></div>
+      <div className={`pointer-events-none absolute inset-0 rounded-3xl ${playerStyles.glow} opacity-30 group-hover:opacity-60 transition-opacity duration-200 blur-md scale-100`}></div>
       
       <div onClick={handleClick} className={`
           relative rounded-3xl p-5 border-2 ${playerStyles.border} 
-          hover:border-white/50 transition-all duration-700 cursor-pointer
-          transform hover:scale-[1.03] hover:-translate-y-2
+          hover:border-white/60 transition-colors duration-200 cursor-pointer
+          transform-gpu will-change-transform hover:scale-[1.01]
           backdrop-blur-xl overflow-hidden
           ${isFlashing ? 'animate-pulse border-orange-400 bg-gradient-to-br from-orange-500/30 via-red-500/20 to-orange-500/30' : ''}
           ${!friend.cover_image ? `bg-gradient-to-br ${playerStyles.background}` : ''}
@@ -199,8 +199,7 @@ export const FriendListItem = React.memo(({
         </div>
 
         {/* Advanced shine effects */}
-        <div className="absolute inset-0 -skew-x-12 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-200%] group-hover:translate-x-[200%] transition-transform duration-1200 rounded-3xl"></div>
-        <div className="absolute inset-0 -skew-x-6 bg-gradient-to-r from-transparent via-purple-300/5 to-transparent translate-x-[-150%] group-hover:translate-x-[150%] transition-transform duration-800 delay-300 rounded-3xl"></div>
+        <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 opacity-0 group-hover:opacity-10 transition-opacity duration-200 rounded-3xl"></div>
         
         {/* Floating particles for top players */}
         {index < 3 && <div className="absolute inset-0 overflow-hidden rounded-3xl pointer-events-none">
