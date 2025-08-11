@@ -229,6 +229,26 @@ export default {
 						transform: 'translateX(200%) skewX(-15deg)',
 						opacity: '0'
 					}
+				},
+				'elo-positive-strong': {
+					'0%, 100%': { transform: 'scale(1)', opacity: '1' },
+					'50%': { transform: 'scale(1.06)', opacity: '1' }
+				},
+				'elo-positive': {
+					'0%, 100%': { transform: 'scale(1)', opacity: '1' },
+					'50%': { transform: 'scale(1.03)', opacity: '1' }
+				},
+				'elo-neutral': {
+					'0%, 100%': { transform: 'scale(1)', opacity: '0.95' },
+					'50%': { transform: 'scale(1.01)', opacity: '1' }
+				},
+				'elo-negative': {
+					'0%, 100%': { transform: 'scale(1)', opacity: '1' },
+					'50%': { transform: 'scale(0.97)', opacity: '0.95' }
+				},
+				'elo-negative-strong': {
+					'0%, 100%': { transform: 'scale(1)', opacity: '1' },
+					'50%': { transform: 'scale(0.94)', opacity: '0.9' }
 				}
 			},
 			animation: {

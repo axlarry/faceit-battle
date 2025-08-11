@@ -1,4 +1,3 @@
-
 import React from "react";
 import { Card } from "@/components/ui/card";
 import { Player } from "@/types/Player";
@@ -11,6 +10,7 @@ import { FriendSearchForm } from "./FriendSearchForm";
 import { EmptyFriendsState } from "./EmptyFriendsState";
 import { FriendsList } from "./FriendsList";
 import { FriendActionDialog } from "./FriendActionDialog";
+import { EloTodaySummary } from "./EloTodaySummary";
 
 interface FriendsSectionProps {
   friends: Player[];
@@ -70,6 +70,10 @@ export const FriendsSection = ({
             onUpdateAll={updateAllFriends}
           />
 
+          {/* ELO Today Summary */}
+          <EloTodaySummary friends={friendsWithLcrypt} isLoading={lcryptLoading} />
+
+          {/* Căutare prieteni */}
           <FriendSearchForm onPlayerFound={handlePlayerFound} />
           
           {friends.length === 0 ? (
