@@ -2,19 +2,25 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Users, RefreshCw } from "lucide-react";
+import SoldierMascot from "./SoldierMascot";
+import type { FriendWithLcrypt } from "@/hooks/types/lcryptDataManagerTypes";
 
 interface FriendsSectionHeaderProps {
   friendsCount: number;
   livePlayersCount: number;
   isUpdating: boolean;
   onUpdateAll: () => void;
+  lcryptFriends: FriendWithLcrypt[];
+  lcryptLoading: boolean;
 }
 
 export const FriendsSectionHeader = React.memo(({ 
   friendsCount, 
   livePlayersCount,
   isUpdating, 
-  onUpdateAll 
+  onUpdateAll,
+  lcryptFriends,
+  lcryptLoading
 }: FriendsSectionHeaderProps) => {
   return (
     <div className="flex flex-col gap-3 mb-4">
@@ -34,7 +40,14 @@ export const FriendsSectionHeader = React.memo(({
             </div>
           )}
         </div>
-        
+        {/* Right side: Soldier mascot */}
+        <div className="flex items-center gap-3">
+          {/* <Button variant="outline" size="sm" onClick={onUpdateAll} disabled={isUpdating}>
+            <RefreshCw className={cn(isUpdating && "animate-spin")} size={16} />
+            <span className="ml-2">Actualizează</span>
+          </Button> */}
+          <SoldierMascot friends={lcryptFriends} isLoading={lcryptLoading} />
+        </div>
       </div>
     </div>
   );

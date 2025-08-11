@@ -10,7 +10,6 @@ import { FriendSearchForm } from "./FriendSearchForm";
 import { EmptyFriendsState } from "./EmptyFriendsState";
 import { FriendsList } from "./FriendsList";
 import { FriendActionDialog } from "./FriendActionDialog";
-import { EloTodaySummary } from "./EloTodaySummary";
 
 interface FriendsSectionProps {
   friends: Player[];
@@ -68,11 +67,11 @@ export const FriendsSection = ({
             livePlayersCount={livePlayersCount}
             isUpdating={isUpdating || lcryptLoading}
             onUpdateAll={updateAllFriends}
+            lcryptFriends={friendsWithLcrypt}
+            lcryptLoading={lcryptLoading}
           />
 
-          {/* ELO Today Summary */}
-          <EloTodaySummary friends={friendsWithLcrypt} isLoading={lcryptLoading} />
-
+          {/* Mascota ELO Today este acum în antetul secțiunii */}
           {/* Căutare prieteni */}
           <FriendSearchForm onPlayerFound={handlePlayerFound} />
           
