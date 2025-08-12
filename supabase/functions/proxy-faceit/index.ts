@@ -22,7 +22,35 @@ const ALLOWED_ENDPOINTS: RegExp[] = [
   /^\/search\/players\?nickname=[A-Za-z0-9%._-]+(&game=cs2)?$/,
   /^\/search\/matches\?type=ongoing&game=cs2(&limit=\d+)?$/
 ];
- 
+
+// Simple in-memory rate limiter per IP
+class RateLimiter {
+  private hits: Map<string, number[]> = new Map();
+  constructor(private limit: number, private windowMs: number) {}
+  allow(key: string): boolean {
+    const now = Date.now();
+    const windowStart = now - this.windowMs;
+    const arr = this.hits.get(key) || [];
+    const recent = arr.filter((t) => t > windowStart);
+    if (recent.length >= this.limit) return false;
+    recent.push(now);
+    this.hits.set(key, recent);
+    return true;
+  }
+}
+
+function getClientIp(req: Request): string {
+  const xf = req.headers.get('x-forwarded-for');
+  if (xf) return xf.split(',')[0].trim();
+  return (
+    req.headers.get('cf-connecting-ip') ||
+    req.headers.get('x-real-ip') ||
+    'unknown'
+  );
+}
+
+const proxyLimiter = new RateLimiter(60, 60_000); // 60 Faceit calls/min per IP
+
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -33,6 +61,12 @@ serve(async (req) => {
     const { endpoint, useLeaderboardApi = false } = (await req.json()) as ProxyRequestBody;
 
     console.log(`[proxy-faceit] incoming`, { endpoint, useLeaderboardApi });
+
+    // Rate limit per IP to protect API key quota
+    const ip = getClientIp(req);
+    if (!proxyLimiter.allow(ip)) {
+      return new Response(JSON.stringify({ error: 'Too many requests' }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
 
     if (!endpoint || typeof endpoint !== 'string') {
       return new Response(JSON.stringify({ error: 'Missing or invalid endpoint' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });

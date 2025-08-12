@@ -6,6 +6,36 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Simple in-memory rate limiter per IP
+class RateLimiter {
+  private hits: Map<string, number[]> = new Map();
+  constructor(private limit: number, private windowMs: number) {}
+  allow(key: string): boolean {
+    const now = Date.now();
+    const windowStart = now - this.windowMs;
+    const arr = this.hits.get(key) || [];
+    const recent = arr.filter((t) => t > windowStart);
+    if (recent.length >= this.limit) return false;
+    recent.push(now);
+    this.hits.set(key, recent);
+    return true;
+  }
+}
+
+function getClientIp(req: Request): string {
+  const xf = req.headers.get('x-forwarded-for');
+  if (xf) return xf.split(',')[0].trim();
+  return (
+    req.headers.get('cf-connecting-ip') ||
+    req.headers.get('x-real-ip') ||
+    'unknown'
+  );
+}
+
+// Friends gateway rate limiters
+const friendsListLimiter = new RateLimiter(120, 60_000); // 120 req/min per IP for list
+const friendsMutationLimiter = new RateLimiter(30, 60_000); // 30 mutations/min per IP
+
 // Single shared owner for password-protected, unauthenticated lists
 const PUBLIC_OWNER_ID = '00000000-0000-0000-0000-000000000000';
 
@@ -39,10 +69,23 @@ function getServiceClient() {
   return createClient(url, key);
 }
 
+function safeEqual(a?: string, b?: string) {
+  if (typeof a !== 'string' || typeof b !== 'string') return false;
+  let mismatch = a.length === b.length ? 0 : 1;
+  const len = Math.max(a.length, b.length);
+  for (let i = 0; i < len; i++) {
+    const ca = a.charCodeAt(i) || 0;
+    const cb = b.charCodeAt(i) || 0;
+    mismatch |= ca ^ cb;
+  }
+  return mismatch === 0;
+}
+
 function requirePassword(reqPassword?: string) {
-  const expected = Deno.env.get('ACCESS_CODE');
-  if (!expected) return true; // If not configured, skip check
-  return reqPassword === expected;
+  const expected = Deno.env.get('ACCESS_CODE') || '';
+  // Fail-closed if not configured
+  if (!expected) return false;
+  return safeEqual(String(reqPassword ?? ''), expected);
 }
 
 serve(async (req) => {
@@ -56,6 +99,18 @@ serve(async (req) => {
 
     if (!action) {
       return new Response(JSON.stringify({ error: 'Missing action' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    // Basic rate limiting per IP
+    const ip = getClientIp(req);
+    if (action === 'list') {
+      if (!friendsListLimiter.allow(ip)) {
+        return new Response(JSON.stringify({ error: 'Too many requests' }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+    } else {
+      if (!friendsMutationLimiter.allow(ip)) {
+        return new Response(JSON.stringify({ error: 'Too many requests' }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
     }
 
     const supabase = getServiceClient();
