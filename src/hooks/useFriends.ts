@@ -106,13 +106,14 @@ export const useFriends = () => {
     }
   };
 
-  const updateFriend = async (updatedPlayer: Player) => {
+  const updateFriend = async (updatedPlayer: Player, password?: string) => {
     try {
       console.log(`Updating friend ${updatedPlayer.nickname} via gateway...`, updatedPlayer);
 
       const { error } = await supabase.functions.invoke('friends-gateway', {
         body: {
           action: 'update',
+          password,
           player: {
             player_id: updatedPlayer.player_id,
             nickname: updatedPlayer.nickname,

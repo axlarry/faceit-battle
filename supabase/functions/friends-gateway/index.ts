@@ -86,7 +86,7 @@ serve(async (req) => {
     }
 
     // For add/remove (and optionally update) enforce password
-    const needsPassword = action === 'add' || action === 'remove';
+    const needsPassword = action === 'add' || action === 'remove' || action === 'update';
     if (needsPassword && !requirePassword(body.password)) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
