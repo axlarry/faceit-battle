@@ -34,6 +34,7 @@ export const PlayerHeader = ({ player, isFriend = false }: PlayerHeaderProps) =>
         <img
           src={player.avatar}
           alt={player.nickname}
+          loading="lazy"
           className="w-28 h-28 rounded-full border-4 border-orange-400 mx-auto animate-fade-in"
         />
         <div>

@@ -25,6 +25,7 @@ const Index = () => {
 
       <div className="relative z-10">
         <Header />
+        <h1 className="sr-only">Faceit Friend Tracker – ELO, Prieteni și Leaderboard CS2</h1>
         
         <div className="container mx-auto px-2 sm:px-3 md:px-4 py-3 sm:py-4 md:py-6 lg:py-8 space-y-3 sm:space-y-4 md:space-y-6 lg:space-y-8 max-w-7xl">
           <RegionTabs 

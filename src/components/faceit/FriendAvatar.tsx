@@ -17,6 +17,7 @@ export const FriendAvatar = ({ avatar, nickname, index }: FriendAvatarProps) => 
       <img
         src={avatar}
         alt={nickname}
+        loading="lazy"
         className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg border-2 border-[#ff6500] shadow-lg flex-shrink-0"
       />
     </div>

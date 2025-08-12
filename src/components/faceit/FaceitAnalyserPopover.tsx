@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Player } from '@/types/Player';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -62,6 +62,7 @@ export const FaceitAnalyserPopover = ({ player }: FaceitAnalyserPopoverProps) =>
               <Target className="h-6 w-6" />
               FaceitAnalyser - {player.nickname}
             </DialogTitle>
+            <DialogDescription className="sr-only">Analiză completă Faceit pentru {player.nickname}</DialogDescription>
           </DialogHeader>
 
           <div className="flex-1 overflow-y-auto p-6">

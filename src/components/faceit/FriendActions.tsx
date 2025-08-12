@@ -19,6 +19,7 @@ export const FriendActions = ({ nickname, steamId64, onLinkClick }: FriendAction
         <img 
           src="/faceit-icons/faceit_icon.png" 
           alt="F" 
+          loading="lazy"
           className="w-12 h-12"
           onError={(e) => {
             console.log('✅ Faceit icon fallback activated');
@@ -38,6 +39,7 @@ export const FriendActions = ({ nickname, steamId64, onLinkClick }: FriendAction
         <img 
           src="/faceit-icons/steam_icon.png" 
           alt="S" 
+          loading="lazy"
           className="w-12 h-12"
           onError={(e) => {
             console.log('✅ Steam icon fallback activated');

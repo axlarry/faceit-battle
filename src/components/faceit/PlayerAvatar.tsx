@@ -47,6 +47,7 @@ export const PlayerAvatar = ({ avatar, nickname, index, isLive }: PlayerAvatarPr
         <img
           src={avatar}
           alt={nickname}
+          loading="lazy"
           className={`w-16 h-16 rounded-lg border-2 shadow-lg flex-shrink-0 transition-all duration-300 ${
             isLive 
               ? 'border-green-400 ring-2 ring-green-500/50' 

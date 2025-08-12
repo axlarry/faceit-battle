@@ -77,6 +77,7 @@ export const MatchInfo = ({ mapName, startedAt, finishedAt, eloChange }: MatchIn
             <img 
               src={mapIconUrl} 
               alt={mapName} 
+              loading="lazy"
               onError={() => setImageLoadError(true)}
               className="w-full h-full object-scale-down" 
             />

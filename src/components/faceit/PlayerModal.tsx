@@ -151,6 +151,10 @@ export const PlayerModal = ({
   return <>
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 border-2 border-orange-500/30 text-white w-[95vw] max-w-7xl h-[90vh] flex flex-col p-0 overflow-hidden shadow-2xl shadow-orange-500/20 rounded-2xl">
+          <DialogHeader className="sr-only">
+            <DialogTitle>Profil jucător</DialogTitle>
+            <DialogDescription>Detalii despre jucător și meciuri recente</DialogDescription>
+          </DialogHeader>
           
           
           <div className="flex-1 overflow-y-auto px-3 sm:px-4 md:px-6 pb-6 scrollbar-hide">

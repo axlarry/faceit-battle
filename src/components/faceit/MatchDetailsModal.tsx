@@ -2,6 +2,9 @@
 import {
   Dialog,
   DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Player, Match } from "@/types/Player";
 import { 
@@ -87,6 +90,10 @@ export const MatchDetailsModal = ({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 border-2 border-orange-500/30 text-white w-[95vw] max-w-6xl h-[90vh] max-h-[90vh] overflow-hidden shadow-2xl shadow-orange-500/20 rounded-2xl">
+        <DialogHeader className="sr-only">
+          <DialogTitle>Detalii meci</DialogTitle>
+          <DialogDescription>Statistici și informații despre meci</DialogDescription>
+        </DialogHeader>
         <div className="flex-1 overflow-y-auto px-4 md:px-6 pb-6 pt-6 space-y-4 md:space-y-6 scrollbar-hide">
           {/* Match Header - Team vs Team with Map Background */}
           <MatchHeader 

@@ -4,6 +4,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,6 +42,7 @@ export const PasswordDialog = ({
           <DialogTitle className="text-lg md:text-xl font-bold bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">
             {title}
           </DialogTitle>
+          <DialogDescription className="sr-only">{description}</DialogDescription>
         </DialogHeader>
         
         <div className="space-y-6 p-4">

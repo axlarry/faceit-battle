@@ -306,6 +306,7 @@ export const FaceitTool = ({ onShowPlayerDetails, onAddFriend }: FaceitToolProps
                   <img
                     src={playerData.avatar}
                     alt={playerData.nickname}
+                    loading="lazy"
                     className="w-12 h-12 rounded-full border-2 border-orange-400"
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = '/placeholder.svg';
