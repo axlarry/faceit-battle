@@ -144,11 +144,9 @@ export const MatchRow = ({
   const handleMatchRoomClick = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent row click
 
-    // Use the fetched live match URL or fallback
-    const matchRoomUrl = liveMatchUrl || `https://www.faceit.com/en/cs2/room/${match.match_id}`;
-
-    // Open in new tab
-    window.open(matchRoomUrl, '_blank');
+    // Open player's Faceit profile in new tab
+    const profileUrl = `https://www.faceit.com/en/players/${encodeURIComponent(player.nickname)}`;
+    window.open(profileUrl, '_blank');
   };
 
   // Handle live match differently
