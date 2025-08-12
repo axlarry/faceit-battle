@@ -16,6 +16,20 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Origin allowlist (optional): set ORIGIN_ALLOWLIST secret as comma-separated list
+  const origin = req.headers.get('origin')?.toLowerCase() || '';
+  const allowlist = (Deno.env.get('ORIGIN_ALLOWLIST') || '')
+    .split(',')
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+  if (allowlist.length && origin && !allowlist.includes(origin)) {
+    console.log('validate-access blocked origin:', origin);
+    return new Response(JSON.stringify({ ok: false, error: 'Origin not allowed' }), {
+      status: 403,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
   try {
     const { code } = await req.json();
     if (typeof code !== 'string' || code.length < 1 || code.length > 128) {

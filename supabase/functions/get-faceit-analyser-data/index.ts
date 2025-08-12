@@ -16,6 +16,20 @@ Deno.serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
+  // Origin allowlist (optional): set ORIGIN_ALLOWLIST secret as comma-separated list
+  const origin = req.headers.get('origin')?.toLowerCase() || ''
+  const allowlist = (Deno.env.get('ORIGIN_ALLOWLIST') || '')
+    .split(',')
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean)
+  if (allowlist.length && origin && !allowlist.includes(origin)) {
+    console.log('get-faceit-analyser-data blocked origin:', origin)
+    return new Response(JSON.stringify({ error: 'Origin not allowed' }), {
+      status: 403,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    })
+  }
+
   try {
     const { nickname, endpoint = 'stats' }: FaceitAnalyserRequest = await req.json()
     

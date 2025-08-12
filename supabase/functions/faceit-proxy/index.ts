@@ -11,6 +11,20 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  // Origin allowlist (optional): set ORIGIN_ALLOWLIST secret as comma-separated list
+  const origin = req.headers.get('origin')?.toLowerCase() || '';
+  const allowlist = (Deno.env.get('ORIGIN_ALLOWLIST') || '')
+    .split(',')
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+  if (allowlist.length && origin && !allowlist.includes(origin)) {
+    console.log('faceit-proxy blocked origin:', origin);
+    return new Response(JSON.stringify({ error: 'Origin not allowed' }), {
+      status: 403,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
   // Simple in-memory rate limiter (per-instance)
   const RATE_LIMIT_WINDOW_MS = 60_000; // 1 minute
   const RATE_LIMIT_MAX = 60; // max requests per window per IP
