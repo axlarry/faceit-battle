@@ -48,7 +48,7 @@ export const FriendInfo = ({ nickname, level, elo, lcryptData }: FriendInfoProps
           <img
             src={getLevelIcon(calculatedLevel)}
             alt={`Skill Level ${calculatedLevel}`}
-            className="w-8 h-8"
+            className="w-9 h-9"
             onError={handleLevelIconError}
           />
         ) : (
