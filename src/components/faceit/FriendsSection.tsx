@@ -13,8 +13,8 @@ import { FriendActionDialog } from "./FriendActionDialog";
 
 interface FriendsSectionProps {
   friends: Player[];
-  onAddFriend: (player: Player) => void;
-  onRemoveFriend: (playerId: string) => void;
+  onAddFriend: (player: Player, password: string) => void;
+  onRemoveFriend: (playerId: string, password: string) => void;
   onShowPlayerDetails: (player: Player) => void;
   onUpdateFriend?: (player: Player) => void;
   onReloadFriends?: () => void;

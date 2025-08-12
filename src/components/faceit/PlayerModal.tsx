@@ -13,8 +13,8 @@ interface PlayerModalProps {
   player: Player | null;
   isOpen: boolean;
   onClose: () => void;
-  onAddFriend: (player: Player) => void;
-  onRemoveFriend: (playerId: string) => void;
+  onAddFriend: (player: Player, password: string) => void;
+  onRemoveFriend: (playerId: string, password: string) => void;
   isFriend: boolean;
   liveMatchInfo?: any;
 }
@@ -139,11 +139,11 @@ export const PlayerModal = ({
     }
     setShowPasswordDialog(true);
   };
-  const confirmAction = () => {
+  const confirmAction = (password: string) => {
     if (pendingAction === 'add') {
-      onAddFriend(player);
+      onAddFriend(player, password);
     } else if (pendingAction === 'remove') {
-      onRemoveFriend(player.player_id);
+      onRemoveFriend(player.player_id, password);
     }
     setPendingAction(null);
     onClose();
@@ -182,6 +182,6 @@ export const PlayerModal = ({
       <PasswordDialog isOpen={showPasswordDialog} onClose={() => {
       setShowPasswordDialog(false);
       setPendingAction(null);
-    }} onConfirm={confirmAction} title={pendingAction === 'add' ? 'Adaugă Prieten' : 'Șterge Prieten'} description={pendingAction === 'add' ? `Vrei să adaugi ${player.nickname} în lista de prieteni?` : `Vrei să ștergi ${player.nickname} din lista de prieteni?`} />
+    }} onConfirm={confirmAction} title={pendingAction === 'add' ? 'Adaugă Prieten' : 'Șterge Prieten'} description={pendingAction === 'add' ? `Introdu parola pentru a adăuga ${player.nickname} în lista de prieteni.` : `Introdu parola pentru a șterge ${player.nickname} din lista de prieteni.`} />
     </>;
 };

@@ -1,4 +1,4 @@
-
+import React, { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -6,11 +6,12 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 interface PasswordDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: (password: string) => void;
   title: string;
   description: string;
 }
@@ -22,8 +23,10 @@ export const PasswordDialog = ({
   title, 
   description 
 }: PasswordDialogProps) => {
+  const [password, setPassword] = useState("");
+
   const handleConfirm = () => {
-    onConfirm();
+    onConfirm(password);
     onClose();
   };
 
@@ -44,6 +47,19 @@ export const PasswordDialog = ({
           <p className="text-gray-300 text-center text-sm md:text-base leading-relaxed">
             {description}
           </p>
+
+          <div className="space-y-3">
+            <Input
+              type="password"
+              placeholder="Introdu parola de administrare"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleConfirm();
+              }}
+              className="bg-white/10 border-orange-400/30 text-white placeholder:text-gray-400"
+            />
+          </div>
           
           <div className="flex gap-3 pt-2">
             <Button
@@ -55,7 +71,8 @@ export const PasswordDialog = ({
             </Button>
             <Button
               onClick={handleConfirm}
-              className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white h-12 rounded-xl font-bold shadow-lg shadow-orange-500/25 transition-all duration-200 transform hover:scale-105"
+              disabled={!password}
+              className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white h-12 rounded-xl font-bold shadow-lg shadow-orange-500/25 transition-all duration-200 transform hover:scale-105 disabled:opacity-50"
             >
               Confirmă
             </Button>

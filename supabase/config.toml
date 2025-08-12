@@ -8,3 +8,6 @@ verify_jwt = true
 
 [functions.get-faceit-analyser-data]
 verify_jwt = true
+
+[functions.friends-gateway]
+verify_jwt = false

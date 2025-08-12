@@ -11,7 +11,7 @@ import { useFaceitApi } from "@/hooks/useFaceitApi";
 
 interface FaceitToolProps {
   onShowPlayerDetails: (player: Player) => void;
-  onAddFriend: (player: Player) => Promise<void>;
+  onAddFriend: (player: Player, password: string) => void;
 }
 
 const PROXY_SERVER = 'https://lacurte.ro:3000';
@@ -201,9 +201,9 @@ export const FaceitTool = ({ onShowPlayerDetails, onAddFriend }: FaceitToolProps
     setShowPasswordDialog(true);
   };
 
-  const confirmAddFriend = async () => {
+  const confirmAddFriend = async (password: string) => {
     if (pendingPlayer) {
-      await onAddFriend(pendingPlayer);
+      onAddFriend(pendingPlayer, password);
       setPendingPlayer(null);
     }
   };
@@ -385,7 +385,7 @@ export const FaceitTool = ({ onShowPlayerDetails, onAddFriend }: FaceitToolProps
         }}
         onConfirm={confirmAddFriend}
         title="Adaugă Prieten"
-        description={`Vrei să adaugi ${pendingPlayer?.nickname} în lista de prieteni?`}
+        description={`Introdu parola pentru a adăuga ${pendingPlayer?.nickname} în lista de prieteni.`}
       />
     </div>
   );

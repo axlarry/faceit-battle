@@ -13,7 +13,7 @@ interface FriendActionDialogProps {
   isOpen: boolean;
   pendingAction: PendingAction | null;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: (password: string) => void;
 }
 
 export const FriendActionDialog = React.memo(({

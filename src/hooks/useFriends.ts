@@ -13,89 +13,70 @@ export const useFriends = () => {
 
   const loadFriendsFromDatabase = async () => {
     try {
-      const { data: authData } = await supabase.auth.getSession();
-      const userId = authData.session?.user?.id;
-
-      if (!userId) {
-        setFriends([]);
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from('friends')
-        .select('*')
-        .eq('owner_id', userId)
-        .order('created_at', { ascending: false });
+      const { data, error } = await supabase.functions.invoke('friends-gateway', {
+        body: { action: 'list' }
+      });
 
       if (error) {
-        console.error('Error loading friends:', error);
+        console.error('Error loading friends via gateway:', error);
         toast({
           title: "Eroare la încărcare",
-          description: "Nu s-au putut încărca prietenii din baza de date.",
+          description: "Nu s-au putut încărca prietenii (gateway).",
           variant: "destructive",
         });
         return;
       }
 
-      if (data) {
-        const friendsData: Player[] = data.map(friend => ({
-          player_id: friend.player_id,
-          nickname: friend.nickname,
-          avatar: friend.avatar,
-          level: friend.level || 0,
-          elo: friend.elo || 0,
-          wins: friend.wins || 0,
-          winRate: friend.win_rate || 0,
-          hsRate: friend.hs_rate || 0,
-          kdRatio: friend.kd_ratio || 0,
-        }));
-        setFriends(friendsData);
-      }
+      const items = (data as any)?.items || [];
+      const friendsData: Player[] = items.map((friend: any) => ({
+        player_id: friend.player_id,
+        nickname: friend.nickname,
+        avatar: friend.avatar,
+        level: friend.level || 0,
+        elo: friend.elo || 0,
+        wins: friend.wins || 0,
+        winRate: friend.winRate || 0,
+        hsRate: friend.hsRate || 0,
+        kdRatio: friend.kdRatio || 0,
+      }));
+      setFriends(friendsData);
     } catch (error) {
-      console.error('Error loading friends from database:', error);
+      console.error('Error loading friends from gateway:', error);
       toast({
         title: "Eroare la încărcare",
-        description: "Nu s-au putut încărca prietenii din baza de date.",
+        description: "Nu s-au putut încărca prietenii din gateway.",
         variant: "destructive",
       });
     }
   };
 
-  const addFriend = async (player: Player) => {
+  const addFriend = async (player: Player, password: string) => {
     const exists = friends.some(f => f.player_id === player.player_id);
     if (!exists) {
       try {
-        const { data: sessionData } = await supabase.auth.getSession();
-        const userId = sessionData.session?.user?.id;
-        if (!userId) {
-          toast({
-            title: "Necesită autentificare",
-            description: "Te rugăm să te loghezi pentru a adăuga prieteni.",
-            variant: "destructive",
-          });
-          return;
-        }
-
-        const { error } = await supabase
-          .from('friends')
-          .insert({
-            player_id: player.player_id,
-            nickname: player.nickname,
-            avatar: player.avatar,
-            level: player.level || 0,
-            elo: player.elo || 0,
-            wins: player.wins || 0,
-            win_rate: player.winRate || 0,
-            hs_rate: player.hsRate || 0,
-            kd_ratio: player.kdRatio || 0,
-            owner_id: userId,
-          } as any);
+        const { error } = await supabase.functions.invoke('friends-gateway', {
+          body: {
+            action: 'add',
+            password,
+            player: {
+              player_id: player.player_id,
+              nickname: player.nickname,
+              avatar: player.avatar,
+              level: player.level || 0,
+              elo: player.elo || 0,
+              wins: player.wins || 0,
+              win_rate: player.winRate || 0,
+              hs_rate: player.hsRate || 0,
+              kd_ratio: player.kdRatio || 0,
+            }
+          }
+        } as any);
 
         if (error) {
-          console.error('Error adding friend:', error);
+          console.error('Error adding friend (gateway):', error);
           toast({
             title: "Eroare la adăugare",
-            description: error.message || "Nu s-a putut adăuga prietenul în baza de date.",
+            description: (error as any).message || "Parolă invalidă sau eroare la gateway.",
             variant: "destructive",
           });
           return;
@@ -106,7 +87,7 @@ export const useFriends = () => {
         
         toast({
           title: "Prieten adăugat!",
-          description: `${player.nickname} a fost adăugat în lista de prieteni.`,
+          description: `${player.nickname} a fost adăugat în lista de prieteni.",
         });
       } catch (error) {
         console.error('Error adding friend:', error);
@@ -127,38 +108,32 @@ export const useFriends = () => {
 
   const updateFriend = async (updatedPlayer: Player) => {
     try {
-      console.log(`Updating friend ${updatedPlayer.nickname} in database...`, updatedPlayer);
-      const { data: sessionData } = await supabase.auth.getSession();
-      const userId = sessionData.session?.user?.id;
-      if (!userId) {
-        toast({ title: "Necesită autentificare", description: "Loghează-te pentru a actualiza prieteni.", variant: "destructive" });
-        return;
-      }
+      console.log(`Updating friend ${updatedPlayer.nickname} via gateway...`, updatedPlayer);
 
-      const { error } = await (supabase as any)
-        .from('friends')
-        .update({
-          nickname: updatedPlayer.nickname,
-          avatar: updatedPlayer.avatar,
-          level: updatedPlayer.level || 0,
-          elo: updatedPlayer.elo || 0,
-          wins: updatedPlayer.wins || 0,
-          win_rate: updatedPlayer.winRate || 0,
-          hs_rate: updatedPlayer.hsRate || 0,
-          kd_ratio: updatedPlayer.kdRatio || 0,
-          owner_id: userId,
-        } as any)
-        .eq('player_id', updatedPlayer.player_id)
-        .eq('owner_id', userId);
+      const { error } = await supabase.functions.invoke('friends-gateway', {
+        body: {
+          action: 'update',
+          player: {
+            player_id: updatedPlayer.player_id,
+            nickname: updatedPlayer.nickname,
+            avatar: updatedPlayer.avatar,
+            level: updatedPlayer.level || 0,
+            elo: updatedPlayer.elo || 0,
+            wins: updatedPlayer.wins || 0,
+            win_rate: updatedPlayer.winRate || 0,
+            hs_rate: updatedPlayer.hsRate || 0,
+            kd_ratio: updatedPlayer.kdRatio || 0,
+          }
+        }
+      } as any);
 
       if (error) {
-        console.error('Error updating friend in database:', error);
+        console.error('Error updating friend in gateway:', error);
         throw error;
       }
 
-      console.log(`Successfully updated ${updatedPlayer.nickname} in database`);
+      console.log(`Successfully updated ${updatedPlayer.nickname} in gateway`);
 
-      // Update local state only after successful database update
       setFriends(prevFriends => 
         prevFriends.map(f => 
           f.player_id === updatedPlayer.player_id ? updatedPlayer : f
@@ -167,30 +142,25 @@ export const useFriends = () => {
       
     } catch (error) {
       console.error('Error updating friend:', error);
-      throw error; // Re-throw to handle in calling function
+      throw error;
     }
   };
 
-  const removeFriend = async (playerId: string) => {
+  const removeFriend = async (playerId: string, password: string) => {
     try {
-      const { data: sessionData } = await supabase.auth.getSession();
-      const userId = sessionData.session?.user?.id;
-      if (!userId) {
-        toast({ title: "Necesită autentificare", description: "Loghează-te pentru a șterge prieteni.", variant: "destructive" });
-        return;
-      }
-
-      const { error } = await (supabase as any)
-        .from('friends')
-        .delete()
-        .eq('player_id', playerId)
-        .eq('owner_id', userId);
+      const { error } = await supabase.functions.invoke('friends-gateway', {
+        body: {
+          action: 'remove',
+          password,
+          playerId
+        }
+      } as any);
 
       if (error) {
-        console.error('Error removing friend:', error);
+        console.error('Error removing friend (gateway):', error);
         toast({
           title: "Eroare la ștergere",
-          description: "Nu s-a putut șterge prietenul din baza de date.",
+          description: "Parolă invalidă sau eroare la gateway.",
           variant: "destructive",
         });
         return;

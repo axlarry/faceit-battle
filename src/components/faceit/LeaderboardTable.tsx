@@ -13,7 +13,7 @@ import { EmptyLeaderboardState } from "./EmptyLeaderboardState";
 interface LeaderboardTableProps {
   region: string;
   onShowPlayerDetails: (player: Player) => void;
-  onAddFriend: (player: Player) => void;
+  onAddFriend: (player: Player, password: string) => void;
 }
 
 export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: LeaderboardTableProps) => {
@@ -149,9 +149,9 @@ export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: L
     setShowPasswordDialog(true);
   };
 
-  const confirmAddFriend = () => {
+  const confirmAddFriend = (password: string) => {
     if (pendingPlayer) {
-      onAddFriend(pendingPlayer);
+      onAddFriend(pendingPlayer, password);
       setPendingPlayer(null);
     }
   };
@@ -194,7 +194,7 @@ export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: L
         }}
         onConfirm={confirmAddFriend}
         title="Adaugă Prieten"
-        description={`Vrei să adaugi ${pendingPlayer?.nickname} în lista de prieteni?`}
+        description={`Introdu parola pentru a adăuga ${pendingPlayer?.nickname} în lista de prieteni.`}
       />
     </div>
   );

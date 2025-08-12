@@ -9,8 +9,8 @@ interface PendingAction {
 }
 
 export const usePendingFriendActions = (
-  onAddFriend: (player: Player) => void,
-  onRemoveFriend: (playerId: string) => void
+  onAddFriend: (player: Player, password: string) => void,
+  onRemoveFriend: (playerId: string, password: string) => void
 ) => {
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
@@ -25,12 +25,12 @@ export const usePendingFriendActions = (
     setShowPasswordDialog(true);
   };
 
-  const confirmAction = () => {
+  const confirmAction = (password: string) => {
     if (pendingAction) {
       if (pendingAction.type === 'add' && pendingAction.player) {
-        onAddFriend(pendingAction.player);
+        onAddFriend(pendingAction.player, password);
       } else if (pendingAction.type === 'remove' && pendingAction.playerId) {
-        onRemoveFriend(pendingAction.playerId);
+        onRemoveFriend(pendingAction.playerId, password);
       }
       setPendingAction(null);
     }
