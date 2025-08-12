@@ -32,6 +32,8 @@ serve(async (req) => {
   try {
     const { endpoint, useLeaderboardApi = false } = (await req.json()) as ProxyRequestBody;
 
+    console.log(`[proxy-faceit] incoming`, { endpoint, useLeaderboardApi });
+
     if (!endpoint || typeof endpoint !== 'string') {
       return new Response(JSON.stringify({ error: 'Missing or invalid endpoint' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
@@ -47,6 +49,7 @@ serve(async (req) => {
 
     // Allowlist check
     const isAllowed = ALLOWED_ENDPOINTS.some((re) => re.test(endpoint));
+    console.log(`[proxy-faceit] allowlist`, { endpoint, isAllowed });
     if (!isAllowed) {
       return new Response(JSON.stringify({ error: 'Endpoint not allowed' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
@@ -70,6 +73,7 @@ serve(async (req) => {
     });
 
     if (!response.ok) {
+      console.log(`[proxy-faceit] faceit error`, { endpoint, status: response.status });
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: 'Rate limited' }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
@@ -78,6 +82,7 @@ serve(async (req) => {
     }
 
     const data = await response.json();
+    console.log(`[proxy-faceit] success`, { endpoint });
     return new Response(JSON.stringify(data), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (e) {
     return new Response(JSON.stringify({ error: e.message || 'Unknown error' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
