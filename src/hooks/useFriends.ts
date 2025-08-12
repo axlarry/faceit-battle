@@ -87,7 +87,7 @@ export const useFriends = () => {
         
         toast({
           title: "Prieten adăugat!",
-          description: `${player.nickname} a fost adăugat în lista de prieteni.",
+          description: `${player.nickname} a fost adăugat în lista de prieteni.`,
         });
       } catch (error) {
         console.error('Error adding friend:', error);
