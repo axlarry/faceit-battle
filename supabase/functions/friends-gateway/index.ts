@@ -180,17 +180,29 @@ serve(async (req) => {
         counts[oid] = (counts[oid] || 0) + 1;
       }
 
+      // Determine source: prefer the non-public owner with the most rows; if none, fall back to rows with NULL owner_id (legacy data)
       const sourceOwnerId = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
-      if (!sourceOwnerId) {
-        return new Response(JSON.stringify({ migratedInserted: 0, migratedUpdated: 0, sourceOwnerId: null }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-      }
 
-      // Load source rows
-      const { data: sourceRows, error: srcErr } = await supabase
-        .from('friends')
-        .select('*')
-        .eq('owner_id', sourceOwnerId);
-      if (srcErr) throw srcErr;
+      let sourceRows: any[] = [];
+      if (sourceOwnerId) {
+        const { data: srcRows, error: srcErr } = await supabase
+          .from('friends')
+          .select('*')
+          .eq('owner_id', sourceOwnerId);
+        if (srcErr) throw srcErr;
+        sourceRows = (srcRows || []) as any[];
+      } else {
+        // Fallback: migrate legacy rows where owner_id IS NULL
+        const { data: nullOwnerRows, error: nullErr } = await supabase
+          .from('friends')
+          .select('*')
+          .is('owner_id', null);
+        if (nullErr) throw nullErr;
+        if (!nullOwnerRows || nullOwnerRows.length === 0) {
+          return new Response(JSON.stringify({ migratedInserted: 0, migratedUpdated: 0, sourceOwnerId: null }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        }
+        sourceRows = (nullOwnerRows || []) as any[];
+      }
 
       // Load existing public player_ids
       const { data: existingPublic, error: existErr } = await supabase
