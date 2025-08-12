@@ -1,5 +1,4 @@
 
-import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -7,8 +6,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { toast } from "@/hooks/use-toast";
 
 interface PasswordDialogProps {
   isOpen: boolean;
@@ -25,24 +22,12 @@ export const PasswordDialog = ({
   title, 
   description 
 }: PasswordDialogProps) => {
-  const [password, setPassword] = useState('');
-
   const handleConfirm = () => {
-    if (password === 'lacurte.ro') {
-      onConfirm();
-      setPassword('');
-      onClose();
-    } else {
-      toast({
-        title: "Parolă incorectă",
-        description: "Parola introdusă nu este corectă.",
-        variant: "destructive",
-      });
-    }
+    onConfirm();
+    onClose();
   };
 
   const handleClose = () => {
-    setPassword('');
     onClose();
   };
 
@@ -60,31 +45,20 @@ export const PasswordDialog = ({
             {description}
           </p>
           
-          <div className="space-y-4">
-            <Input
-              type="password"
-              placeholder="Introdu parola..."
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleConfirm()}
-              className="bg-gray-800/50 border-2 border-gray-600/50 text-white placeholder:text-gray-400 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 h-12 rounded-xl transition-all duration-200"
-            />
-            
-            <div className="flex gap-3 pt-2">
-              <Button
-                variant="outline"
-                onClick={handleClose}
-                className="flex-1 bg-gray-800/50 border-2 border-gray-600/50 text-gray-300 hover:bg-gray-700/50 hover:text-white hover:border-gray-500 h-12 rounded-xl font-medium transition-all duration-200"
-              >
-                Anulează
-              </Button>
-              <Button
-                onClick={handleConfirm}
-                className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white h-12 rounded-xl font-bold shadow-lg shadow-orange-500/25 transition-all duration-200 transform hover:scale-105"
-              >
-                Confirmă
-              </Button>
-            </div>
+          <div className="flex gap-3 pt-2">
+            <Button
+              variant="outline"
+              onClick={handleClose}
+              className="flex-1 bg-gray-800/50 border-2 border-gray-600/50 text-gray-300 hover:bg-gray-700/50 hover:text-white hover:border-gray-500 h-12 rounded-xl font-medium transition-all duration-200"
+            >
+              Anulează
+            </Button>
+            <Button
+              onClick={handleConfirm}
+              className="flex-1 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white h-12 rounded-xl font-bold shadow-lg shadow-orange-500/25 transition-all duration-200 transform hover:scale-105"
+            >
+              Confirmă
+            </Button>
           </div>
         </div>
       </DialogContent>

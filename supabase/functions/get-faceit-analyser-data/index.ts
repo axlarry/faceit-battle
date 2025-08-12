@@ -25,8 +25,12 @@ Deno.serve(async (req) => {
 
     console.log(`Fetching FaceitAnalyser ${endpoint} data for: ${nickname}`)
 
-    // Make request to FaceitAnalyser API
-    const faceitAnalyserUrl = `https://faceitanalyser.com/api/${endpoint}/${encodeURIComponent(nickname)}?key=B9uwGBLLjCAoBrLJYph4TKvU2Doziue6Yq8svfvG`
+    const analyserKey = Deno.env.get('FACEIT_ANALYSER_API_KEY')
+    if (!analyserKey) {
+      throw new Error('FACEIT_ANALYSER_API_KEY not configured')
+    }
+
+    const faceitAnalyserUrl = `https://faceitanalyser.com/api/${endpoint}/${encodeURIComponent(nickname)}?key=${analyserKey}`
     
     const response = await fetch(faceitAnalyserUrl, {
       method: 'GET',

@@ -13,9 +13,18 @@ export const useFriends = () => {
 
   const loadFriendsFromDatabase = async () => {
     try {
+      const { data: authData } = await supabase.auth.getSession();
+      const userId = authData.session?.user?.id;
+
+      if (!userId) {
+        setFriends([]);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('friends')
         .select('*')
+        .eq('owner_id', userId)
         .order('created_at', { ascending: false });
 
       if (error) {
