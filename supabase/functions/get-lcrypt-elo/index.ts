@@ -6,6 +6,9 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+const NICK_RE = /^[A-Za-z0-9 _.\-]{1,32}$/;
+const RATE_LIMIT = new Map<string, number>();
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -14,9 +17,18 @@ serve(async (req) => {
 
   try {
     const { nickname } = await req.json()
+
+    // Lightweight rate limit per IP
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+    const now = Date.now()
+    const last = RATE_LIMIT.get(ip) || 0
+    if (now - last < 300) {
+      return new Response(JSON.stringify({ error: 'Too many requests' }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+    RATE_LIMIT.set(ip, now)
     
-    if (!nickname) {
-      throw new Error('Nickname is required')
+    if (!nickname || !NICK_RE.test(nickname)) {
+      throw new Error('Invalid nickname')
     }
 
     console.log(`Fetching ELO data for: ${nickname}`)

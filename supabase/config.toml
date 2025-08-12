@@ -1,10 +1,7 @@
 project_id = "rwizxoeyatdtggrpnpmq"
 
 [functions.get-lcrypt-elo]
-verify_jwt = false
-
-[functions.get-faceit-api-key]
-verify_jwt = false
+verify_jwt = true
 
 [functions.get-faceit-analyser-data]
-verify_jwt = false
+verify_jwt = true

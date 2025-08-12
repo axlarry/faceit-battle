@@ -11,6 +11,18 @@ interface ProxyRequestBody {
 }
 
 const FACEIT_BASE = 'https://open.faceit.com/data/v4';
+const ALLOWED_ENDPOINTS: RegExp[] = [
+  /^\/players\?[A-Za-z0-9_=&%\-]+$/,
+  /^\/players\/[A-Za-z0-9_-]+$/,
+  /^\/players\/[A-Za-z0-9_-]+\/stats\/cs2$/,
+  /^\/players\/[A-Za-z0-9_-]+\/history\?game=cs2(&limit=\d+)?$/,
+  /^\/rankings\/games\/cs2\/regions\/[A-Za-z]+(\?offset=\d+&limit=\d+|\?limit=\d+)?$/,
+  /^\/matches\/[A-Za-z0-9-]+$/,
+  /^\/matches\/[A-Za-z0-9-]+\/stats$/,
+  /^\/search\/players\?nickname=[A-Za-z0-9%._-]+(&game=cs2)?$/,
+  /^\/search\/matches\?type=ongoing&game=cs2(&limit=\d+)?$/
+];
+ 
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -24,9 +36,19 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Missing or invalid endpoint' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
+    if (endpoint.length > 200) {
+      return new Response(JSON.stringify({ error: 'Endpoint too long' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
     // Basic validation to prevent full URL proxying
     if (endpoint.startsWith('http://') || endpoint.startsWith('https://')) {
       return new Response(JSON.stringify({ error: 'Absolute URLs are not allowed' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    // Allowlist check
+    const isAllowed = ALLOWED_ENDPOINTS.some((re) => re.test(endpoint));
+    if (!isAllowed) {
+      return new Response(JSON.stringify({ error: 'Endpoint not allowed' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     // Choose API key based on usage
