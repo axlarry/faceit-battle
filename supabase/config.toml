@@ -1,5 +1,8 @@
 project_id = "rwizxoeyatdtggrpnpmq"
 
+[functions.proxy-faceit]
+verify_jwt = false
+
 [functions.get-lcrypt-elo]
 verify_jwt = true
 
