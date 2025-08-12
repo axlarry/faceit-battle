@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface PasswordDialogProps {
   isOpen: boolean;
@@ -27,15 +28,28 @@ export const PasswordDialog = ({
 }: PasswordDialogProps) => {
   const [password, setPassword] = useState('');
 
-  const handleConfirm = () => {
-    if (password === 'lacurte.ro') {
-      onConfirm();
-      setPassword('');
-      onClose();
-    } else {
+  const handleConfirm = async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('validate-access', {
+        body: { code: password }
+      });
+
+      if (error) throw error;
+      if (data?.ok) {
+        onConfirm();
+        setPassword('');
+        onClose();
+      } else {
+        toast({
+          title: "Parolă incorectă",
+          description: "Parola introdusă nu este corectă.",
+          variant: "destructive",
+        });
+      }
+    } catch (_e) {
       toast({
-        title: "Parolă incorectă",
-        description: "Parola introdusă nu este corectă.",
+        title: "Eroare de validare",
+        description: "Nu s-a putut valida parola. Încearcă din nou.",
         variant: "destructive",
       });
     }
@@ -66,7 +80,7 @@ export const PasswordDialog = ({
               placeholder="Introdu parola..."
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleConfirm()}
+              onKeyPress={(e) => { if (e.key === 'Enter') { void handleConfirm(); } }}
               className="bg-gray-800/50 border-2 border-gray-600/50 text-white placeholder:text-gray-400 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 h-12 rounded-xl transition-all duration-200"
             />
             
