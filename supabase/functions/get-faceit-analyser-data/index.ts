@@ -16,20 +16,6 @@ Deno.serve(async (req) => {
     return new Response('ok', { headers: corsHeaders })
   }
 
-  // Origin allowlist (optional): set ORIGIN_ALLOWLIST secret as comma-separated list
-  const origin = req.headers.get('origin')?.toLowerCase() || ''
-  const allowlist = (Deno.env.get('ORIGIN_ALLOWLIST') || '')
-    .split(',')
-    .map((s) => s.trim().toLowerCase())
-    .filter(Boolean)
-  if (allowlist.length && origin && !allowlist.includes(origin)) {
-    console.log('get-faceit-analyser-data blocked origin:', origin)
-    return new Response(JSON.stringify({ error: 'Origin not allowed' }), {
-      status: 403,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    })
-  }
-
   try {
     const { nickname, endpoint = 'stats' }: FaceitAnalyserRequest = await req.json()
     
@@ -40,12 +26,7 @@ Deno.serve(async (req) => {
     console.log(`Fetching FaceitAnalyser ${endpoint} data for: ${nickname}`)
 
     // Make request to FaceitAnalyser API
-    const apiKey = Deno.env.get('FACEIT_ANALYSER_API_KEY')
-    if (!apiKey) {
-      throw new Error('FACEIT_ANALYSER_API_KEY not configured')
-    }
-
-    const faceitAnalyserUrl = `https://faceitanalyser.com/api/${endpoint}/${encodeURIComponent(nickname)}?key=${encodeURIComponent(apiKey)}`
+    const faceitAnalyserUrl = `https://faceitanalyser.com/api/${endpoint}/${encodeURIComponent(nickname)}?key=B9uwGBLLjCAoBrLJYph4TKvU2Doziue6Yq8svfvG`
     
     const response = await fetch(faceitAnalyserUrl, {
       method: 'GET',

@@ -13,11 +13,16 @@ serve(async (req) => {
   }
 
   try {
-    // This endpoint is intentionally disabled to avoid exposing secrets
+    // Get the API key from environment variables
+    const apiKey = Deno.env.get('FACEIT_API_KEY')
+    
+    if (!apiKey) {
+      throw new Error('FACEIT_API_KEY not configured')
+    }
+
     return new Response(
-      JSON.stringify({ error: 'Not allowed' }),
+      JSON.stringify({ apiKey }),
       { 
-        status: 403,
         headers: { 
           ...corsHeaders,
           'Content-Type': 'application/json' 

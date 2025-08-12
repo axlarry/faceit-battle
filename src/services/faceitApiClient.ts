@@ -1,31 +1,48 @@
 
 import { apiService } from './apiService';
-import { supabase } from '@/integrations/supabase/client';
+import { FACEIT_CONFIG } from '@/config/faceitConfig';
 
 export class FaceitApiClient {
   async makeApiCall(endpoint: string, useLeaderboardApi: boolean = false) {
+    const apiKey = useLeaderboardApi ? 
+      FACEIT_CONFIG.API_KEYS.LEADERBOARD : 
+      FACEIT_CONFIG.API_KEYS.FRIENDS_AND_TOOL;
+    
+    if (!apiKey) {
+      throw new Error('API key not available');
+    }
+
     const requestKey = `faceit-${endpoint}-${useLeaderboardApi ? 'leaderboard' : 'friends'}`;
     
     return apiService.dedupedRequest(requestKey, async () => {
       return apiService.retryRequest(async () => {
-        console.log(`Invoking faceit-proxy for endpoint: ${endpoint}`);
+        console.log(`Making API call to: ${FACEIT_CONFIG.API_BASE}${endpoint}`);
         
         try {
-          const { data, error } = await supabase.functions.invoke('faceit-proxy', {
-            body: { endpoint, useLeaderboardApi }
+          const response = await fetch(`${FACEIT_CONFIG.API_BASE}${endpoint}`, {
+            headers: {
+              'Authorization': `Bearer ${apiKey}`,
+              'Content-Type': 'application/json'
+            }
           });
 
-          if (error) {
-            const message = (error as any)?.message || 'Server error';
-            if (message.includes('429') || message.toLowerCase().includes('rate')) {
+          if (!response.ok) {
+            if (response.status === 429) {
               throw new Error('Rate limited');
             }
-            throw new Error(message);
+            
+            if (response.status >= 500) {
+              throw new Error('Server error');
+            }
+
+            console.warn(`API Warning ${response.status}:`, response.statusText);
+            return null;
           }
 
-          return data ?? null;
+          const data = await response.json();
+          return data;
         } catch (error) {
-          if (error instanceof TypeError && (error as any).message?.includes('Failed to fetch')) {
+          if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
             console.warn('Network connectivity issue, will retry later');
           }
           throw error;

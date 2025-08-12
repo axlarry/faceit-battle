@@ -1,13 +1,1 @@
 project_id = "rwizxoeyatdtggrpnpmq"
-
-[functions.get-lcrypt-elo]
-verify_jwt = false
-
-[functions.get-faceit-analyser-data]
-verify_jwt = false
-
-[functions.faceit-proxy]
-verify_jwt = false
-
-[functions.validate-access]
-verify_jwt = false
