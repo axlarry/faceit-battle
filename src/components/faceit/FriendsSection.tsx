@@ -10,6 +10,9 @@ import { FriendSearchForm } from "./FriendSearchForm";
 import { EmptyFriendsState } from "./EmptyFriendsState";
 import { FriendsList } from "./FriendsList";
 import { FriendActionDialog } from "./FriendActionDialog";
+import { PasswordDialog } from "./PasswordDialog";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 interface FriendsSectionProps {
   friends: Player[];
@@ -33,6 +36,9 @@ export const FriendsSection = ({
     friends,
     enabled: true
   });
+
+  // Password dialog pentru migrare
+  const [showMigratePassword, setShowMigratePassword] = React.useState(false);
 
   // Auto-update friends data every 5 minutes
   const { isUpdating, updateAllFriends } = useFriendsAutoUpdate({
@@ -71,12 +77,11 @@ export const FriendsSection = ({
             lcryptLoading={lcryptLoading}
           />
 
-          {/* Mascota ELO Today este acum în antetul secțiunii */}
           {/* Căutare prieteni */}
           <FriendSearchForm onPlayerFound={handlePlayerFound} />
           
           {friends.length === 0 ? (
-            <EmptyFriendsState />
+            <EmptyFriendsState onMigrate={() => setShowMigratePassword(true)} />
           ) : (
             <FriendsList 
               friends={friendsWithLcrypt}
@@ -94,6 +99,31 @@ export const FriendsSection = ({
         pendingAction={pendingAction}
         onClose={closePasswordDialog}
         onConfirm={confirmAction}
+      />
+
+      <PasswordDialog
+        isOpen={showMigratePassword}
+        onClose={() => setShowMigratePassword(false)}
+        onConfirm={async (password) => {
+          try {
+            const { data, error } = await supabase.functions.invoke('friends-gateway', {
+              body: { action: 'migrate_auto', password }
+            });
+            if (error) {
+              toast({ title: 'Migrare eșuată', description: 'Parola invalidă sau eroare la gateway.', variant: 'destructive' });
+              return;
+            }
+            const info = data as any;
+            toast({ title: 'Migrare reușită', description: `Inserate: ${info?.migratedInserted || 0}, Actualizate: ${info?.migratedUpdated || 0}` });
+            onReloadFriends?.();
+          } catch (e) {
+            toast({ title: 'Migrare eșuată', description: 'A apărut o eroare în timpul migrării.', variant: 'destructive' });
+          } finally {
+            setShowMigratePassword(false);
+          }
+        }}
+        title="Migrează lista veche"
+        description="Introdu parola pentru a migra lista ta veche de prieteni în lista publică."
       />
     </div>
   );

@@ -9,7 +9,7 @@ const corsHeaders = {
 // Single shared owner for password-protected, unauthenticated lists
 const PUBLIC_OWNER_ID = '00000000-0000-0000-0000-000000000000';
 
-type Action = 'list' | 'add' | 'update' | 'remove';
+type Action = 'list' | 'add' | 'update' | 'remove' | 'migrate_auto';
 
 interface FriendPayload {
   player_id: string;
@@ -159,8 +159,100 @@ serve(async (req) => {
       return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
+    // Auto-migrate: copy the largest old owner list into PUBLIC owner
+    if (action === 'migrate_auto') {
+      // Enforce password
+      if (!requirePassword(body.password)) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
+      // Fetch all owner_ids (excluding PUBLIC and null)
+      const { data: ownersRaw, error: ownersErr } = await supabase
+        .from('friends')
+        .select('owner_id')
+        .neq('owner_id', PUBLIC_OWNER_ID)
+        .not('owner_id', 'is', null);
+      if (ownersErr) throw ownersErr;
+
+      const counts: Record<string, number> = {};
+      for (const row of ownersRaw || []) {
+        const oid = (row as any).owner_id as string;
+        counts[oid] = (counts[oid] || 0) + 1;
+      }
+
+      const sourceOwnerId = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
+      if (!sourceOwnerId) {
+        return new Response(JSON.stringify({ migratedInserted: 0, migratedUpdated: 0, sourceOwnerId: null }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
+      // Load source rows
+      const { data: sourceRows, error: srcErr } = await supabase
+        .from('friends')
+        .select('*')
+        .eq('owner_id', sourceOwnerId);
+      if (srcErr) throw srcErr;
+
+      // Load existing public player_ids
+      const { data: existingPublic, error: existErr } = await supabase
+        .from('friends')
+        .select('player_id')
+        .eq('owner_id', PUBLIC_OWNER_ID);
+      if (existErr) throw existErr;
+
+      const existingSet = new Set((existingPublic || []).map((r: any) => r.player_id as string));
+
+      const toInsert: any[] = [];
+      const toUpdate: any[] = [];
+
+      for (const f of sourceRows || []) {
+        const payload = {
+          owner_id: PUBLIC_OWNER_ID,
+          player_id: (f as any).player_id,
+          nickname: (f as any).nickname,
+          avatar: (f as any).avatar,
+          level: (f as any).level ?? 0,
+          elo: (f as any).elo ?? 0,
+          wins: (f as any).wins ?? 0,
+          win_rate: (f as any).win_rate ?? 0,
+          hs_rate: (f as any).hs_rate ?? 0,
+          kd_ratio: (f as any).kd_ratio ?? 0,
+        } as any;
+        if (!existingSet.has((f as any).player_id)) {
+          toInsert.push(payload);
+        } else {
+          toUpdate.push(payload);
+        }
+      }
+
+      let inserted = 0;
+      if (toInsert.length > 0) {
+        const { error: insErr } = await supabase.from('friends').insert(toInsert as any);
+        if (insErr) throw insErr;
+        inserted = toInsert.length;
+      }
+
+      let updated = 0;
+      // Update records one-by-one to avoid onConflict requirements
+      for (const u of toUpdate) {
+        const { error: updErr } = await supabase
+          .from('friends')
+          .update({
+            nickname: u.nickname,
+            avatar: u.avatar,
+            level: u.level,
+            elo: u.elo,
+            wins: u.wins,
+            win_rate: u.win_rate,
+            hs_rate: u.hs_rate,
+            kd_ratio: u.kd_ratio,
+          })
+          .eq('owner_id', PUBLIC_OWNER_ID)
+          .eq('player_id', u.player_id);
+        if (updErr) throw updErr;
+        updated += 1;
+      }
+
+      return new Response(JSON.stringify({ migratedInserted: inserted, migratedUpdated: updated, sourceOwnerId }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
     return new Response(JSON.stringify({ error: 'Unknown action' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-  } catch (e: any) {
-    return new Response(JSON.stringify({ error: e.message || 'Unknown error' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-  }
-});
