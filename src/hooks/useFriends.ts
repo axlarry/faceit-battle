@@ -56,6 +56,17 @@ export const useFriends = () => {
     const exists = friends.some(f => f.player_id === player.player_id);
     if (!exists) {
       try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const userId = sessionData.session?.user?.id;
+        if (!userId) {
+          toast({
+            title: "Necesită autentificare",
+            description: "Te rugăm să te loghezi pentru a adăuga prieteni.",
+            variant: "destructive",
+          });
+          return;
+        }
+
         const { error } = await supabase
           .from('friends')
           .insert({
@@ -68,13 +79,14 @@ export const useFriends = () => {
             win_rate: player.winRate || 0,
             hs_rate: player.hsRate || 0,
             kd_ratio: player.kdRatio || 0,
-          });
+            owner_id: userId,
+          } as any);
 
         if (error) {
           console.error('Error adding friend:', error);
           toast({
             title: "Eroare la adăugare",
-            description: "Nu s-a putut adăuga prietenul în baza de date.",
+            description: error.message || "Nu s-a putut adăuga prietenul în baza de date.",
             variant: "destructive",
           });
           return;
@@ -107,8 +119,14 @@ export const useFriends = () => {
   const updateFriend = async (updatedPlayer: Player) => {
     try {
       console.log(`Updating friend ${updatedPlayer.nickname} in database...`, updatedPlayer);
-      
-      const { error } = await supabase
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData.session?.user?.id;
+      if (!userId) {
+        toast({ title: "Necesită autentificare", description: "Loghează-te pentru a actualiza prieteni.", variant: "destructive" });
+        return;
+      }
+
+      const { error } = await (supabase as any)
         .from('friends')
         .update({
           nickname: updatedPlayer.nickname,
@@ -119,8 +137,10 @@ export const useFriends = () => {
           win_rate: updatedPlayer.winRate || 0,
           hs_rate: updatedPlayer.hsRate || 0,
           kd_ratio: updatedPlayer.kdRatio || 0,
-        })
-        .eq('player_id', updatedPlayer.player_id);
+          owner_id: userId,
+        } as any)
+        .eq('player_id', updatedPlayer.player_id)
+        .eq('owner_id', userId);
 
       if (error) {
         console.error('Error updating friend in database:', error);
@@ -144,10 +164,18 @@ export const useFriends = () => {
 
   const removeFriend = async (playerId: string) => {
     try {
-      const { error } = await supabase
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData.session?.user?.id;
+      if (!userId) {
+        toast({ title: "Necesită autentificare", description: "Loghează-te pentru a șterge prieteni.", variant: "destructive" });
+        return;
+      }
+
+      const { error } = await (supabase as any)
         .from('friends')
         .delete()
-        .eq('player_id', playerId);
+        .eq('player_id', playerId)
+        .eq('owner_id', userId);
 
       if (error) {
         console.error('Error removing friend:', error);
