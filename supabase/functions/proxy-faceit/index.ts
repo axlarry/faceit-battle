@@ -56,7 +56,7 @@ serve(async (req) => {
 
     // Choose API key based on usage
     const defaultKey = Deno.env.get('FACEIT_API_KEY');
-    const leaderboardKey = Deno.env.get('FACEIT_ANALYSER_API_KEY') || defaultKey;
+    const leaderboardKey = Deno.env.get('FACEIT_LEADERBOARD_API_KEY') || Deno.env.get('FACEIT_ANALYSER_API_KEY') || defaultKey;
     const apiKey = useLeaderboardApi ? leaderboardKey : defaultKey;
 
     if (!apiKey) {
