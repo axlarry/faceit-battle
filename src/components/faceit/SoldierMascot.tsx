@@ -111,6 +111,16 @@ export const SoldierMascot: React.FC<SoldierMascotProps> = ({ friends, isLoading
     ? "bg-muted-foreground"
     : "bg-destructive";
 
+  const palette = {
+    veryGood: { helmet: "fill-accent", helmetStripe: "fill-accent/80", body: "fill-accent/15", limb: "fill-accent/30", weapon: "fill-primary", muzzle: "text-accent" },
+    good: { helmet: "fill-primary", helmetStripe: "fill-primary/80", body: "fill-primary/15", limb: "fill-primary/30", weapon: "fill-primary", muzzle: "text-primary" },
+    neutral: { helmet: "fill-muted", helmetStripe: "fill-muted-foreground/60", body: "fill-muted/20", limb: "fill-muted/30", weapon: "fill-muted-foreground", muzzle: "text-secondary" },
+    bad: { helmet: "fill-destructive/90", helmetStripe: "fill-destructive/70", body: "fill-destructive/10", limb: "fill-destructive/30", weapon: "fill-destructive", muzzle: "text-destructive" },
+    veryBad: { helmet: "fill-destructive", helmetStripe: "fill-destructive/80", body: "fill-destructive/10", limb: "fill-destructive/40", weapon: "fill-destructive", muzzle: "text-destructive" },
+  } as const;
+
+  const paletteState = palette[state];
+
   return (
     <TooltipProvider>
       <Tooltip>
@@ -140,8 +150,8 @@ export const SoldierMascot: React.FC<SoldierMascotProps> = ({ friends, isLoading
             >
               {/* Helmet */}
               <g transform={`rotate(${isVeryHappy ? -6 : isHappy ? -3 : isSad ? 3 : isVerySad ? 6 : 0} 32 12)`}>
-                <rect x="14" y="4" rx="6" ry="6" width="36" height="16" className="fill-current/80" />
-                <rect x="18" y="18" width="28" height="3" className="fill-current/60" />
+                <rect x="14" y="4" rx="6" ry="6" width="36" height="16" className={cn(paletteState.helmet)} />
+                <rect x="18" y="18" width="28" height="3" className={cn(paletteState.helmetStripe)} />
               </g>
 
               {/* Head */}
@@ -163,11 +173,11 @@ export const SoldierMascot: React.FC<SoldierMascotProps> = ({ friends, isLoading
               <path d={mouthPaths[state]} className="stroke-current" strokeWidth="2" fill="none" strokeLinecap="round" />
 
               {/* Body */}
-              <rect x="22" y="36" width="22" height="14" rx="4" className="fill-current/15" />
+              <rect x="22" y="36" width="22" height="14" rx="4" className={cn(paletteState.body)} />
 
               {/* Left arm (idle) */}
               <g transform="translate(22,38)">
-                <rect x="-8" y="4" width="10" height="4" rx="2" className={cn("fill-current/40", isNeutral && "animate-tired-breathe")} />
+                <rect x="-8" y="4" width="10" height="4" rx="2" className={cn(paletteState.limb, isNeutral && "animate-tired-breathe")} />
               </g>
 
               {/* Right arm with weapon */}
@@ -175,14 +185,14 @@ export const SoldierMascot: React.FC<SoldierMascotProps> = ({ friends, isLoading
                 {/* Shoulder pivot at (0,0) */}
                 <g className={cn(isHappy && "animate-recoil-loop", isVerySad && "animate-rage-shake")}
                    style={{ transformOrigin: "0px 0px" }}>
-                  <rect x="0" y="4" width="12" height="4" rx="2" className="fill-current/60" />
+                  <rect x="0" y="4" width="12" height="4" rx="2" className={cn(paletteState.limb)} />
                   {/* Weapon */}
                   <g transform="translate(10,2)">
-                    <rect x="0" y="2" width="16" height="4" rx="2" className="fill-current" />
-                    <rect x="14" y="1" width="4" height="2" className="fill-current" />
+                    <rect x="0" y="2" width="16" height="4" rx="2" className={cn(paletteState.weapon)} />
+                    <rect x="14" y="1" width="4" height="2" className={cn(paletteState.weapon)} />
                     {/* Muzzle flash (happy) */}
                     {isHappy && (
-                      <g className="animate-flash-burst text-accent">
+                      <g className={cn("animate-flash-burst", paletteState.muzzle)}>
                         <polygon points="20,3 24,5 20,7 21,5" className="fill-current" />
                         <line x1="18" y1="4" x2="26" y2="4" className="stroke-current/70" strokeWidth="1" />
                       </g>
@@ -193,8 +203,8 @@ export const SoldierMascot: React.FC<SoldierMascotProps> = ({ friends, isLoading
 
               {/* Legs */}
               <g>
-                <rect x="26" y="50" width="4" height="8" rx="2" className={cn("fill-current/40", isNeutral && "animate-tired-breathe")} />
-                <rect x="36" y="50" width="4" height="8" rx="2" className={cn("fill-current/40", isNeutral && "animate-tired-breathe")} />
+                <rect x="26" y="50" width="4" height="8" rx="2" className={cn(paletteState.limb, isNeutral && "animate-tired-breathe")} />
+                <rect x="36" y="50" width="4" height="8" rx="2" className={cn(paletteState.limb, isNeutral && "animate-tired-breathe")} />
               </g>
 
               {/* Rage aura */}
