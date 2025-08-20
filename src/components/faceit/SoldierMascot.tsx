@@ -44,7 +44,7 @@ const stateLabels: Record<ReturnType<typeof getState>, string> = {
 };
 
 
-export const SoldierMascot: React.FC<SoldierMascotProps> = ({ friends, isLoading, size = 56, className }) => {
+export const SoldierMascot: React.FC<SoldierMascotProps> = ({ friends, isLoading, size = 80, className }) => {
   const { avg, count } = useMemo(() => {
     const todays = (friends || [])
       .map((f) => {
@@ -61,7 +61,7 @@ export const SoldierMascot: React.FC<SoldierMascotProps> = ({ friends, isLoading
 
   if (isLoading && count === 0) {
     return (
-      <div className={cn("w-11 h-11 rounded-full bg-muted animate-pulse", className)} aria-label="Se încarcă mascotă" />
+      <div className={cn("w-20 h-20 rounded-full bg-muted animate-pulse", className)} aria-label="Se încarcă mascotă" />
     );
   }
 
@@ -70,13 +70,21 @@ export const SoldierMascot: React.FC<SoldierMascotProps> = ({ friends, isLoading
   const state = getState(avg);
   const title = `ELO Today: ${avg > 0 ? "+" + avg : avg} • ${stateLabels[state]} • ${count} au jucat`;
 
-  // Expressions per state (face)
+  // Enhanced expressions per state
+  const eyePositions: Record<ReturnType<typeof getState>, { leftY: number; rightY: number; shape: string }> = {
+    veryGood: { leftY: 20, rightY: 20, shape: "excited" },
+    good: { leftY: 21, rightY: 21, shape: "happy" },
+    neutral: { leftY: 22, rightY: 22, shape: "normal" },
+    bad: { leftY: 23, rightY: 23, shape: "tired" },
+    veryBad: { leftY: 21, rightY: 21, shape: "angry" },
+  };
+
   const mouthPaths: Record<ReturnType<typeof getState>, string> = {
-    veryGood: "M24,34 Q32,40 40,34",
-    good: "M24,35 Q32,38 40,35",
-    neutral: "M24,36 L40,36",
-    bad: "M24,38 Q32,32 40,38",
-    veryBad: "M24,40 Q32,28 40,40",
+    veryGood: "M22,34 Q32,42 42,34",
+    good: "M24,35 Q32,39 40,35",
+    neutral: "M26,36 L38,36",
+    bad: "M24,39 Q32,33 40,39",
+    veryBad: "M22,41 Q32,29 42,41",
   };
 
   const isVeryHappy = state === "veryGood";
@@ -85,15 +93,22 @@ export const SoldierMascot: React.FC<SoldierMascotProps> = ({ friends, isLoading
   const isSad = state === "bad";
   const isVerySad = state === "veryBad";
 
-  const containerAnim = isVeryHappy
-    ? "animate-elo-positive-strong"
+  // Enhanced animation system
+  const soldierAnimation = isVeryHappy
+    ? "animate-soldier-victory-dance"
     : isHappy
-    ? "animate-elo-positive"
+    ? "animate-soldier-shooting-up"
     : isNeutral
-    ? "animate-elo-neutral"
+    ? "animate-soldier-patrol"
     : isSad
-    ? "animate-elo-negative"
-    : "animate-elo-negative-strong";
+    ? "animate-soldier-sad-slump"
+    : "animate-soldier-rage-mode";
+
+  const weaponAnimation = isVeryHappy || isHappy
+    ? "animate-weapon-recoil-strong"
+    : isVerySad
+    ? "animate-soldier-rage-mode"
+    : "";
 
   const colorClass = isVeryHappy
     ? "text-accent"
@@ -104,22 +119,79 @@ export const SoldierMascot: React.FC<SoldierMascotProps> = ({ friends, isLoading
     : "text-destructive";
 
   const glowClass = isVeryHappy
-    ? "bg-accent"
+    ? "shadow-lg shadow-accent/50"
     : isHappy
-    ? "bg-primary"
+    ? "shadow-lg shadow-primary/50"
     : isNeutral
-    ? "bg-muted-foreground"
-    : "bg-destructive";
+    ? "shadow-md shadow-muted-foreground/30"
+    : "shadow-lg shadow-destructive/50";
 
+  // Enhanced color palette with gradients
   const palette = {
-    veryGood: { helmet: "fill-accent", helmetStripe: "fill-accent/80", body: "fill-accent/15", limb: "fill-accent/30", weapon: "fill-primary", muzzle: "text-accent" },
-    good: { helmet: "fill-primary", helmetStripe: "fill-primary/80", body: "fill-primary/15", limb: "fill-primary/30", weapon: "fill-primary", muzzle: "text-primary" },
-    neutral: { helmet: "fill-muted", helmetStripe: "fill-muted-foreground/60", body: "fill-muted/20", limb: "fill-muted/30", weapon: "fill-muted-foreground", muzzle: "text-secondary" },
-    bad: { helmet: "fill-destructive/90", helmetStripe: "fill-destructive/70", body: "fill-destructive/10", limb: "fill-destructive/30", weapon: "fill-destructive", muzzle: "text-destructive" },
-    veryBad: { helmet: "fill-destructive", helmetStripe: "fill-destructive/80", body: "fill-destructive/10", limb: "fill-destructive/40", weapon: "fill-destructive", muzzle: "text-destructive" },
+    veryGood: { 
+      helmet: "fill-accent", 
+      helmetDetails: "fill-accent/90", 
+      helmetStripe: "fill-accent/70",
+      body: "fill-accent/20", 
+      bodyDetails: "fill-accent/30",
+      limb: "fill-accent/40", 
+      weapon: "fill-primary", 
+      weaponDetails: "fill-primary/80",
+      muzzle: "text-accent",
+      effects: "text-accent"
+    },
+    good: { 
+      helmet: "fill-primary", 
+      helmetDetails: "fill-primary/90", 
+      helmetStripe: "fill-primary/70",
+      body: "fill-primary/20", 
+      bodyDetails: "fill-primary/30",
+      limb: "fill-primary/40", 
+      weapon: "fill-primary", 
+      weaponDetails: "fill-primary/80",
+      muzzle: "text-primary",
+      effects: "text-primary"
+    },
+    neutral: { 
+      helmet: "fill-muted-foreground", 
+      helmetDetails: "fill-muted-foreground/80", 
+      helmetStripe: "fill-muted-foreground/60",
+      body: "fill-muted/30", 
+      bodyDetails: "fill-muted-foreground/20",
+      limb: "fill-muted-foreground/50", 
+      weapon: "fill-muted-foreground", 
+      weaponDetails: "fill-muted-foreground/70",
+      muzzle: "text-muted-foreground",
+      effects: "text-muted-foreground"
+    },
+    bad: { 
+      helmet: "fill-destructive/90", 
+      helmetDetails: "fill-destructive/80", 
+      helmetStripe: "fill-destructive/60",
+      body: "fill-destructive/15", 
+      bodyDetails: "fill-destructive/25",
+      limb: "fill-destructive/40", 
+      weapon: "fill-destructive", 
+      weaponDetails: "fill-destructive/80",
+      muzzle: "text-destructive",
+      effects: "text-destructive"
+    },
+    veryBad: { 
+      helmet: "fill-destructive", 
+      helmetDetails: "fill-destructive/90", 
+      helmetStripe: "fill-destructive/70",
+      body: "fill-destructive/20", 
+      bodyDetails: "fill-destructive/30",
+      limb: "fill-destructive/50", 
+      weapon: "fill-destructive", 
+      weaponDetails: "fill-destructive/80",
+      muzzle: "text-destructive",
+      effects: "text-destructive"
+    },
   } as const;
 
   const paletteState = palette[state];
+  const eyeState = eyePositions[state];
 
   return (
     <TooltipProvider>
@@ -129,7 +201,7 @@ export const SoldierMascot: React.FC<SoldierMascotProps> = ({ friends, isLoading
             className={cn(
               "relative inline-flex items-center justify-center",
               colorClass,
-              containerAnim,
+              soldierAnimation,
               className
             )}
             aria-label={title}
@@ -141,85 +213,187 @@ export const SoldierMascot: React.FC<SoldierMascotProps> = ({ friends, isLoading
               glowClass
             )} />
 
-            {/* Soldier SVG */}
+            {/* Enhanced Soldier SVG */}
             <svg
               width={size}
               height={size}
               viewBox="0 0 64 64"
-              className={cn("relative z-10 drop-shadow")}
+              className={cn("relative z-10", glowClass)}
             >
-              {/* Helmet */}
+              {/* Enhanced Military Helmet */}
               <g transform={`rotate(${isVeryHappy ? -6 : isHappy ? -3 : isSad ? 3 : isVerySad ? 6 : 0} 32 12)`}>
-                <rect x="14" y="4" rx="6" ry="6" width="36" height="16" className={cn(paletteState.helmet)} />
-                <rect x="18" y="18" width="28" height="3" className={cn(paletteState.helmetStripe)} />
+                <ellipse cx="32" cy="12" rx="18" ry="8" className={cn(paletteState.helmet)} />
+                <ellipse cx="32" cy="10" rx="16" ry="6" className={cn(paletteState.helmetDetails)} />
+                <rect x="20" y="18" width="24" height="4" rx="2" className={cn(paletteState.helmetStripe)} />
+                <circle cx="26" cy="8" r="1.5" className={cn(paletteState.helmetDetails)} />
+                <circle cx="38" cy="8" r="1.5" className={cn(paletteState.helmetDetails)} />
+                <rect x="30" y="6" width="4" height="2" rx="1" className={cn(paletteState.helmetDetails)} />
               </g>
 
-              {/* Head */}
-              <circle cx="28" cy="28" r="16" className="fill-card stroke-current/30" strokeWidth="1.5" />
-
-              {/* Eyes */}
-              <circle cx="24" cy={isSad || isVerySad ? 22 : 21} r="2" className="fill-current" />
-              <circle cx="32" cy={isSad || isVerySad ? 22 : 21} r="2" className="fill-current" />
-
-              {/* Eyebrows for rage */}
-              {(isSad || isVerySad) && (
-                <g className={cn(isVerySad && "animate-rage-shake")}> 
-                  <path d="M20 18 L26 16" className="stroke-current" strokeWidth="2" strokeLinecap="round" />
-                  <path d="M30 16 L36 18" className="stroke-current" strokeWidth="2" strokeLinecap="round" />
-                </g>
+              {/* Enhanced Head with better proportions */}
+              <circle cx="32" cy="28" r="14" className="fill-card stroke-border" strokeWidth="1" />
+              
+              {/* Enhanced Eyes with expressions */}
+              {eyeState.shape === "excited" && (
+                <>
+                  <ellipse cx="26" cy={eyeState.leftY} rx="2.5" ry="3" className="fill-current" />
+                  <ellipse cx="38" cy={eyeState.rightY} rx="2.5" ry="3" className="fill-current" />
+                  <path d="M24 17 Q26 15 28 17" className="stroke-current" strokeWidth="1.5" fill="none" />
+                  <path d="M36 17 Q38 15 40 17" className="stroke-current" strokeWidth="1.5" fill="none" />
+                </>
+              )}
+              {eyeState.shape === "happy" && (
+                <>
+                  <ellipse cx="26" cy={eyeState.leftY} rx="2" ry="2.5" className="fill-current" />
+                  <ellipse cx="38" cy={eyeState.rightY} rx="2" ry="2.5" className="fill-current" />
+                  <path d="M24 18 Q26 16 28 18" className="stroke-current" strokeWidth="1" fill="none" />
+                  <path d="M36 18 Q38 16 40 18" className="stroke-current" strokeWidth="1" fill="none" />
+                </>
+              )}
+              {eyeState.shape === "normal" && (
+                <>
+                  <circle cx="26" cy={eyeState.leftY} r="2" className="fill-current" />
+                  <circle cx="38" cy={eyeState.rightY} r="2" className="fill-current" />
+                </>
+              )}
+              {eyeState.shape === "tired" && (
+                <>
+                  <ellipse cx="26" cy={eyeState.leftY} rx="2" ry="1.5" className="fill-current/70" />
+                  <ellipse cx="38" cy={eyeState.rightY} rx="2" ry="1.5" className="fill-current/70" />
+                  <path d="M24 19 Q26 21 28 19" className="stroke-current/50" strokeWidth="1" fill="none" />
+                  <path d="M36 19 Q38 21 40 19" className="stroke-current/50" strokeWidth="1" fill="none" />
+                </>
+              )}
+              {eyeState.shape === "angry" && (
+                <>
+                  <ellipse cx="26" cy={eyeState.leftY} rx="2.5" ry="2" className="fill-destructive" />
+                  <ellipse cx="38" cy={eyeState.rightY} rx="2.5" ry="2" className="fill-destructive" />
+                  <path d="M22 16 L30 19" className="stroke-current" strokeWidth="2" strokeLinecap="round" />
+                  <path d="M34 19 L42 16" className="stroke-current" strokeWidth="2" strokeLinecap="round" />
+                </>
               )}
 
-              {/* Mouth */}
-              <path d={mouthPaths[state]} className="stroke-current" strokeWidth="2" fill="none" strokeLinecap="round" />
+              {/* Enhanced Mouth expressions */}
+              <path d={mouthPaths[state]} className="stroke-current" strokeWidth="2.5" fill="none" strokeLinecap="round" />
 
-              {/* Body */}
-              <rect x="22" y="36" width="22" height="14" rx="4" className={cn(paletteState.body)} />
+              {/* Enhanced Military Body with details */}
+              <rect x="20" y="36" width="24" height="16" rx="6" className={cn(paletteState.body)} />
+              <rect x="22" y="38" width="20" height="12" rx="4" className={cn(paletteState.bodyDetails)} />
+              {/* Military patches */}
+              <rect x="24" y="40" width="3" height="2" rx="0.5" className={cn(paletteState.helmetDetails)} />
+              <rect x="37" y="40" width="3" height="2" rx="0.5" className={cn(paletteState.helmetDetails)} />
+              {/* Chest pockets */}
+              <rect x="26" y="44" width="4" height="3" rx="1" className={cn(paletteState.bodyDetails)} />
+              <rect x="34" y="44" width="4" height="3" rx="1" className={cn(paletteState.bodyDetails)} />
 
-              {/* Left arm (idle) */}
-              <g transform="translate(22,38)">
-                <rect x="-8" y="4" width="10" height="4" rx="2" className={cn(paletteState.limb, isNeutral && "animate-tired-breathe")} />
+              {/* Enhanced Left arm with articulation */}
+              <g transform="translate(20,40)">
+                <ellipse cx="0" cy="0" rx="3" ry="6" className={cn(paletteState.limb, isNeutral && "animate-tired-breathe")} />
+                <rect x="-8" y="2" width="12" height="5" rx="2.5" className={cn(paletteState.limb, isNeutral && "animate-tired-breathe")} />
+                <circle cx="-6" cy="4" r="1.5" className={cn(paletteState.bodyDetails)} />
               </g>
 
-              {/* Right arm with weapon */}
-              <g transform="translate(44,38)">
-                {/* Shoulder pivot at (0,0) */}
+              {/* Enhanced Right arm with detailed weapon */}
+              <g transform="translate(44,40)" className={cn(weaponAnimation)}>
                 <g className={cn(isHappy && "animate-recoil-loop", isVerySad && "animate-rage-shake")}
                    style={{ transformOrigin: "0px 0px" }}>
-                  <rect x="0" y="4" width="12" height="4" rx="2" className={cn(paletteState.limb)} />
-                  {/* Weapon */}
-                  <g transform="translate(10,2)">
-                    <rect x="0" y="2" width="16" height="4" rx="2" className={cn(paletteState.weapon)} />
-                    <rect x="14" y="1" width="4" height="2" className={cn(paletteState.weapon)} />
-                    {/* Muzzle flash (happy) */}
+                  {/* Shoulder */}
+                  <ellipse cx="0" cy="0" rx="3" ry="6" className={cn(paletteState.limb)} />
+                  {/* Forearm */}
+                  <rect x="0" y="2" width="14" height="5" rx="2.5" className={cn(paletteState.limb)} />
+                  <circle cx="12" cy="4" r="1.5" className={cn(paletteState.bodyDetails)} />
+                  
+                  {/* Enhanced AK-47 Style Weapon */}
+                  <g transform="translate(12,0)">
+                    {/* Main body */}
+                    <rect x="0" y="2" width="18" height="5" rx="2" className={cn(paletteState.weapon)} />
+                    {/* Stock */}
+                    <rect x="-4" y="3" width="6" height="3" rx="1" className={cn(paletteState.weaponDetails)} />
+                    {/* Barrel */}
+                    <rect x="16" y="3" width="8" height="3" rx="1.5" className={cn(paletteState.weapon)} />
+                    {/* Grip */}
+                    <rect x="4" y="6" width="3" height="6" rx="1.5" className={cn(paletteState.weaponDetails)} />
+                    {/* Magazine */}
+                    <rect x="6" y="7" width="6" height="8" rx="2" className={cn(paletteState.weaponDetails)} />
+                    {/* Trigger guard */}
+                    <path d="M8 6 Q10 8 12 6" className="stroke-current" strokeWidth="1" fill="none" />
+                    {/* Scope/sight */}
+                    <rect x="12" y="1" width="4" height="1.5" rx="0.5" className={cn(paletteState.weaponDetails)} />
+                    
+                    {/* Enhanced Muzzle flash for happy states */}
                     {isHappy && (
-                      <g className={cn("animate-flash-burst", paletteState.muzzle)}>
-                        <polygon points="20,3 24,5 20,7 21,5" className="fill-current" />
-                        <line x1="18" y1="4" x2="26" y2="4" className="stroke-current/70" strokeWidth="1" />
+                      <g className={cn("animate-muzzle-flash-burst", paletteState.effects)}>
+                        <polygon points="24,4.5 28,3 30,4.5 28,6 24,4.5" className="fill-current" />
+                        <polygon points="26,4.5 30,2 32,4.5 30,7 26,4.5" className="fill-current/70" />
+                        <line x1="24" y1="4.5" x2="32" y2="4.5" className="stroke-current" strokeWidth="2" />
+                        {/* Sparks */}
+                        <circle cx="28" cy="2" r="0.5" className={cn("fill-current animate-victory-sparks")} />
+                        <circle cx="30" cy="7" r="0.5" className={cn("fill-current animate-victory-sparks")} />
+                      </g>
+                    )}
+                    
+                    {/* Victory fireworks for very happy */}
+                    {isVeryHappy && (
+                      <g className={cn("animate-victory-sparks", paletteState.effects)}>
+                        <circle cx="28" cy="0" r="1" className="fill-current" />
+                        <circle cx="32" cy="-2" r="0.8" className="fill-current/80" />
+                        <circle cx="26" cy="-1" r="0.6" className="fill-current/60" />
+                        <path d="M28 0 L30 -4 M28 0 L26 -3 M28 0 L32 -1" className="stroke-current" strokeWidth="1" />
                       </g>
                     )}
                   </g>
                 </g>
               </g>
 
-              {/* Legs */}
+              {/* Enhanced Legs with military boots */}
               <g>
-                <rect x="26" y="50" width="4" height="8" rx="2" className={cn(paletteState.limb, isNeutral && "animate-tired-breathe")} />
-                <rect x="36" y="50" width="4" height="8" rx="2" className={cn(paletteState.limb, isNeutral && "animate-tired-breathe")} />
+                <rect x="24" y="52" width="6" height="10" rx="3" className={cn(paletteState.limb, isNeutral && "animate-tired-breathe")} />
+                <rect x="34" y="52" width="6" height="10" rx="3" className={cn(paletteState.limb, isNeutral && "animate-tired-breathe")} />
+                {/* Military boots */}
+                <ellipse cx="27" cy="61" rx="4" ry="2" className={cn(paletteState.weaponDetails)} />
+                <ellipse cx="37" cy="61" rx="4" ry="2" className={cn(paletteState.weaponDetails)} />
+                {/* Boot details */}
+                <rect x="25" y="60" width="4" height="1" className={cn(paletteState.helmetDetails)} />
+                <rect x="35" y="60" width="4" height="1" className={cn(paletteState.helmetDetails)} />
               </g>
 
-              {/* Rage aura */}
+              {/* Enhanced Rage effects */}
               {isVerySad && (
-                <g className="animate-rage-shake">
-                  <circle cx="28" cy="28" r="20" className="stroke-current/30" strokeWidth="1.5" fill="none" />
-                  <path d="M12 10 L16 12 L12 14" className="stroke-current" strokeWidth="1" fill="none" />
-                  <path d="M44 10 L48 12 L44 14" className="stroke-current" strokeWidth="1" fill="none" />
+                <g className={cn("animate-rage-steam", paletteState.effects)}>
+                  <circle cx="32" cy="28" r="22" className="stroke-current/20" strokeWidth="2" fill="none" />
+                  <circle cx="32" cy="28" r="26" className="stroke-current/10" strokeWidth="1" fill="none" />
+                  {/* Steam from ears */}
+                  <g className="animate-smoke-puff">
+                    <ellipse cx="18" cy="24" rx="2" ry="4" className="fill-current/30" />
+                    <ellipse cx="46" cy="24" rx="2" ry="4" className="fill-current/30" />
+                  </g>
+                  {/* Anger symbols */}
+                  <g className="animate-rage-shake">
+                    <path d="M12 8 L16 12 L12 16" className="stroke-current" strokeWidth="2" fill="none" strokeLinecap="round" />
+                    <path d="M52 8 L48 12 L52 16" className="stroke-current" strokeWidth="2" fill="none" strokeLinecap="round" />
+                    <path d="M8 12 L12 8 L16 12 L12 16 Z" className="fill-current/20" />
+                    <path d="M48 12 L52 8 L56 12 L52 16 Z" className="fill-current/20" />
+                  </g>
                 </g>
               )}
 
-              {/* Sweat drop for neutral */}
+              {/* Enhanced effects for neutral state */}
               {isNeutral && (
-                <g className="text-secondary animate-tired-breathe">
-                  <path d="M40 20 C41 18, 43 18, 42 21 C41 23, 39 23, 40 20 Z" className="fill-current/60" />
+                <g className={cn("animate-tired-breathe", paletteState.effects)}>
+                  <path d="M44 20 C45 18, 47 18, 46 21 C45 23, 43 23, 44 20 Z" className="fill-current/40" />
+                  <ellipse cx="45" cy="19" rx="0.5" ry="1" className="fill-current/20" />
+                </g>
+              )}
+
+              {/* Victory celebration effects */}
+              {isVeryHappy && (
+                <g className={cn("animate-victory-sparks", paletteState.effects)}>
+                  <circle cx="16" cy="16" r="1" className="fill-current/60" />
+                  <circle cx="48" cy="16" r="1" className="fill-current/60" />
+                  <circle cx="20" cy="48" r="0.8" className="fill-current/40" />
+                  <circle cx="44" cy="48" r="0.8" className="fill-current/40" />
+                  <path d="M16 16 L18 12 M16 16 L12 14 M16 16 L20 18" className="stroke-current/40" strokeWidth="1" />
+                  <path d="M48 16 L46 12 M48 16 L52 14 M48 16 L44 18" className="stroke-current/40" strokeWidth="1" />
                 </g>
               )}
             </svg>
