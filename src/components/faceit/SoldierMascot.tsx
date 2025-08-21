@@ -1,13 +1,17 @@
-import React, { useMemo } from "react";
+import React, { useMemo, Suspense, lazy } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import type { FriendWithLcrypt } from "@/hooks/types/lcryptDataManagerTypes";
+
+// Lazy load 3D component
+const SoldierMascot3D = lazy(() => import("./SoldierMascot3D"));
 
 interface SoldierMascotProps {
   friends: FriendWithLcrypt[];
   isLoading?: boolean;
   size?: number;
   className?: string;
+  use3D?: boolean; // New prop to toggle 3D mode
 }
 
 const parseTodayElo = (elo: unknown): number | null => {
@@ -44,7 +48,7 @@ const stateLabels: Record<ReturnType<typeof getState>, string> = {
 };
 
 
-export const SoldierMascot: React.FC<SoldierMascotProps> = ({ friends, isLoading, size = 80, className }) => {
+export const SoldierMascot: React.FC<SoldierMascotProps> = ({ friends, isLoading, size = 80, className, use3D = false }) => {
   const { avg, count } = useMemo(() => {
     const todays = (friends || [])
       .map((f) => {
@@ -69,6 +73,17 @@ export const SoldierMascot: React.FC<SoldierMascotProps> = ({ friends, isLoading
 
   const state = getState(avg);
   const title = `ELO Today: ${avg > 0 ? "+" + avg : avg} • ${stateLabels[state]} • ${count} au jucat`;
+
+  // Use 3D component if requested
+  if (use3D) {
+    return (
+      <Suspense fallback={
+        <div className={cn("w-20 h-20 rounded-full bg-muted animate-pulse", className)} aria-label="Se încarcă mascotă 3D" />
+      }>
+        <SoldierMascot3D friends={friends} isLoading={isLoading} size={size} className={className} />
+      </Suspense>
+    );
+  }
 
   // Clean animation system
   const animation = state === "veryGood" 
