@@ -1,6 +1,6 @@
 import React, { Suspense, useMemo, useRef } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { OrbitControls } from "@react-three/drei";
+import { useGLTF } from "@react-three/drei";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import type { FriendWithLcrypt } from "@/hooks/types/lcryptDataManagerTypes";
@@ -46,11 +46,16 @@ const stateLabels: Record<ReturnType<typeof getState>, string> = {
   veryBad: "Foarte trist",
 };
 
-// Simple 3D Soldier Component
+// Real 3D Soldier Component using uploaded models
 const Soldier3D: React.FC<{ state: ReturnType<typeof getState>; avg: number }> = ({ state, avg }) => {
   const meshRef = useRef<THREE.Group>(null);
-  const headRef = useRef<THREE.Mesh>(null);
-  const bodyRef = useRef<THREE.Mesh>(null);
+  
+  // Load the uploaded 3D models
+  const { scene: basicModel } = useGLTF("/faceit-icons/base_basic_shaded.glb");
+  const { scene: pbrModel } = useGLTF("/faceit-icons/base_basic_pbr.glb");
+  
+  // Use PBR model for better quality
+  const model = pbrModel.clone();
 
   // Color scheme based on state
   const colors = {
@@ -65,89 +70,71 @@ const Soldier3D: React.FC<{ state: ReturnType<typeof getState>; avg: number }> =
 
   // Animation based on state
   useFrame((frameState, delta) => {
-    if (!meshRef.current || !headRef.current || !bodyRef.current) return;
+    if (!meshRef.current) return;
 
     const time = frameState.clock.getElapsedTime();
 
     switch (state) {
       case "veryGood":
         // Victory dance - bouncing and rotating
-        meshRef.current.position.y = Math.sin(time * 8) * 0.3;
+        meshRef.current.position.y = Math.sin(time * 8) * 0.2;
         meshRef.current.rotation.y = Math.sin(time * 4) * 0.3;
-        headRef.current.rotation.z = Math.sin(time * 6) * 0.2;
+        meshRef.current.rotation.z = Math.sin(time * 6) * 0.1;
         break;
       case "good":
         // Happy bobbing
-        meshRef.current.position.y = Math.sin(time * 4) * 0.15;
-        headRef.current.rotation.z = Math.sin(time * 3) * 0.1;
+        meshRef.current.position.y = Math.sin(time * 4) * 0.1;
+        meshRef.current.rotation.y = Math.sin(time * 3) * 0.1;
         break;
       case "neutral":
         // Gentle breathing
-        bodyRef.current.scale.y = 1 + Math.sin(time * 2) * 0.05;
+        meshRef.current.scale.y = 1 + Math.sin(time * 2) * 0.02;
         break;
       case "bad":
         // Sad swaying
-        meshRef.current.rotation.z = Math.sin(time * 2) * 0.1;
-        headRef.current.rotation.x = -0.2 + Math.sin(time * 3) * 0.05;
+        meshRef.current.rotation.z = Math.sin(time * 2) * 0.05;
+        meshRef.current.position.y = -0.1;
         break;
       case "veryBad":
         // Angry shaking
-        meshRef.current.position.x = Math.sin(time * 15) * 0.1;
-        headRef.current.rotation.z = Math.sin(time * 10) * 0.2;
-        bodyRef.current.scale.setScalar(1 + Math.sin(time * 8) * 0.05);
+        meshRef.current.position.x = Math.sin(time * 15) * 0.05;
+        meshRef.current.rotation.z = Math.sin(time * 10) * 0.1;
+        meshRef.current.scale.setScalar(1 + Math.sin(time * 8) * 0.02);
         break;
     }
   });
 
+  // Apply color tint to model materials
+  React.useEffect(() => {
+    if (model) {
+      model.traverse((child: any) => {
+        if (child.isMesh && child.material) {
+          // Clone material to avoid modifying the original
+          child.material = child.material.clone();
+          // Apply color tint
+          child.material.color = new THREE.Color(currentColor);
+          // Add emissive glow for very states
+          if (state === "veryGood" || state === "veryBad") {
+            child.material.emissive = new THREE.Color(currentColor);
+            child.material.emissiveIntensity = 0.2;
+          } else {
+            child.material.emissive = new THREE.Color(0x000000);
+            child.material.emissiveIntensity = 0;
+          }
+        }
+      });
+    }
+  }, [model, currentColor, state]);
+
   return (
     <group ref={meshRef}>
-      {/* Body */}
-      <mesh ref={bodyRef} position={[0, -0.5, 0]}>
-        <boxGeometry args={[1, 1.5, 0.6]} />
-        <meshPhongMaterial color={currentColor} />
-      </mesh>
-
-      {/* Head */}
-      <mesh ref={headRef} position={[0, 0.5, 0]}>
-        <sphereGeometry args={[0.4, 16, 16]} />
-        <meshPhongMaterial color={currentColor} />
-      </mesh>
-
-      {/* Helmet */}
-      <mesh position={[0, 0.5, 0]}>
-        <sphereGeometry args={[0.45, 16, 16]} />
-        <meshPhongMaterial 
-          color={currentColor} 
-          transparent 
-          opacity={0.3}
-          wireframe={state === "veryBad"}
-        />
-      </mesh>
-
-      {/* Arms */}
-      <mesh position={[-0.7, -0.2, 0]} rotation={[0, 0, Math.PI / 6]}>
-        <boxGeometry args={[0.3, 1, 0.3]} />
-        <meshPhongMaterial color={currentColor} />
-      </mesh>
-      <mesh position={[0.7, -0.2, 0]} rotation={[0, 0, -Math.PI / 6]}>
-        <boxGeometry args={[0.3, 1, 0.3]} />
-        <meshPhongMaterial color={currentColor} />
-      </mesh>
-
-      {/* Weapon (Simple rifle) */}
-      <mesh position={[0.8, -0.1, 0]} rotation={[0, 0, -Math.PI / 4]}>
-        <boxGeometry args={[0.1, 1.2, 0.1]} />
-        <meshPhongMaterial color="#2d2d2d" />
-      </mesh>
-
-      {/* ELO Display - Simple mesh text instead of Text3D to avoid font loading issues */}
-      <group position={[0, 1.2, 0]}>
-        <mesh>
-          <planeGeometry args={[1, 0.3]} />
-          <meshBasicMaterial color={currentColor} transparent opacity={0.8} />
-        </mesh>
-        {/* We'll use a simple colored indicator instead of 3D text for now */}
-      </group>
+      {/* The actual 3D model */}
+      <primitive 
+        object={model} 
+        scale={[1.5, 1.5, 1.5]} 
+        position={[0, -1, 0]}
+        rotation={[0, Math.PI, 0]}
+      />
 
       {/* State-specific effects */}
       {state === "veryGood" && (
@@ -157,8 +144,8 @@ const Soldier3D: React.FC<{ state: ReturnType<typeof getState>; avg: number }> =
             <mesh
               key={i}
               position={[
-                Math.cos((i / 8) * Math.PI * 2) * 1.5,
-                Math.sin((i / 8) * Math.PI * 2) * 1.5 + 0.5,
+                Math.cos((i / 8) * Math.PI * 2) * 1.2,
+                Math.sin((i / 8) * Math.PI * 2) * 1.2 + 0.5,
                 0
               ]}
             >
@@ -172,19 +159,31 @@ const Soldier3D: React.FC<{ state: ReturnType<typeof getState>; avg: number }> =
       {state === "veryBad" && (
         <>
           {/* Anger steam */}
-          <mesh position={[-0.3, 0.8, 0]}>
+          <mesh position={[-0.3, 1.2, 0]}>
             <sphereGeometry args={[0.05, 8, 8]} />
             <meshBasicMaterial color="#ff4444" transparent opacity={0.6} />
           </mesh>
-          <mesh position={[0.3, 0.8, 0]}>
+          <mesh position={[0.3, 1.2, 0]}>
             <sphereGeometry args={[0.05, 8, 8]} />
             <meshBasicMaterial color="#ff4444" transparent opacity={0.6} />
           </mesh>
         </>
       )}
+
+      {/* ELO indicator above model */}
+      <group position={[0, 1.5, 0]}>
+        <mesh>
+          <planeGeometry args={[0.8, 0.2]} />
+          <meshBasicMaterial color={currentColor} transparent opacity={0.8} />
+        </mesh>
+      </group>
     </group>
   );
 };
+
+// Preload the models
+useGLTF.preload("/faceit-icons/base_basic_shaded.glb");
+useGLTF.preload("/faceit-icons/base_basic_pbr.glb");
 
 const Scene3D: React.FC<{ state: ReturnType<typeof getState>; avg: number }> = ({ state, avg }) => {
   return (
