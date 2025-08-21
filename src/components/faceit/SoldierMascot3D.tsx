@@ -1,6 +1,5 @@
 import React, { Suspense, useMemo, useRef } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { useGLTF } from "@react-three/drei";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import type { FriendWithLcrypt } from "@/hooks/types/lcryptDataManagerTypes";
@@ -46,16 +45,9 @@ const stateLabels: Record<ReturnType<typeof getState>, string> = {
   veryBad: "Foarte trist",
 };
 
-// Real 3D Soldier Component using uploaded models
+// Real 3D Soldier Component - Simplified to avoid GLB loading issues
 const Soldier3D: React.FC<{ state: ReturnType<typeof getState>; avg: number }> = ({ state, avg }) => {
   const meshRef = useRef<THREE.Group>(null);
-  
-  // Load the uploaded 3D models
-  const { scene: basicModel } = useGLTF("/faceit-icons/base_basic_shaded.glb");
-  const { scene: pbrModel } = useGLTF("/faceit-icons/base_basic_pbr.glb");
-  
-  // Use PBR model for better quality
-  const model = pbrModel.clone();
 
   // Color scheme based on state
   const colors = {
@@ -104,52 +96,62 @@ const Soldier3D: React.FC<{ state: ReturnType<typeof getState>; avg: number }> =
     }
   });
 
-  // Apply color tint to model materials
-  React.useEffect(() => {
-    if (model) {
-      model.traverse((child: any) => {
-        if (child.isMesh && child.material) {
-          // Clone material to avoid modifying the original
-          child.material = child.material.clone();
-          // Apply color tint
-          child.material.color = new THREE.Color(currentColor);
-          // Add emissive glow for very states
-          if (state === "veryGood" || state === "veryBad") {
-            child.material.emissive = new THREE.Color(currentColor);
-            child.material.emissiveIntensity = 0.2;
-          } else {
-            child.material.emissive = new THREE.Color(0x000000);
-            child.material.emissiveIntensity = 0;
-          }
-        }
-      });
-    }
-  }, [model, currentColor, state]);
-
   return (
     <group ref={meshRef}>
-      {/* The actual 3D model */}
-      <primitive 
-        object={model} 
-        scale={[1.5, 1.5, 1.5]} 
-        position={[0, -1, 0]}
-        rotation={[0, Math.PI, 0]}
-      />
+      {/* Simple 3D Soldier made from basic geometries */}
+      {/* Body */}
+      <mesh position={[0, -0.3, 0]}>
+        <boxGeometry args={[0.8, 1.2, 0.4]} />
+        <meshPhongMaterial color={currentColor} />
+      </mesh>
+
+      {/* Head */}
+      <mesh position={[0, 0.4, 0]}>
+        <sphereGeometry args={[0.3, 16, 16]} />
+        <meshPhongMaterial color={currentColor} />
+      </mesh>
+
+      {/* Helmet */}
+      <mesh position={[0, 0.4, 0]}>
+        <sphereGeometry args={[0.35, 16, 16]} />
+        <meshPhongMaterial 
+          color={currentColor} 
+          transparent 
+          opacity={0.3}
+          wireframe={state === "veryBad"}
+        />
+      </mesh>
+
+      {/* Arms */}
+      <mesh position={[-0.5, -0.1, 0]} rotation={[0, 0, Math.PI / 6]}>
+        <boxGeometry args={[0.2, 0.8, 0.2]} />
+        <meshPhongMaterial color={currentColor} />
+      </mesh>
+      <mesh position={[0.5, -0.1, 0]} rotation={[0, 0, -Math.PI / 6]}>
+        <boxGeometry args={[0.2, 0.8, 0.2]} />
+        <meshPhongMaterial color={currentColor} />
+      </mesh>
+
+      {/* Weapon (Simple rifle) */}
+      <mesh position={[0.6, 0, 0]} rotation={[0, 0, -Math.PI / 4]}>
+        <boxGeometry args={[0.05, 0.8, 0.05]} />
+        <meshPhongMaterial color="#2d2d2d" />
+      </mesh>
 
       {/* State-specific effects */}
       {state === "veryGood" && (
         <>
           {/* Victory sparkles */}
-          {Array.from({ length: 8 }).map((_, i) => (
+          {Array.from({ length: 6 }).map((_, i) => (
             <mesh
               key={i}
               position={[
-                Math.cos((i / 8) * Math.PI * 2) * 1.2,
-                Math.sin((i / 8) * Math.PI * 2) * 1.2 + 0.5,
+                Math.cos((i / 6) * Math.PI * 2) * 1.0,
+                Math.sin((i / 6) * Math.PI * 2) * 1.0 + 0.3,
                 0
               ]}
             >
-              <sphereGeometry args={[0.05, 8, 8]} />
+              <sphereGeometry args={[0.03, 8, 8]} />
               <meshBasicMaterial color="#ffd700" />
             </mesh>
           ))}
@@ -159,31 +161,27 @@ const Soldier3D: React.FC<{ state: ReturnType<typeof getState>; avg: number }> =
       {state === "veryBad" && (
         <>
           {/* Anger steam */}
-          <mesh position={[-0.3, 1.2, 0]}>
-            <sphereGeometry args={[0.05, 8, 8]} />
+          <mesh position={[-0.2, 0.7, 0]}>
+            <sphereGeometry args={[0.03, 8, 8]} />
             <meshBasicMaterial color="#ff4444" transparent opacity={0.6} />
           </mesh>
-          <mesh position={[0.3, 1.2, 0]}>
-            <sphereGeometry args={[0.05, 8, 8]} />
+          <mesh position={[0.2, 0.7, 0]}>
+            <sphereGeometry args={[0.03, 8, 8]} />
             <meshBasicMaterial color="#ff4444" transparent opacity={0.6} />
           </mesh>
         </>
       )}
 
       {/* ELO indicator above model */}
-      <group position={[0, 1.5, 0]}>
+      <group position={[0, 1.0, 0]}>
         <mesh>
-          <planeGeometry args={[0.8, 0.2]} />
+          <planeGeometry args={[0.6, 0.15]} />
           <meshBasicMaterial color={currentColor} transparent opacity={0.8} />
         </mesh>
       </group>
     </group>
   );
 };
-
-// Preload the models
-useGLTF.preload("/faceit-icons/base_basic_shaded.glb");
-useGLTF.preload("/faceit-icons/base_basic_pbr.glb");
 
 const Scene3D: React.FC<{ state: ReturnType<typeof getState>; avg: number }> = ({ state, avg }) => {
   return (
