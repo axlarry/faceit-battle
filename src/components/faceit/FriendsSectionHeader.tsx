@@ -46,7 +46,7 @@ export const FriendsSectionHeader = React.memo(({
             <RefreshCw className={cn(isUpdating && "animate-spin")} size={16} />
             <span className="ml-2">Actualizează</span>
           </Button> */}
-          <SoldierMascot friends={lcryptFriends} isLoading={lcryptLoading} />
+          <SoldierMascot friends={lcryptFriends} isLoading={lcryptLoading} use3D={true} />
         </div>
       </div>
     </div>

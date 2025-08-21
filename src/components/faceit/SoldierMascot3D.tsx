@@ -1,6 +1,6 @@
 import React, { Suspense, useMemo, useRef } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { OrbitControls, Text3D, Center, useTexture } from "@react-three/drei";
+import { OrbitControls } from "@react-three/drei";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import type { FriendWithLcrypt } from "@/hooks/types/lcryptDataManagerTypes";
@@ -140,17 +140,14 @@ const Soldier3D: React.FC<{ state: ReturnType<typeof getState>; avg: number }> =
         <meshPhongMaterial color="#2d2d2d" />
       </mesh>
 
-      {/* ELO Display */}
-      <Center position={[0, 1.2, 0]}>
-        <Text3D
-          font="/fonts/helvetiker_regular.typeface.json"
-          size={0.2}
-          height={0.02}
-        >
-          {avg > 0 ? `+${avg}` : `${avg}`}
-          <meshPhongMaterial color={currentColor} />
-        </Text3D>
-      </Center>
+      {/* ELO Display - Simple mesh text instead of Text3D to avoid font loading issues */}
+      <group position={[0, 1.2, 0]}>
+        <mesh>
+          <planeGeometry args={[1, 0.3]} />
+          <meshBasicMaterial color={currentColor} transparent opacity={0.8} />
+        </mesh>
+        {/* We'll use a simple colored indicator instead of 3D text for now */}
+      </group>
 
       {/* State-specific effects */}
       {state === "veryGood" && (
