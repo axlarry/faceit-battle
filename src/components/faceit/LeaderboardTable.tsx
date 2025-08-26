@@ -53,6 +53,18 @@ export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: L
     };
   }, [region]);
 
+  // Helper to merge, dedupe and sort players globally by position
+  const mergeAndSortPlayers = (prev: any[], next: any[]) => {
+    const map = new Map<string, any>();
+    for (const p of [...prev, ...next]) {
+      const existing = map.get(p.player_id);
+      if (!existing || (p.position ?? Infinity) < (existing.position ?? Infinity)) {
+        map.set(p.player_id, p);
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => (a.position || 0) - (b.position || 0));
+  };
+
   const loadPlayers = async (currentOffset: number, reset = false) => {
     console.log(`Loading players for region: ${region}, offset: ${currentOffset}, reset: ${reset}`);
     
@@ -127,10 +139,10 @@ export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: L
 
       if (reset) {
         console.log(`Setting ${playersWithDetails.length} players (reset) for region ${region}`);
-        setPlayers(playersWithDetails);
+        setPlayers(mergeAndSortPlayers([], playersWithDetails as any[]));
       } else {
         console.log(`Adding ${playersWithDetails.length} players to existing ${players.length} for region ${region}`);
-        setPlayers(prev => [...prev, ...playersWithDetails]);
+        setPlayers(prev => mergeAndSortPlayers(prev as any[], playersWithDetails as any[]));
       }
       
       setOffset(currentOffset + limit);
