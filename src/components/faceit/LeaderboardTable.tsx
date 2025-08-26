@@ -122,6 +122,9 @@ export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: L
         })
       );
 
+      // Sortează jucătorii după poziția din clasament
+      playersWithDetails.sort((a, b) => (a.position || 0) - (b.position || 0));
+
       if (reset) {
         console.log(`Setting ${playersWithDetails.length} players (reset) for region ${region}`);
         setPlayers(playersWithDetails);
