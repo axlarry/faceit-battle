@@ -2,7 +2,7 @@
 import React from 'react';
 import { Button } from "@/components/ui/button";
 import { Users, RefreshCw } from "lucide-react";
-import SoldierMascot from "./SoldierMascot";
+import { TodayEloStats } from './TodayEloStats';
 import type { FriendWithLcrypt } from "@/hooks/types/lcryptDataManagerTypes";
 
 interface FriendsSectionHeaderProps {
@@ -40,14 +40,8 @@ export const FriendsSectionHeader = React.memo(({
             </div>
           )}
         </div>
-        {/* Right side: Soldier mascot */}
-        <div className="flex items-center gap-3">
-          {/* <Button variant="outline" size="sm" onClick={onUpdateAll} disabled={isUpdating}>
-            <RefreshCw className={cn(isUpdating && "animate-spin")} size={16} />
-            <span className="ml-2">Actualizează</span>
-          </Button> */}
-          <SoldierMascot friends={lcryptFriends} isLoading={lcryptLoading} use3D={true} />
-        </div>
+        {/* Right side: Today Elo Stats */}
+        <TodayEloStats friends={lcryptFriends} isLoading={lcryptLoading} />
       </div>
     </div>
   );

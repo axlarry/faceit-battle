@@ -2,6 +2,7 @@
 import React from 'react';
 import { Player } from "@/types/Player";
 import { FriendListItem } from './FriendListItem';
+import { LiveMatchGroup } from './LiveMatchGroup';
 
 interface FriendsWithLcrypt extends Player {
   lcryptData?: any;
@@ -29,17 +30,49 @@ export const FriendsList = React.memo(({
   liveMatches,
   onPlayerClick 
 }: FriendsListProps) => {
-  // Sortează prietenii doar după ELO, fără să îi mute pe cei live la început
-  const sortedFriends = React.useMemo(() => {
-    return [...friends].sort((a, b) => {
-      // Sortare doar după ELO pentru a păstra pozițiile consistente
-      return (b.elo || 0) - (a.elo || 0);
+  // Grupează prietenii după match-uri live și sortează restul după ELO
+  const { liveMatchGroups, otherFriends } = React.useMemo(() => {
+    const liveGroups: Record<string, FriendsWithLcrypt[]> = {};
+    const others: FriendsWithLcrypt[] = [];
+
+    friends.forEach(friend => {
+      const liveInfo = liveMatches[friend.player_id];
+      if (liveInfo?.isLive && liveInfo.matchId) {
+        if (!liveGroups[liveInfo.matchId]) {
+          liveGroups[liveInfo.matchId] = [];
+        }
+        liveGroups[liveInfo.matchId].push(friend);
+      } else {
+        others.push(friend);
+      }
     });
-  }, [friends]);
+
+    // Sortează prietenii care nu sunt live după ELO
+    const sortedOthers = others.sort((a, b) => (b.elo || 0) - (a.elo || 0));
+
+    return {
+      liveMatchGroups: Object.entries(liveGroups).filter(([_, players]) => players.length > 0),
+      otherFriends: sortedOthers
+    };
+  }, [friends, liveMatches]);
 
   return (
     <div className="space-y-2 px-1">
-      {sortedFriends.map((friend, index) => {
+      {/* Grupuri de match-uri live */}
+      {liveMatchGroups.map(([matchId, players]) => (
+        <LiveMatchGroup
+          key={matchId}
+          matchId={matchId}
+          players={players}
+          liveMatches={liveMatches}
+          flashingPlayer={flashingPlayer}
+          loadingFriends={loadingFriends}
+          onPlayerClick={onPlayerClick}
+        />
+      ))}
+
+      {/* Prietenii care nu sunt live */}
+      {otherFriends.map((friend, index) => {
         const liveInfo = liveMatches[friend.player_id];
         return (
           <FriendListItem
