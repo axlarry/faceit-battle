@@ -29,26 +29,8 @@ export const FriendsList = React.memo(({
   liveMatches,
   onPlayerClick 
 }: FriendsListProps) => {
-  // Sortează prietenii: live players first, apoi după ELO
-  const sortedFriends = React.useMemo(() => {
-    const liveFriends: FriendsWithLcrypt[] = [];
-    const otherFriends: FriendsWithLcrypt[] = [];
-
-    friends.forEach(friend => {
-      const liveInfo = liveMatches[friend.player_id];
-      if (liveInfo?.isLive) {
-        liveFriends.push(friend);
-      } else {
-        otherFriends.push(friend);
-      }
-    });
-
-    // Sortează grupurile
-    const sortedLive = liveFriends.sort((a, b) => (b.elo || 0) - (a.elo || 0));
-    const sortedOthers = otherFriends.sort((a, b) => (b.elo || 0) - (a.elo || 0));
-
-    return [...sortedLive, ...sortedOthers];
-  }, [friends, liveMatches]);
+  // Keep friends in original order, no sorting by live status
+  const sortedFriends = friends;
 
   return (
     <div className="space-y-2 px-1">
