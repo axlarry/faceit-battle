@@ -61,8 +61,18 @@ export const FriendsSection = ({
   // Handle flashing player state
   const { flashingPlayer, handlePlayerClick } = useFlashingPlayer(onShowPlayerDetails);
 
-  // Calculate live players count from integrated data
-  const livePlayersCount = Object.values(liveMatches).filter(match => match.isLive).length;
+  // Calculate live players count and extract live friends from integrated data
+  const { livePlayersCount, liveFriends } = React.useMemo(() => {
+    const livePlayers = friendsWithLcrypt.filter(friend => {
+      const liveInfo = liveMatches[friend.player_id];
+      return liveInfo?.isLive;
+    });
+    
+    return {
+      livePlayersCount: livePlayers.length,
+      liveFriends: livePlayers
+    };
+  }, [friendsWithLcrypt, liveMatches]);
 
   return (
     <div className="space-y-4 px-4 md:px-0">
@@ -75,6 +85,8 @@ export const FriendsSection = ({
             onUpdateAll={updateAllFriends}
             lcryptFriends={friendsWithLcrypt}
             lcryptLoading={lcryptLoading}
+            liveFriends={liveFriends}
+            liveMatches={liveMatches}
           />
 
           {/* Căutare prieteni */}
