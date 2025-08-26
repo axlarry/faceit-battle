@@ -62,7 +62,7 @@ export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: L
         map.set(p.player_id, p);
       }
     }
-    return Array.from(map.values()).sort((a, b) => (a.position || 0) - (b.position || 0));
+    return Array.from(map.values()).sort((a, b) => (a.position ?? Infinity) - (b.position ?? Infinity));
   };
 
   const loadPlayers = async (currentOffset: number, reset = false) => {
@@ -98,8 +98,9 @@ export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: L
       console.log(`Received ${data.items.length} players for region ${region}`);
 
       const playersWithDetails = await Promise.all(
-        data.items.map(async (item: any) => {
-          try {
+        data.items.map(async (item: any, idx: number) => {
+          const normalizedPosition = ((typeof item.position === 'number' ? item.position : (idx + 1)) + currentOffset);
+           try {
             // Pentru detaliile jucătorului folosim API-ul pentru prieteni/tool
             const playerData = await makeApiCall(`/players/${item.player_id}`, false);
             const statsData = await makeApiCall(`/players/${item.player_id}/stats/cs2`, false);
@@ -108,7 +109,7 @@ export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: L
               player_id: item.player_id,
               nickname: item.nickname,
               avatar: playerData.avatar || '/placeholder.svg',
-              position: item.position,
+              position: normalizedPosition,
               level: playerData.games?.cs2?.skill_level || 0,
               elo: playerData.games?.cs2?.faceit_elo || 0,
               wins: parseInt(statsData.lifetime?.Wins) || 0,
@@ -122,7 +123,7 @@ export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: L
               player_id: item.player_id,
               nickname: item.nickname,
               avatar: '/placeholder.svg',
-              position: item.position,
+              position: normalizedPosition,
               level: 0,
               elo: 0,
               wins: 0,
@@ -135,7 +136,7 @@ export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: L
       );
 
       // Sortează jucătorii după poziția din clasament
-      playersWithDetails.sort((a, b) => (a.position || 0) - (b.position || 0));
+      playersWithDetails.sort((a, b) => (a.position ?? Infinity) - (b.position ?? Infinity));
 
       if (reset) {
         console.log(`Setting ${playersWithDetails.length} players (reset) for region ${region}`);
