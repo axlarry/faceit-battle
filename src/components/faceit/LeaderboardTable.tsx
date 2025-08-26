@@ -99,7 +99,7 @@ export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: L
 
       const playersWithDetails = await Promise.all(
         data.items.map(async (item: any, idx: number) => {
-          const normalizedPosition = ((typeof item.position === 'number' ? item.position : (idx + 1)) + currentOffset);
+          const position = (typeof item.position === 'number' ? item.position : ((idx + 1) + currentOffset));
            try {
             // Pentru detaliile jucătorului folosim API-ul pentru prieteni/tool
             const playerData = await makeApiCall(`/players/${item.player_id}`, false);
@@ -109,7 +109,7 @@ export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: L
               player_id: item.player_id,
               nickname: item.nickname,
               avatar: playerData.avatar || '/placeholder.svg',
-              position: normalizedPosition,
+              position: position,
               level: playerData.games?.cs2?.skill_level || 0,
               elo: playerData.games?.cs2?.faceit_elo || 0,
               wins: parseInt(statsData.lifetime?.Wins) || 0,
@@ -123,7 +123,7 @@ export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: L
               player_id: item.player_id,
               nickname: item.nickname,
               avatar: '/placeholder.svg',
-              position: normalizedPosition,
+              position: position,
               level: 0,
               elo: 0,
               wins: 0,
