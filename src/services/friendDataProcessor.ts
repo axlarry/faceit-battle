@@ -3,7 +3,8 @@ import { Player } from '@/types/Player';
 import { lcryptOptimizedService } from '@/services/lcryptOptimizedService';
 import { playerService } from '@/services/playerService';
 import { FriendWithLcrypt, LiveMatchInfo } from '@/hooks/types/lcryptDataManagerTypes';
-import { faceitApiClient } from '@/services/faceitApiClient';
+import { optimizedApiService } from '@/services/optimizedApiService';
+import { performanceMonitor } from '@/utils/performance';
 
 export class FriendDataProcessor {
   private coverImageCache = new Map<string, string | null>();
@@ -23,18 +24,25 @@ export class FriendDataProcessor {
     try {
       console.log(`🚀 OPTIMIZED: Fetching complete data for ${friend.nickname}...`);
       
-      // Actualizează datele de bază folosind player_id (stabile și unice)
+      // V2.0 Optimized data fetching with performance monitoring
       let currentNickname = friend.nickname;
       let basicData: any = null;
+      
       try {
-        basicData = await faceitApiClient.makeApiCall(`/players/${friend.player_id}`);
+        basicData = await performanceMonitor.measureAsyncTime(
+          `faceit-api-${friend.nickname}`,
+          () => optimizedApiService.faceitApiCall(`/players/${friend.player_id}`)
+        );
         currentNickname = basicData?.nickname || friend.nickname;
       } catch (e) {
         console.warn(`⚠️ Could not refresh basic data for ${friend.nickname} by id ${friend.player_id}`, e);
       }
       
-      // APEL pentru datele Lcrypt folosind nickname-ul curent (sincronizat)
-      const optimizedData = await lcryptOptimizedService.getCompletePlayerData(currentNickname);
+      // V2.0 Optimized Lcrypt data fetching
+      const optimizedData = await performanceMonitor.measureAsyncTime(
+        `lcrypt-api-${currentNickname}`,
+        () => optimizedApiService.lcryptApiCall(currentNickname)
+      );
       
       // OPTIMIZED: Cover image doar dacă nu există în cache
       let coverImage = friend.cover_image;

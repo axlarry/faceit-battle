@@ -1,14 +1,13 @@
 import React from "react";
 import { Card } from "@/components/ui/card";
 import { Player } from "@/types/Player";
-import { useFriendsAutoUpdate } from "@/hooks/useFriendsAutoUpdate";
-import { useLcryptDataManager } from "@/hooks/useLcryptDataManager";
+import { useOptimizedFriendsManager } from "@/hooks/useOptimizedFriendsManager";
 import { usePendingFriendActions } from "@/hooks/usePendingFriendActions";
 import { useFlashingPlayer } from "@/hooks/useFlashingPlayer";
 import { FriendsSectionHeader } from "./FriendsSectionHeader";
 import { FriendSearchForm } from "./FriendSearchForm";
 import { EmptyFriendsState } from "./EmptyFriendsState";
-import { FriendsList } from "./FriendsList";
+import { VirtualizedFriendsList } from "./VirtualizedFriendsList";
 import { FriendActionDialog } from "./FriendActionDialog";
 import { PasswordDialog } from "./PasswordDialog";
 import { supabase } from "@/integrations/supabase/client";
@@ -31,24 +30,26 @@ export const FriendsSection = ({
   onUpdateFriend,
   onReloadFriends
 }: FriendsSectionProps) => {
-  // Hook optimizat pentru datele Lcrypt și statusul LIVE
-  const { friendsWithLcrypt, isLoading: lcryptLoading, loadingProgress, loadingFriends, liveMatches } = useLcryptDataManager({
-    friends,
-    enabled: true
+  // V2.0 Optimized friends management
+  const {
+    friendsWithLcrypt,
+    liveMatches,
+    loadingFriends,
+    isLoading,
+    livePlayersCount,
+    liveFriends,
+    addFriend: optimizedAddFriend,
+    removeFriend: optimizedRemoveFriend
+  } = useOptimizedFriendsManager({
+    enabled: true,
+    batchSize: 3,
+    updateInterval: 45000
   });
 
   // Password dialog pentru migrare
   const [showMigratePassword, setShowMigratePassword] = React.useState(false);
 
-  // Auto-update friends data every 5 minutes
-  const { isUpdating, updateAllFriends } = useFriendsAutoUpdate({
-    friends,
-    updateFriend: onUpdateFriend || (() => {}),
-    reloadFriends: onReloadFriends || (() => {}),
-    enabled: true
-  });
-
-  // Handle pending friend actions
+  // Handle pending friend actions with optimized functions
   const {
     showPasswordDialog,
     pendingAction,
@@ -56,35 +57,25 @@ export const FriendsSection = ({
     handleRemoveFriend,
     confirmAction,
     closePasswordDialog
-  } = usePendingFriendActions(onAddFriend, onRemoveFriend);
+  } = usePendingFriendActions(
+    (player, password) => optimizedAddFriend(player, password), 
+    (playerId, password) => optimizedRemoveFriend(playerId, password)
+  );
 
   // Handle flashing player state
   const { flashingPlayer, handlePlayerClick } = useFlashingPlayer(onShowPlayerDetails);
-
-  // Calculate live players count and extract live friends from integrated data
-  const { livePlayersCount, liveFriends } = React.useMemo(() => {
-    const livePlayers = friendsWithLcrypt.filter(friend => {
-      const liveInfo = liveMatches[friend.player_id];
-      return liveInfo?.isLive;
-    });
-    
-    return {
-      livePlayersCount: livePlayers.length,
-      liveFriends: livePlayers
-    };
-  }, [friendsWithLcrypt, liveMatches]);
 
   return (
     <div className="space-y-4 px-4 md:px-0">
       <Card className="glass-card border shadow-2xl">
         <div className="p-4 md:p-5">
           <FriendsSectionHeader 
-            friendsCount={friends.length}
+            friendsCount={friendsWithLcrypt.length}
             livePlayersCount={livePlayersCount}
-            isUpdating={isUpdating || lcryptLoading}
-            onUpdateAll={updateAllFriends}
+            isUpdating={isLoading}
+            onUpdateAll={() => {}} // Handled internally now
             lcryptFriends={friendsWithLcrypt}
-            lcryptLoading={lcryptLoading}
+            lcryptLoading={isLoading}
             liveFriends={liveFriends}
             liveMatches={liveMatches}
           />
@@ -92,15 +83,17 @@ export const FriendsSection = ({
           {/* Căutare prieteni */}
           <FriendSearchForm onPlayerFound={handlePlayerFound} />
           
-          {friends.length === 0 ? (
+          {friendsWithLcrypt.length === 0 ? (
             <EmptyFriendsState onMigrate={() => setShowMigratePassword(true)} />
           ) : (
-            <FriendsList 
+            <VirtualizedFriendsList 
               friends={friendsWithLcrypt}
               flashingPlayer={flashingPlayer}
               loadingFriends={loadingFriends}
               liveMatches={liveMatches}
               onPlayerClick={handlePlayerClick}
+              height={800}
+              itemHeight={220}
             />
           )}
         </div>
