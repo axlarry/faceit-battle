@@ -13,25 +13,7 @@ export const useFriends = () => {
 
   const loadFriendsFromDatabase = async (refreshData = true) => {
     try {
-      // First refresh all friends data if requested
-      if (refreshData) {
-        console.log('🔄 Refreshing friends data from lcrypt...');
-        try {
-          const { data: refreshData, error: refreshError } = await supabase.functions.invoke('friends-gateway', {
-            body: { action: 'refresh_all' }
-          });
-          
-          if (refreshError) {
-            console.warn('Failed to refresh friends data:', refreshError);
-          } else {
-            console.log(`✅ Refreshed ${refreshData?.updated || 0}/${refreshData?.total || 0} friends`);
-          }
-        } catch (refreshErr) {
-          console.warn('Error refreshing friends data:', refreshErr);
-        }
-      }
-
-      // Then load the updated data
+      // First load existing data immediately
       const { data, error } = await supabase.functions.invoke('friends-gateway', {
         body: { action: 'list' }
       });
@@ -59,6 +41,24 @@ export const useFriends = () => {
         kdRatio: friend.kdRatio || 0,
       }));
       setFriends(friendsData);
+
+      // Then refresh all friends data in the background if requested
+      if (refreshData) {
+        console.log('🔄 Refreshing friends data from lcrypt in background...');
+        supabase.functions.invoke('friends-gateway', {
+          body: { action: 'refresh_all' }
+        }).then(({ data: refreshData, error: refreshError }) => {
+          if (refreshError) {
+            console.warn('Failed to refresh friends data:', refreshError);
+          } else {
+            console.log(`✅ Refreshed ${refreshData?.updated || 0}/${refreshData?.total || 0} friends`);
+            // Reload the data after refresh
+            loadFriendsFromDatabase(false);
+          }
+        }).catch((refreshErr) => {
+          console.warn('Error refreshing friends data:', refreshErr);
+        });
+      }
     } catch (error) {
       console.error('Error loading friends from gateway:', error);
       toast({
