@@ -33,25 +33,40 @@ export const parseLcryptReport = (report: string): LcryptMatchData[] => {
 export const findMatchEloChange = (
   match: any,
   lcryptMatches: LcryptMatchData[],
-  matchIndex: number
+  matchIndex: number,
+  player: any
 ): number | null => {
   // Try to match by index first (most recent matches should be in order)
   if (lcryptMatches[matchIndex]) {
     return lcryptMatches[matchIndex].eloChange;
   }
   
-  // Fallback: try to match by map name and result
-  const matchScore = match.results?.score;
-  const isWin = matchScore && match.results?.winner;
-  
-  if (isWin !== undefined) {
-    const resultType = isWin ? 'WIN' : 'LOSE';
-    const matchingLcryptMatch = lcryptMatches.find(lcryptMatch => 
-      lcryptMatch.result === resultType
-    );
+  // Fallback: try to match by result type using proper match result logic
+  if (match.teams && match.results && player) {
+    // Find which team the player is on
+    let playerTeamId = '';
+    const teamIds = Object.keys(match.teams);
     
-    if (matchingLcryptMatch) {
-      return matchingLcryptMatch.eloChange;
+    for (const teamId of teamIds) {
+      const team = match.teams[teamId];
+      if (team.players?.some((p: any) => p.player_id === player.player_id)) {
+        playerTeamId = teamId;
+        break;
+      }
+    }
+    
+    if (playerTeamId) {
+      const winnerTeamId = match.results.winner;
+      const isWin = playerTeamId === winnerTeamId;
+      const resultType = isWin ? 'WIN' : 'LOSE';
+      
+      const matchingLcryptMatch = lcryptMatches.find(lcryptMatch => 
+        lcryptMatch.result === resultType
+      );
+      
+      if (matchingLcryptMatch) {
+        return matchingLcryptMatch.eloChange;
+      }
     }
   }
   

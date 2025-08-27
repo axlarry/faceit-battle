@@ -45,7 +45,7 @@ export const MatchRow = ({
 
   // Parse lcrypt report and find ELO change for this match
   const lcryptMatches = lcryptData?.report ? parseLcryptReport(lcryptData.report) : [];
-  const lcryptEloChange = findMatchEloChange(match, lcryptMatches, matchIndex);
+  const lcryptEloChange = findMatchEloChange(match, lcryptMatches, matchIndex, player);
 
   // Check for live match URL when it's a live match
   useEffect(() => {
