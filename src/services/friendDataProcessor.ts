@@ -46,13 +46,18 @@ export class FriendDataProcessor {
       
       // OPTIMIZED: Cover image doar dacă nu există în cache
       let coverImage = friend.cover_image;
-      if (!coverImage && !this.coverImageCache.has(currentNickname)) {
-        console.log(`🖼️ OPTIMIZED: Fetching cover image for ${currentNickname} (first time only)`);
-        coverImage = await playerService.getPlayerCoverImage(currentNickname);
-        this.coverImageCache.set(currentNickname, coverImage);
-      } else if (this.coverImageCache.has(currentNickname)) {
-        coverImage = this.coverImageCache.get(currentNickname) || friend.cover_image;
-        console.log(`📦 OPTIMIZED: Using cached cover image for ${currentNickname}`);
+      if (!coverImage) {
+        if (this.coverImageCache.has(currentNickname)) {
+          coverImage = this.coverImageCache.get(currentNickname);
+          console.log(`📦 OPTIMIZED: Using cached cover image for ${currentNickname}`);
+        } else {
+          console.log(`🖼️ OPTIMIZED: Fetching cover image for ${currentNickname} (first time only)`);
+          coverImage = await playerService.getPlayerCoverImage(currentNickname);
+          this.coverImageCache.set(currentNickname, coverImage);
+          if (coverImage) {
+            console.log(`✅ OPTIMIZED: Cover image fetched and cached for ${currentNickname}`);
+          }
+        }
       }
       
       // Construiește obiectul actualizat cu toate datele (identificare prin player_id, nu nickname)
