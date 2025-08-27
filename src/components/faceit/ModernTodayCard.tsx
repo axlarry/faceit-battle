@@ -76,11 +76,10 @@ export const ModernTodayCard = ({ player, lcryptData }: ModernTodayCardProps) =>
     const wins = lcryptData.today.win || 0;
     const losses = lcryptData.today.lose || 0;
     const totalGames = lcryptData.today.count || 0;
-    const todayElo = lcryptData.today.elo || 0;
     
-    // Calculate ELO gained from wins and lost from losses
-    const eloFromWins = todayElo > 0 ? todayElo : 0;
-    const eloFromLosses = todayElo < 0 ? Math.abs(todayElo) : 0;
+    // Use specific ELO win/lose values from API
+    const eloFromWins = lcryptData.today.elo_win || 0;
+    const eloFromLosses = lcryptData.today.elo_lose || 0;
     
     return (
       <div className="grid grid-cols-3 gap-2 text-xs">
