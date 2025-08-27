@@ -1,13 +1,12 @@
 import React from "react";
 import { Card } from "@/components/ui/card";
 import { Player } from "@/types/Player";
-import { useOptimizedFriendsManager } from "@/hooks/useOptimizedFriendsManager";
 import { usePendingFriendActions } from "@/hooks/usePendingFriendActions";
 import { useFlashingPlayer } from "@/hooks/useFlashingPlayer";
 import { FriendsSectionHeader } from "./FriendsSectionHeader";
 import { FriendSearchForm } from "./FriendSearchForm";
 import { EmptyFriendsState } from "./EmptyFriendsState";
-import { VirtualizedFriendsList } from "./VirtualizedFriendsList";
+import { FriendsList } from "./FriendsList";
 import { FriendActionDialog } from "./FriendActionDialog";
 import { PasswordDialog } from "./PasswordDialog";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,21 +29,80 @@ export const FriendsSection = ({
   onUpdateFriend,
   onReloadFriends
 }: FriendsSectionProps) => {
-  // V2.0 Optimized friends management
-  const {
-    friendsWithLcrypt,
-    liveMatches,
-    loadingFriends,
-    isLoading,
-    livePlayersCount,
-    liveFriends,
-    addFriend: optimizedAddFriend,
-    removeFriend: optimizedRemoveFriend
-  } = useOptimizedFriendsManager({
-    enabled: true,
-    batchSize: 3,
-    updateInterval: 45000
-  });
+  // Use passed friends and add lcrypt data
+  const [friendsWithLcrypt, setFriendsWithLcrypt] = React.useState(friends.map(f => ({ ...f, lcryptData: null })));
+  const [liveMatches, setLiveMatches] = React.useState<Record<string, any>>({});
+  const [loadingFriends, setLoadingFriends] = React.useState(new Set<string>());
+  const [isLoading, setIsLoading] = React.useState(false);
+
+  // Sync with passed friends
+  React.useEffect(() => {
+    setFriendsWithLcrypt(friends.map(f => ({ 
+      ...f, 
+      lcryptData: friendsWithLcrypt.find(fl => fl.player_id === f.player_id)?.lcryptData || null 
+    })));
+  }, [friends]);
+
+  // Load lcrypt data for all friends
+  React.useEffect(() => {
+    if (friends.length > 0) {
+      setIsLoading(true);
+      
+      const loadFriendData = async () => {
+        const promises = friends.map(async (friend) => {
+          setLoadingFriends(prev => new Set(prev).add(friend.nickname));
+          
+          try {
+            console.log(`🔍 Loading lcrypt data for ${friend.nickname}...`);
+            const { data } = await supabase.functions.invoke('get-lcrypt-elo', {
+              body: { nickname: friend.nickname }
+            });
+            
+            console.log(`📊 Lcrypt response for ${friend.nickname}:`, data);
+            
+            if (data && !data.error) {
+              setFriendsWithLcrypt(prev => 
+                prev.map(f => 
+                  f.player_id === friend.player_id 
+                    ? { ...f, lcryptData: data, elo: data.elo || f.elo, isLive: data.isLive || false }
+                    : f
+                )
+              );
+              
+              setLiveMatches(prev => ({
+                ...prev,
+                [friend.player_id]: {
+                  isLive: data.isLive || false,
+                  matchId: data.liveInfo?.matchId,
+                  competition: data.liveInfo?.competition,
+                  matchDetails: data.liveInfo?.matchDetails
+                }
+              }));
+              console.log(`✅ Updated ${friend.nickname} with lcrypt data`);
+            } else {
+              console.log(`⚠️ No valid lcrypt data for ${friend.nickname}:`, data);
+            }
+          } catch (error) {
+            console.error(`Failed to load lcrypt data for ${friend.nickname}:`, error);
+          } finally {
+            setLoadingFriends(prev => {
+              const newSet = new Set(prev);
+              newSet.delete(friend.nickname);
+              return newSet;
+            });
+          }
+        });
+        
+        await Promise.allSettled(promises);
+        setIsLoading(false);
+      };
+      
+      loadFriendData();
+    }
+  }, [friends]);
+
+  const livePlayersCount = Object.values(liveMatches).filter(m => m.isLive).length;
+  const liveFriends = friendsWithLcrypt.filter(f => liveMatches[f.player_id]?.isLive);
 
   // Password dialog pentru migrare
   const [showMigratePassword, setShowMigratePassword] = React.useState(false);
@@ -57,10 +115,7 @@ export const FriendsSection = ({
     handleRemoveFriend,
     confirmAction,
     closePasswordDialog
-  } = usePendingFriendActions(
-    (player, password) => optimizedAddFriend(player, password), 
-    (playerId, password) => optimizedRemoveFriend(playerId, password)
-  );
+  } = usePendingFriendActions(onAddFriend, onRemoveFriend);
 
   // Handle flashing player state
   const { flashingPlayer, handlePlayerClick } = useFlashingPlayer(onShowPlayerDetails);
@@ -86,14 +141,12 @@ export const FriendsSection = ({
           {friendsWithLcrypt.length === 0 ? (
             <EmptyFriendsState onMigrate={() => setShowMigratePassword(true)} />
           ) : (
-            <VirtualizedFriendsList 
+            <FriendsList 
               friends={friendsWithLcrypt}
               flashingPlayer={flashingPlayer}
               loadingFriends={loadingFriends}
               liveMatches={liveMatches}
               onPlayerClick={handlePlayerClick}
-              height={800}
-              itemHeight={220}
             />
           )}
         </div>
