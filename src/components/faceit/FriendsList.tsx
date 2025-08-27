@@ -29,8 +29,14 @@ export const FriendsList = React.memo(({
   liveMatches,
   onPlayerClick 
 }: FriendsListProps) => {
-  // Keep friends in original order, no sorting by live status
-  const sortedFriends = friends;
+  // Sort friends by ELO in descending order (highest first)
+  const sortedFriends = React.useMemo(() => {
+    return [...friends].sort((a, b) => {
+      const eloA = a.lcryptData?.elo || a.elo || 0;
+      const eloB = b.lcryptData?.elo || b.elo || 0;
+      return eloB - eloA;
+    });
+  }, [friends]);
 
   return (
     <div className="space-y-2 px-1">

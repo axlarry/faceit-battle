@@ -48,6 +48,10 @@ export const PlayerAvatar = ({ avatar, nickname, index, isLive }: PlayerAvatarPr
           src={avatar}
           alt={nickname}
           loading="lazy"
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            target.src = 'https://assets.faceit-cdn.net/avatars/default_avatar.jpg';
+          }}
           className={`w-16 h-16 rounded-lg border-2 shadow-lg flex-shrink-0 transition-all duration-300 ${
             isLive 
               ? 'border-green-400 ring-2 ring-green-500/50' 
