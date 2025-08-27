@@ -356,16 +356,22 @@ serve(async (req) => {
               const lcryptData = await lcryptResponse.json();
               
               if (lcryptData && !lcryptData.error) {
-                // Update friend with fresh data
+                // Only save essential data for speed: ELO and level
+                const newElo = lcryptData.elo || friend.elo || 0;
+                const newLevel = lcryptData.level || friend.level || 0;
+                
+                // Only update if ELO or level changed significantly
+                if (Math.abs(newElo - (friend.elo || 0)) < 1 && newLevel === (friend.level || 0)) {
+                  results.push({ nickname: friend.nickname, status: 'no_change' });
+                  return;
+                }
+
+                // Update friend with only essential data
                 const { error: updateErr } = await supabase
                   .from('friends')
                   .update({
-                    level: lcryptData.level || friend.level,
-                    elo: lcryptData.elo || friend.elo,
-                    wins: lcryptData.wins || friend.wins,
-                    win_rate: lcryptData.winRate || friend.win_rate,
-                    hs_rate: lcryptData.hsRate || friend.hs_rate,
-                    kd_ratio: lcryptData.kdRatio || friend.kd_ratio,
+                    level: newLevel,
+                    elo: newElo,
                   })
                   .eq('owner_id', PUBLIC_OWNER_ID)
                   .eq('player_id', friend.player_id);
