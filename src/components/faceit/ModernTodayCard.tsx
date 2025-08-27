@@ -84,16 +84,22 @@ export const ModernTodayCard = ({ player, lcryptData }: ModernTodayCardProps) =>
     
     return (
       <div className="grid grid-cols-3 gap-2 text-xs">
-        <div className="text-center bg-green-500/10 rounded-lg p-2 border border-green-500/20">
-          <div className="text-green-400 font-bold text-lg">
-            {wins} {eloFromWins > 0 && <span className="text-sm">+{eloFromWins}</span>}
-          </div>
+        <div className="relative text-center bg-green-500/10 rounded-lg p-2 border border-green-500/20">
+          {eloFromWins > 0 && (
+            <div className="absolute top-1 right-1 text-green-400/70 text-xs font-medium">
+              +{eloFromWins}
+            </div>
+          )}
+          <div className="text-green-400 font-bold text-lg">{wins}</div>
           <div className="text-gray-400">Wins</div>
         </div>
-        <div className="text-center bg-red-500/10 rounded-lg p-2 border border-red-500/20">
-          <div className="text-red-400 font-bold text-lg">
-            {losses} {eloFromLosses > 0 && <span className="text-sm">-{eloFromLosses}</span>}
-          </div>
+        <div className="relative text-center bg-red-500/10 rounded-lg p-2 border border-red-500/20">
+          {eloFromLosses > 0 && (
+            <div className="absolute top-1 right-1 text-red-400/70 text-xs font-medium">
+              -{eloFromLosses}
+            </div>
+          )}
+          <div className="text-red-400 font-bold text-lg">{losses}</div>
           <div className="text-gray-400">Losses</div>
         </div>
         <div className="text-center bg-blue-500/10 rounded-lg p-2 border border-blue-500/20">
