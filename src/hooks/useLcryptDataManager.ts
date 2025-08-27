@@ -102,8 +102,24 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
 
     finishLoading();
     setIsManualUpdate(false);
-    console.log(`✅ Loading completed: Data fetch for all friends completed successfully`);
+
+    // Final sort by latest ELO after all friends have been updated
+    setFriendsWithLcrypt(prev => {
+      const sorted = [...prev].sort((a, b) => {
+        const eb = b.elo ?? 0;
+        const ea = a.elo ?? 0;
+        if (eb !== ea) return eb - ea; // Higher ELO first
+        const wb = b.wins ?? 0;
+        const wa = a.wins ?? 0;
+        if (wb !== wa) return wb - wa; // Then by wins
+        return (a.nickname ?? '').localeCompare(b.nickname ?? ''); // Stable tiebreaker
+      });
+      return sorted;
+    });
+
+    console.log(`✅ Loading completed: Data fetch finished. Friends sorted by ELO.`);
     
+    // Resume individual updates after a delay
     setTimeout(() => {
       startIndividualUpdates();
     }, 45000);
