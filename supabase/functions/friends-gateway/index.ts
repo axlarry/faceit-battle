@@ -39,7 +39,7 @@ const friendsMutationLimiter = new RateLimiter(30, 60_000); // 30 mutations/min 
 // Single shared owner for password-protected, unauthenticated lists
 const PUBLIC_OWNER_ID = '00000000-0000-0000-0000-000000000000';
 
-type Action = 'list' | 'add' | 'update' | 'remove' | 'migrate_auto';
+type Action = 'list' | 'add' | 'update' | 'remove' | 'migrate_auto' | 'refresh_all';
 
 interface FriendPayload {
   player_id: string;
@@ -320,6 +320,84 @@ serve(async (req) => {
       }
 
       return new Response(JSON.stringify({ migratedInserted: inserted, migratedUpdated: updated, sourceOwnerId }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    // Refresh all friends data from lcrypt API
+    if (action === 'refresh_all') {
+      // Get all friends from database
+      const { data: friends, error: friendsErr } = await supabase
+        .from('friends')
+        .select('*')
+        .eq('owner_id', PUBLIC_OWNER_ID);
+      
+      if (friendsErr) throw friendsErr;
+
+      let updated = 0;
+      const results = [];
+
+      // Process friends in small batches to avoid overwhelming the lcrypt API
+      const batchSize = 3;
+      for (let i = 0; i < (friends || []).length; i += batchSize) {
+        const batch = (friends || []).slice(i, i + batchSize);
+        
+        await Promise.all(batch.map(async (friend: any) => {
+          try {
+            // Fetch fresh data from lcrypt
+            const lcryptResponse = await fetch(`https://rwizxoeyatdtggrpnpmq.supabase.co/functions/v1/get-lcrypt-elo`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${Deno.env.get('SUPABASE_ANON_KEY')}`,
+              },
+              body: JSON.stringify({ nickname: friend.nickname })
+            });
+
+            if (lcryptResponse.ok) {
+              const lcryptData = await lcryptResponse.json();
+              
+              if (lcryptData && !lcryptData.error) {
+                // Update friend with fresh data
+                const { error: updateErr } = await supabase
+                  .from('friends')
+                  .update({
+                    level: lcryptData.level || friend.level,
+                    elo: lcryptData.elo || friend.elo,
+                    wins: lcryptData.wins || friend.wins,
+                    win_rate: lcryptData.winRate || friend.win_rate,
+                    hs_rate: lcryptData.hsRate || friend.hs_rate,
+                    kd_ratio: lcryptData.kdRatio || friend.kd_ratio,
+                  })
+                  .eq('owner_id', PUBLIC_OWNER_ID)
+                  .eq('player_id', friend.player_id);
+
+                if (!updateErr) {
+                  updated++;
+                  results.push({ nickname: friend.nickname, status: 'updated' });
+                } else {
+                  results.push({ nickname: friend.nickname, status: 'update_failed', error: updateErr.message });
+                }
+              } else {
+                results.push({ nickname: friend.nickname, status: 'no_data' });
+              }
+            } else {
+              results.push({ nickname: friend.nickname, status: 'api_error' });
+            }
+          } catch (error) {
+            results.push({ nickname: friend.nickname, status: 'error', error: error.message });
+          }
+        }));
+
+        // Small delay between batches
+        if (i + batchSize < (friends || []).length) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      }
+
+      return new Response(JSON.stringify({ 
+        updated, 
+        total: (friends || []).length, 
+        results 
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     return new Response(JSON.stringify({ error: 'Unknown action' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
