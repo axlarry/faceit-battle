@@ -9,6 +9,7 @@ import { MatchesTable } from "./MatchesTable";
 import { Button } from "@/components/ui/button";
 import { UserPlus, UserMinus } from "lucide-react";
 import { FaceitAnalyserPopover } from "./FaceitAnalyserPopover";
+import { playerService } from "@/services/playerService";
 interface PlayerModalProps {
   player: Player | null;
   isOpen: boolean;
@@ -31,6 +32,7 @@ export const PlayerModal = ({
   const [pendingAction, setPendingAction] = useState<'add' | 'remove' | null>(null);
   const [matches, setMatches] = useState<Match[]>([]);
   const [loadingMatches, setLoadingMatches] = useState(false);
+  const [enhancedPlayer, setEnhancedPlayer] = useState<Player | null>(null);
   const [matchesStats, setMatchesStats] = useState<{
     [key: string]: any;
   }>({});
@@ -45,13 +47,25 @@ export const PlayerModal = ({
   useEffect(() => {
     if (player && isOpen) {
       loadPlayerMatches();
+    } else {
+      setEnhancedPlayer(null);
     }
   }, [player, isOpen]);
   const loadPlayerMatches = async () => {
     if (!player) return;
     setLoadingMatches(true);
     try {
-      console.log('Loading matches for player:', player.player_id);
+      console.log('Loading matches and cover image for player:', player.player_id);
+
+      // Fetch cover image if not already present
+      let playerWithCover = { ...player };
+      if (!player.cover_image) {
+        const coverImage = await playerService.getPlayerCoverImage(player.nickname);
+        if (coverImage) {
+          playerWithCover = { ...player, cover_image: coverImage };
+        }
+      }
+      setEnhancedPlayer(playerWithCover);
 
       // First check if player has a live match
       const liveInfo = await checkPlayerLiveMatch(player.player_id);
@@ -159,7 +173,7 @@ export const PlayerModal = ({
           
           <div className="flex-1 overflow-y-auto px-3 sm:px-4 md:px-6 pb-6 scrollbar-hide">
             <div className="space-y-4 sm:space-y-6 py-4">
-              <PlayerHeader player={player} isFriend={isFriend} />
+              <PlayerHeader player={enhancedPlayer || player} isFriend={isFriend} />
               <PlayerStatsCards player={player} />
               <MatchesTable player={player} matches={matches} matchesStats={matchesStats} loadingMatches={loadingMatches} />
               
