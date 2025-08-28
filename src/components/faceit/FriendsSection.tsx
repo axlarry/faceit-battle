@@ -11,6 +11,7 @@ import { FriendActionDialog } from "./FriendActionDialog";
 import { PasswordDialog } from "./PasswordDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { playerService } from "@/services/playerService";
 
 interface FriendsSectionProps {
   friends: Player[];
@@ -54,17 +55,32 @@ export const FriendsSection = ({
           
           try {
             console.log(`🔍 Loading lcrypt data for ${friend.nickname}...`);
-            const { data } = await supabase.functions.invoke('get-lcrypt-elo', {
+            // Fetch lcrypt data and cover image in parallel
+            const lcryptPromise = supabase.functions.invoke('get-lcrypt-elo', {
               body: { nickname: friend.nickname }
             });
+            const coverPromise = friend.cover_image 
+              ? Promise.resolve(friend.cover_image)
+              : playerService.getPlayerCoverImage(friend.nickname);
+
+            const [{ data }, coverImage] = await Promise.all([lcryptPromise, coverPromise]);
             
             console.log(`📊 Lcrypt response for ${friend.nickname}:`, data);
+            if (coverImage) {
+              console.log(`🖼️ Cover image ready for ${friend.nickname}`);
+            }
             
             if (data && !data.error) {
               setFriendsWithLcrypt(prev => 
                 prev.map(f => 
                   f.player_id === friend.player_id 
-                    ? { ...f, lcryptData: data, elo: data.elo || f.elo, isLive: data.isLive || false }
+                    ? { 
+                        ...f, 
+                        lcryptData: data, 
+                        elo: data.elo || f.elo, 
+                        isLive: data.isLive || false,
+                        cover_image: (coverImage as string) || f.cover_image
+                      }
                     : f
                 )
               );
@@ -80,6 +96,14 @@ export const FriendsSection = ({
               }));
               console.log(`✅ Updated ${friend.nickname} with lcrypt data`);
             } else {
+              // Even if lcrypt fails, still update cover image if we have it
+              setFriendsWithLcrypt(prev => 
+                prev.map(f => 
+                  f.player_id === friend.player_id 
+                    ? { ...f, cover_image: (coverImage as string) || f.cover_image }
+                    : f
+                )
+              );
               console.log(`⚠️ No valid lcrypt data for ${friend.nickname}:`, data);
             }
           } catch (error) {
