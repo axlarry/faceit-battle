@@ -288,3 +288,131 @@
   }
 }
 
+/* CS2 Animated Background */
+@layer utilities {
+  .cs2-animated-bg {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .cs2-animated-bg::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+      radial-gradient(circle at 20% 20%, hsl(24 100% 56% / 0.12) 0%, transparent 50%),
+      radial-gradient(circle at 80% 80%, hsl(0 84% 60% / 0.10) 0%, transparent 50%),
+      radial-gradient(circle at 40% 60%, hsl(265 85% 62% / 0.08) 0%, transparent 50%);
+    animation: cs2-glow 8s ease-in-out infinite alternate;
+    z-index: 1;
+  }
+
+  .cs2-map-icons {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 2;
+  }
+
+  .cs2-map-icon {
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    opacity: 0.08;
+    border-radius: 8px;
+    background-size: cover;
+    background-position: center;
+    animation: cs2-float 20s linear infinite;
+    filter: brightness(0.6) sepia(0.8) hue-rotate(30deg) saturate(1.2);
+  }
+
+  .cs2-map-icon:nth-child(1) {
+    background-image: url('/faceit-icons/de_dust2.png');
+    top: 10%;
+    left: 5%;
+    animation-delay: 0s;
+    animation-duration: 25s;
+  }
+
+  .cs2-map-icon:nth-child(2) {
+    background-image: url('/faceit-icons/de_mirage.png');
+    top: 60%;
+    left: 85%;
+    animation-delay: -5s;
+    animation-duration: 30s;
+  }
+
+  .cs2-map-icon:nth-child(3) {
+    background-image: url('/faceit-icons/de_inferno.png');
+    top: 30%;
+    left: 75%;
+    animation-delay: -10s;
+    animation-duration: 22s;
+  }
+
+  .cs2-map-icon:nth-child(4) {
+    background-image: url('/faceit-icons/de_ancient.png');
+    top: 80%;
+    left: 15%;
+    animation-delay: -15s;
+    animation-duration: 28s;
+  }
+
+  .cs2-map-icon:nth-child(5) {
+    background-image: url('/faceit-icons/de_nuke.png');
+    top: 15%;
+    left: 45%;
+    animation-delay: -8s;
+    animation-duration: 26s;
+  }
+
+  .cs2-map-icon:nth-child(6) {
+    background-image: url('/faceit-icons/de_vertigo.png');
+    top: 70%;
+    left: 55%;
+    animation-delay: -12s;
+    animation-duration: 24s;
+  }
+
+  @keyframes cs2-glow {
+    0% {
+      transform: scale(1) rotate(0deg);
+      opacity: 0.8;
+    }
+    50% {
+      transform: scale(1.1) rotate(180deg);
+      opacity: 0.6;
+    }
+    100% {
+      transform: scale(1) rotate(360deg);
+      opacity: 0.8;
+    }
+  }
+
+  @keyframes cs2-float {
+    0% {
+      transform: translateY(0px) translateX(0px) rotate(0deg) scale(1);
+      opacity: 0.08;
+    }
+    25% {
+      transform: translateY(-20px) translateX(10px) rotate(90deg) scale(1.1);
+      opacity: 0.12;
+    }
+    50% {
+      transform: translateY(-10px) translateX(-15px) rotate(180deg) scale(0.9);
+      opacity: 0.06;
+    }
+    75% {
+      transform: translateY(-30px) translateX(5px) rotate(270deg) scale(1.05);
+      opacity: 0.10;
+    }
+    100% {
+      transform: translateY(0px) translateX(0px) rotate(360deg) scale(1);
+      opacity: 0.08;
+    }
+  }
+}
+
