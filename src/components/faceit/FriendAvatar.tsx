@@ -8,7 +8,7 @@ interface FriendAvatarProps {
 }
 
 export const FriendAvatar = ({ avatar, nickname, index }: FriendAvatarProps) => {
-  const fallbackAvatar = 'https://assets.faceit-cdn.net/avatars/default_avatar.jpg';
+  const fallbackAvatar = '/faceit-icons/faceit_icon.png';
   const safeAvatar = avatar && avatar.trim() ? avatar : fallbackAvatar;
   return (
     <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto min-w-0">

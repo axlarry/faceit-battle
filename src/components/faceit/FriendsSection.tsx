@@ -12,6 +12,7 @@ import { PasswordDialog } from "./PasswordDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { playerService } from "@/services/playerService";
+import { lcryptOptimizedService } from "@/services/lcryptOptimizedService";
 
 interface FriendsSectionProps {
   friends: Player[];
@@ -55,30 +56,28 @@ export const FriendsSection = ({
           
           try {
             console.log(`🔍 Loading lcrypt data for ${friend.nickname}...`);
-            // Fetch lcrypt data and cover image in parallel
-            const lcryptPromise = supabase.functions.invoke('get-lcrypt-elo', {
-              body: { nickname: friend.nickname }
-            });
+            // Fetch optimized lcrypt data and cover image in parallel
+            const lcryptPromise = lcryptOptimizedService.getCompletePlayerData(friend.nickname);
             const coverPromise = friend.cover_image 
               ? Promise.resolve(friend.cover_image)
               : playerService.getPlayerCoverImage(friend.nickname);
 
-            const [{ data }, coverImage] = await Promise.all([lcryptPromise, coverPromise]);
+            const [lcryptData, coverImage] = await Promise.all([lcryptPromise, coverPromise]);
             
-            console.log(`📊 Lcrypt response for ${friend.nickname}:`, data);
+            console.log(`📊 Lcrypt response for ${friend.nickname}:`, lcryptData);
             if (coverImage) {
               console.log(`🖼️ Cover image ready for ${friend.nickname}`);
             }
             
-            if (data && !data.error) {
+            if (lcryptData && !lcryptData.error) {
               setFriendsWithLcrypt(prev => 
                 prev.map(f => 
                   f.player_id === friend.player_id 
                     ? { 
                         ...f, 
-                        lcryptData: data, 
-                        elo: data.elo || f.elo, 
-                        isLive: data.isLive || false,
+                        lcryptData: lcryptData, 
+                        elo: lcryptData.elo || f.elo, 
+                        isLive: lcryptData.isLive || false,
                         cover_image: (coverImage as string) || f.cover_image
                       }
                     : f
@@ -88,10 +87,10 @@ export const FriendsSection = ({
               setLiveMatches(prev => ({
                 ...prev,
                 [friend.player_id]: {
-                  isLive: data.isLive || false,
-                  matchId: data.liveInfo?.matchId,
-                  competition: data.liveInfo?.competition,
-                  matchDetails: data.liveInfo?.matchDetails
+                  isLive: lcryptData.isLive || false,
+                  matchId: lcryptData.liveInfo?.matchId,
+                  competition: lcryptData.liveInfo?.competition,
+                  matchDetails: lcryptData.liveInfo?.matchDetails
                 }
               }));
               console.log(`✅ Updated ${friend.nickname} with lcrypt data`);
@@ -104,7 +103,7 @@ export const FriendsSection = ({
                     : f
                 )
               );
-              console.log(`⚠️ No valid lcrypt data for ${friend.nickname}:`, data);
+              console.log(`⚠️ No valid lcrypt data for ${friend.nickname}:`, lcryptData);
             }
           } catch (error) {
             console.error(`Failed to load lcrypt data for ${friend.nickname}:`, error);

@@ -13,7 +13,7 @@ export const PlayerAvatar = ({ avatar, nickname, index, isLive }: PlayerAvatarPr
   const isFirstPlace = index === 0;
   const isSecondPlace = index === 1;
   const isThirdPlace = index === 2;
-  const fallbackAvatar = 'https://assets.faceit-cdn.net/avatars/default_avatar.jpg';
+  const fallbackAvatar = '/faceit-icons/faceit_icon.png';
   const safeAvatar = avatar && avatar.trim() ? avatar : fallbackAvatar;
   
   return (
