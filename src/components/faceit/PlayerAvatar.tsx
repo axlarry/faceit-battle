@@ -13,6 +13,8 @@ export const PlayerAvatar = ({ avatar, nickname, index, isLive }: PlayerAvatarPr
   const isFirstPlace = index === 0;
   const isSecondPlace = index === 1;
   const isThirdPlace = index === 2;
+  const fallbackAvatar = 'https://assets.faceit-cdn.net/avatars/default_avatar.jpg';
+  const safeAvatar = avatar && avatar.trim() ? avatar : fallbackAvatar;
   
   return (
     <div className="flex items-center gap-2 flex-shrink-0">
@@ -45,12 +47,12 @@ export const PlayerAvatar = ({ avatar, nickname, index, isLive }: PlayerAvatarPr
       </div>
       <div className="relative">
         <img
-          src={avatar}
+          src={safeAvatar}
           alt={nickname}
           loading="lazy"
           onError={(e) => {
             const target = e.target as HTMLImageElement;
-            target.src = 'https://assets.faceit-cdn.net/avatars/default_avatar.jpg';
+            target.src = fallbackAvatar;
           }}
           className={`w-16 h-16 rounded-lg border-2 shadow-lg flex-shrink-0 transition-all duration-300 ${
             isLive 
