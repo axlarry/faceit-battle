@@ -47,7 +47,7 @@ export const PlayerAvatar = ({ avatar, nickname, index, isLive }: PlayerAvatarPr
       </div>
       <div className="relative">
         <img
-          src={`${safeAvatar}${safeAvatar.includes('?') ? '&' : '?'}v=${new Date().toISOString().slice(0,10)}`}
+          src={`${safeAvatar}${safeAvatar.includes('?') ? '&' : '?'}v=${encodeURIComponent(new Date().toISOString().slice(0,16))}`}
           alt={nickname}
           loading="lazy"
           onError={(e) => {
