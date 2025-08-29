@@ -45,10 +45,10 @@ export const TeamHeaderConnector: React.FC<TeamHeaderConnectorProps> = ({
     const h = height; // SVG height
     const startY = h; // start at bottom of SVG
     const endY = h;   // end at bottom of SVG
-    const controlY = 2; // near top of SVG for a nice arch
+    const topY = 2; // top of the rectangle
 
-    // Main arch from first to last avatar
-    const main = `M ${firstX},${startY} Q ${midX},${controlY} ${lastX},${endY}`;
+    // Create a rectangular path connecting all avatars
+    const main = `M ${firstX},${startY} L ${firstX},${topY} L ${lastX},${topY} L ${lastX},${endY}`;
 
     setPath(main);
     setViewBoxWidth(el.clientWidth);
