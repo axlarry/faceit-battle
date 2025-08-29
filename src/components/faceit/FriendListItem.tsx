@@ -105,14 +105,19 @@ export const FriendListItem = React.memo(({
       {/* Outer glow effect */}
       <div className={`pointer-events-none absolute inset-0 rounded-3xl ${playerStyles.glow} opacity-30 group-hover:opacity-60 transition-opacity duration-200 blur-md scale-100`}></div>
       
-      <div onClick={handleClick} className={`
+      <div 
+        onClick={handleClick} 
+        data-player-id={friend.player_id}
+        className={`
           relative rounded-3xl p-5 border-2 ${playerStyles.border} 
           hover:border-white/60 transition-colors duration-200 cursor-pointer
           transform-gpu will-change-transform hover:scale-[1.01]
           backdrop-blur-xl overflow-hidden
           ${isFlashing ? 'animate-pulse border-orange-400 bg-gradient-to-br from-orange-500/30 via-red-500/20 to-orange-500/30' : ''}
           ${!friend.cover_image ? `bg-gradient-to-br ${playerStyles.background}` : ''}
-        `} style={friend.cover_image ? backgroundStyle : {}}>
+        `} 
+        style={friend.cover_image ? backgroundStyle : {}}
+      >
         {/* 3D depth layers */}
         <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-black/20 rounded-3xl"></div>
         <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-white/5 rounded-3xl"></div>
@@ -168,7 +173,7 @@ export const FriendListItem = React.memo(({
         {/* Main content */}
         <div className="flex items-center gap-4 relative z-10 mb-3">
           {/* Avatar */}
-          <div className="relative">
+          <div className="relative" data-avatar>
             <PlayerAvatar avatar={friend.avatar} nickname={friend.nickname} index={index} isLive={isLive} />
             {/* Performance indicator */}
             {friend.elo && friend.elo > 2000}
