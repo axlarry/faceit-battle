@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { playerService } from "@/services/playerService";
 import { lcryptOptimizedService } from "@/services/lcryptOptimizedService";
+import { usePlayerDataUpdater } from "@/hooks/usePlayerDataUpdater";
 
 interface FriendsSectionProps {
   friends: Player[];
@@ -35,7 +36,9 @@ export const FriendsSection = ({
   const [friendsWithLcrypt, setFriendsWithLcrypt] = React.useState(friends.map(f => ({ ...f, lcryptData: null })));
   const [liveMatches, setLiveMatches] = React.useState<Record<string, any>>({});
   const [loadingFriends, setLoadingFriends] = React.useState(new Set<string>());
-  const [isLoading, setIsLoading] = React.useState(false);
+const [isLoading, setIsLoading] = React.useState(false);
+
+  const { updatePlayerData } = usePlayerDataUpdater();
 
   // Sync with passed friends
   React.useEffect(() => {
@@ -56,13 +59,14 @@ export const FriendsSection = ({
           
           try {
             console.log(`🔍 Loading lcrypt data for ${friend.nickname}...`);
-            // Fetch optimized lcrypt data and cover image in parallel
+            // Fetch optimized lcrypt data, fresh Faceit profile (for avatar), and cover image in parallel
             const lcryptPromise = lcryptOptimizedService.getCompletePlayerData(friend.nickname);
             const coverPromise = friend.cover_image 
               ? Promise.resolve(friend.cover_image)
               : playerService.getPlayerCoverImage(friend.nickname);
+            const faceitPromise = updatePlayerData(friend);
 
-            const [lcryptData, coverImage] = await Promise.all([lcryptPromise, coverPromise]);
+            const [lcryptData, coverImage, updatedPlayer] = await Promise.all([lcryptPromise, coverPromise, faceitPromise]);
             
             console.log(`📊 Lcrypt response for ${friend.nickname}:`, lcryptData);
             if (coverImage) {
@@ -78,7 +82,8 @@ export const FriendsSection = ({
                         lcryptData: lcryptData, 
                         elo: lcryptData.elo || f.elo, 
                         isLive: lcryptData.isLive || false,
-                        cover_image: (coverImage as string) || f.cover_image
+                        cover_image: (coverImage as string) || f.cover_image,
+                        avatar: (updatedPlayer?.avatar || f.avatar)
                       }
                     : f
                 )
@@ -95,11 +100,11 @@ export const FriendsSection = ({
               }));
               console.log(`✅ Updated ${friend.nickname} with lcrypt data`);
             } else {
-              // Even if lcrypt fails, still update cover image if we have it
+              // Even if lcrypt fails, still update cover image and avatar if we have them
               setFriendsWithLcrypt(prev => 
                 prev.map(f => 
                   f.player_id === friend.player_id 
-                    ? { ...f, cover_image: (coverImage as string) || f.cover_image }
+                    ? { ...f, cover_image: (coverImage as string) || f.cover_image, avatar: (updatedPlayer?.avatar || f.avatar) }
                     : f
                 )
               );
