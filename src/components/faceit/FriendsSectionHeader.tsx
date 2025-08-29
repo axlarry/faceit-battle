@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Users, RefreshCw } from "lucide-react";
 import { TodayEloStats } from './TodayEloStats';
 import { groupLivePlayersByTeam, getPlayerTeamInfo } from '@/utils/teamGroupingUtils';
+import TeamHeaderConnector from './TeamHeaderConnector';
 import type { FriendWithLcrypt } from "@/hooks/types/lcryptDataManagerTypes";
 
 interface LiveMatchInfo {
@@ -68,32 +69,33 @@ export const FriendsSectionHeader = React.memo(({
               <div className="flex items-center gap-3">
                 {/* Team Groups */}
                 {teams.map((team) => (
-                  <div key={team.id} className="flex -space-x-1 relative">
-                    {/* Team connector line */}
-                    <div className={`absolute -top-1 left-1 right-1 h-0.5 ${team.color.split(' ')[0].replace('border', 'bg')} rounded-full opacity-60`}></div>
-                    {team.players.slice(0, 3).map((player, index) => (
-                      <div 
-                        key={player.player_id} 
-                        className={`w-8 h-8 rounded-full border-2 ${team.color} overflow-hidden bg-gray-800 shadow-lg ring-2 ring-opacity-30`}
-                        title={`${player.nickname} (Team ${team.players.length})`}
-                      >
-                        <img 
-                          src={player.avatar || '/placeholder.svg'} 
-                          alt={player.nickname}
-                          className="w-full h-full object-cover"
-                        />
+                  <TeamHeaderConnector key={team.id}>
+                    <div className="flex -space-x-1 relative">
+                      {team.players.slice(0, 3).map((player) => (
+                        <div
+                          key={player.player_id}
+                          data-team-avatar
+                          className={`w-8 h-8 rounded-full border-2 ${team.color} overflow-hidden bg-gray-800 shadow-lg ring-2 ring-opacity-30`}
+                          title={`${player.nickname} (Team ${team.players.length})`}
+                        >
+                          <img
+                            src={player.avatar || '/placeholder.svg'}
+                            alt={player.nickname}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      ))}
+                      {team.players.length > 3 && (
+                        <div className={`w-8 h-8 rounded-full border-2 ${team.color} bg-gray-700/50 flex items-center justify-center text-xs font-bold text-white ring-2 ring-opacity-30`}>
+                          +{team.players.length - 3}
+                        </div>
+                      )}
+                      {/* Team size indicator */}
+                      <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 text-xs font-bold text-white bg-gray-800 rounded-full w-4 h-4 flex items-center justify-center border border-gray-600">
+                        {team.players.length}
                       </div>
-                    ))}
-                    {team.players.length > 3 && (
-                      <div className={`w-8 h-8 rounded-full border-2 ${team.color} bg-gray-700/50 flex items-center justify-center text-xs font-bold text-white ring-2 ring-opacity-30`}>
-                        +{team.players.length - 3}
-                      </div>
-                    )}
-                    {/* Team size indicator */}
-                    <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2 text-xs font-bold text-white bg-gray-800 rounded-full w-4 h-4 flex items-center justify-center border border-gray-600">
-                      {team.players.length}
                     </div>
-                  </div>
+                  </TeamHeaderConnector>
                 ))}
 
                 {/* Solo Players */}

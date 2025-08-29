@@ -2,8 +2,7 @@
 import React from 'react';
 import { Player } from "@/types/Player";
 import { FriendListItem } from './FriendListItem';
-import { groupLivePlayersByTeam } from '@/utils/teamGroupingUtils';
-import { TeamConnectionOverlay } from './TeamConnectionOverlay';
+
 
 interface FriendsWithLcrypt extends Player {
   lcryptData?: any;
@@ -40,18 +39,9 @@ export const FriendsList = React.memo(({
     });
   }, [friends]);
 
-  // Group live players by teams for connection lines
-  const liveTeams = React.useMemo(() => {
-    const liveFriends = sortedFriends.filter(friend => 
-      liveMatches[friend.player_id]?.isLive
-    );
-    return groupLivePlayersByTeam(liveFriends, liveMatches);
-  }, [sortedFriends, liveMatches]);
 
   return (
     <div className="relative space-y-3 px-1">
-      {/* Team Connection Lines Overlay */}
-      <TeamConnectionOverlay teams={liveTeams} />
 
       {/* All Friends in Rank Order */}
       {sortedFriends.map((friend, index) => {
