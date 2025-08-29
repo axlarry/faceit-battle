@@ -69,8 +69,13 @@ export const FriendsSectionHeader = React.memo(({
               <div className="flex items-center gap-3">
                 {/* Team Groups */}
                 {teams.map((team) => (
-                  <TeamHeaderConnector key={team.id}>
-                    <div className="flex -space-x-1 relative">
+                  <TeamHeaderConnector 
+                    key={team.id} 
+                    height={20}
+                    strokeWidth={3}
+                    strokeColorVar="--destructive"
+                  >
+                    <div className="flex gap-2 relative pt-5">
                       {team.players.slice(0, 3).map((player) => (
                         <div
                           key={player.player_id}
