@@ -74,7 +74,7 @@ export const TeamHeaderConnector: React.FC<TeamHeaderConnectorProps> = ({
       {/* Connector SVG above avatars */}
       {path && (
         <svg
-          className="pointer-events-none absolute left-0"
+          className="pointer-events-none absolute left-0 z-10"
           style={{ top: -height }}
           width={viewBoxWidth}
           height={height}
@@ -84,8 +84,11 @@ export const TeamHeaderConnector: React.FC<TeamHeaderConnectorProps> = ({
           <path
             d={path}
             fill="none"
-            // Use semantic design token color
-            style={{ stroke: `hsl(var(${strokeColorVar}))` }}
+            // Use semantic design token color with subtle glow for visibility
+            style={{ 
+              stroke: `hsl(var(${strokeColorVar}))`,
+              filter: 'drop-shadow(0 1px 0.5px rgba(0,0,0,0.4))'
+            }}
             strokeWidth={strokeWidth}
             strokeLinecap="round"
           />

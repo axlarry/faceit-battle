@@ -27,42 +27,54 @@ const TEAM_COLORS = [
 
 export function groupLivePlayersByTeam(liveFriends: FriendWithLcrypt[], liveMatches: Record<string, any>): TeamGroup[] {
   const teams: TeamGroup[] = [];
-  const processedPlayers = new Set<string>();
+  const used = new Set<string>();
 
-  liveFriends.forEach((friend) => {
-    if (processedPlayers.has(friend.player_id)) return;
+  // 1) Group by explicit matchId when available (most reliable)
+  const byMatchId = new Map<string, FriendWithLcrypt[]>();
+  liveFriends.forEach((f) => {
+    const lm = liveMatches[f.player_id];
+    if (!lm?.isLive) return;
+    if (lm.matchId) {
+      const arr = byMatchId.get(lm.matchId) || [];
+      arr.push(f);
+      byMatchId.set(lm.matchId, arr);
+    }
+  });
 
-    const liveData = liveMatches[friend.player_id];
-    if (!liveData?.isLive || !liveData.matchDetails) return;
-
-    const matchCriteria = extractMatchCriteria(liveData.matchDetails);
-    if (!matchCriteria) return;
-
-    // Find other players with matching criteria
-    const teammates = liveFriends.filter((otherFriend) => {
-      if (otherFriend.player_id === friend.player_id) return true;
-      if (processedPlayers.has(otherFriend.player_id)) return false;
-
-      const otherLiveData = liveMatches[otherFriend.player_id];
-      if (!otherLiveData?.isLive || !otherLiveData.matchDetails) return false;
-
-      const otherCriteria = extractMatchCriteria(otherLiveData.matchDetails);
-      return areMatchCriteriaSame(matchCriteria, otherCriteria);
-    });
-
-    if (teammates.length >= 2 && teammates.length <= 5) {
-      const teamId = `team-${teams.length}`;
-      const colorClass = TEAM_COLORS[teams.length % TEAM_COLORS.length];
-
+  byMatchId.forEach((players, id) => {
+    if (players.length >= 2 && players.length <= 5) {
       teams.push({
-        id: teamId,
-        players: teammates,
-        matchCriteria,
-        color: colorClass,
+        id: `team-${teams.length}`,
+        players,
+        matchCriteria: { queue: 'matchId', map: undefined, server: undefined },
+        color: TEAM_COLORS[teams.length % TEAM_COLORS.length],
       });
+      players.forEach(p => used.add(p.player_id));
+    }
+  });
 
-      // Mark all teammates as processed
-      teammates.forEach(teammate => processedPlayers.add(teammate.player_id));
+  // 2) Fallback: group by relaxed criteria (competition + map + server when present)
+  const byRelaxedKey = new Map<string, FriendWithLcrypt[]>();
+  liveFriends.forEach((f) => {
+    if (used.has(f.player_id)) return;
+    const lm = liveMatches[f.player_id];
+    if (!lm?.isLive) return;
+    const md = lm.matchDetails || {};
+    const key = `${lm.competition || 'unknown'}|${md.map || 'unknown'}|${md.server || 'unknown'}|${md.what || md.queue || 'unknown'}`;
+    const arr = byRelaxedKey.get(key) || [];
+    arr.push(f);
+    byRelaxedKey.set(key, arr);
+  });
+
+  byRelaxedKey.forEach((players, key) => {
+    if (players.length >= 2 && players.length <= 5) {
+      teams.push({
+        id: `team-${teams.length}`,
+        players,
+        matchCriteria: { queue: key },
+        color: TEAM_COLORS[teams.length % TEAM_COLORS.length],
+      });
+      players.forEach(p => used.add(p.player_id));
     }
   });
 
