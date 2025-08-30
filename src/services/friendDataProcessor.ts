@@ -77,6 +77,27 @@ export class FriendDataProcessor {
         cover_image: coverImage || friend.cover_image
       };
 
+      // Auto-sync nickname changes to database if detected
+      if (currentNickname !== friend.nickname) {
+        console.log(`🔄 AUTO-SYNC: Nickname changed ${friend.nickname} -> ${currentNickname}`);
+        try {
+          // Update nickname in Supabase friends table (silent update, no password required for data sync)
+          const { supabase } = await import('@/integrations/supabase/client');
+          await supabase.functions.invoke('friends-gateway', {
+            body: {
+              action: 'sync_nickname',
+              playerId: friend.player_id,
+              newNickname: currentNickname,
+              newAvatar: basicData?.avatar
+            }
+          }).catch(() => {
+            console.warn(`⚠️ Could not sync nickname change for ${friend.player_id}`);
+          });
+        } catch (error) {
+          console.warn('Nickname sync failed:', error);
+        }
+      }
+
       // Actualizează statusul LIVE în state-ul separat
       const liveMatchInfo: LiveMatchInfo = {
         isLive: optimizedData?.isLive || false,

@@ -143,15 +143,58 @@ export const useOptimizedFriendsManager = ({
     }
   }, [enabled, batchSize, state.lastUpdate, updateInterval, updateState]);
 
-  // Add friend with optimized validation
+  // Add friend with optimized validation and nickname sync
   const addFriend = useCallback(async (player: Player, password: string) => {
-    const exists = state.friends.some(f => f.player_id === player.player_id);
-    if (exists) {
-      toast({
-        title: "Already Added",
-        description: `${player.nickname} is already in your friends list.`,
-        variant: "destructive",
-      });
+    const existingFriend = state.friends.find(f => f.player_id === player.player_id);
+    
+    if (existingFriend) {
+      // Check if it's a nickname change
+      if (existingFriend.nickname !== player.nickname) {
+        console.log(`🔄 Detected nickname change: ${existingFriend.nickname} -> ${player.nickname}`);
+        
+        // Update the nickname in database and local state
+        try {
+          await supabase.functions.invoke('friends-gateway', {
+            body: {
+              action: 'update_nickname',
+              password,
+              playerId: player.player_id,
+              newNickname: player.nickname
+            }
+          });
+
+          // Update local state with new nickname
+          updateState(prev => ({
+            friends: prev.friends.map(f => 
+              f.player_id === player.player_id 
+                ? { ...f, nickname: player.nickname, avatar: player.avatar }
+                : f
+            ),
+            friendsWithLcrypt: prev.friendsWithLcrypt.map(f => 
+              f.player_id === player.player_id 
+                ? { ...f, nickname: player.nickname, avatar: player.avatar }
+                : f
+            )
+          }));
+          
+          toast({
+            title: "Nickname Updated!",
+            description: `Updated ${existingFriend.nickname} to ${player.nickname}`,
+          });
+        } catch (error) {
+          toast({
+            title: "Update Failed",
+            description: "Could not update nickname. Invalid password or error occurred.",
+            variant: "destructive",
+          });
+        }
+      } else {
+        toast({
+          title: "Already Added",
+          description: `${player.nickname} is already in your friends list.`,
+          variant: "destructive",
+        });
+      }
       return;
     }
 

@@ -39,7 +39,7 @@ const friendsMutationLimiter = new RateLimiter(30, 60_000); // 30 mutations/min 
 // Single shared owner for password-protected, unauthenticated lists
 const PUBLIC_OWNER_ID = '00000000-0000-0000-0000-000000000000';
 
-type Action = 'list' | 'add' | 'update' | 'remove' | 'migrate_auto' | 'refresh_all';
+type Action = 'list' | 'add' | 'update' | 'remove' | 'migrate_auto' | 'refresh_all' | 'update_nickname' | 'sync_nickname';
 
 interface FriendPayload {
   player_id: string;
@@ -58,6 +58,8 @@ interface RequestBody {
   password?: string;
   player?: FriendPayload;
   playerId?: string;
+  newNickname?: string;
+  newAvatar?: string;
 }
 
 function getServiceClient() {
@@ -404,6 +406,75 @@ serve(async (req) => {
         total: (friends || []).length, 
         results 
       }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    // Manual nickname update (with password authentication)
+    if (action === 'update_nickname') {
+      if (!requirePassword(body.password)) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+      
+      const { playerId, newNickname, newAvatar } = body;
+      if (!playerId || !newNickname) {
+        return new Response(JSON.stringify({ error: 'Missing playerId or newNickname' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
+      const updateData: any = { nickname: newNickname };
+      if (newAvatar) {
+        updateData.avatar = newAvatar;
+      }
+
+      const { error: updateErr } = await supabase
+        .from('friends')
+        .update(updateData)
+        .eq('owner_id', PUBLIC_OWNER_ID)
+        .eq('player_id', playerId);
+      
+      if (updateErr) throw updateErr;
+
+      return new Response(JSON.stringify({ success: true, updated: updateData }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    // Automatic nickname sync (no password required - for internal use)
+    if (action === 'sync_nickname') {
+      const { playerId, newNickname, newAvatar } = body;
+      if (!playerId || !newNickname) {
+        return new Response(JSON.stringify({ error: 'Missing playerId or newNickname' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
+      // Check if the friend exists
+      const { data: existing, error: checkErr } = await supabase
+        .from('friends')
+        .select('nickname, avatar')
+        .eq('owner_id', PUBLIC_OWNER_ID)
+        .eq('player_id', playerId)
+        .maybeSingle();
+      
+      if (checkErr) throw checkErr;
+      
+      if (!existing) {
+        return new Response(JSON.stringify({ error: 'Friend not found' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
+      // Only update if nickname actually changed
+      if (existing.nickname === newNickname && (!newAvatar || existing.avatar === newAvatar)) {
+        return new Response(JSON.stringify({ success: true, changed: false }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
+
+      const updateData: any = { nickname: newNickname };
+      if (newAvatar && newAvatar !== existing.avatar) {
+        updateData.avatar = newAvatar;
+      }
+
+      const { error: updateErr } = await supabase
+        .from('friends')
+        .update(updateData)
+        .eq('owner_id', PUBLIC_OWNER_ID)
+        .eq('player_id', playerId);
+      
+      if (updateErr) throw updateErr;
+
+      return new Response(JSON.stringify({ success: true, changed: true, updated: updateData }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     return new Response(JSON.stringify({ error: 'Unknown action' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
