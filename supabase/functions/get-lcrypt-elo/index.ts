@@ -10,6 +10,7 @@ const corsHeaders = {
 const NICK_RE = /^[A-Za-z0-9 _.\-]{1,32}$/;
 const RATE_LIMIT = new Map<string, number>();
 const REQUEST_QUEUE = new Map<string, Promise<any>>();
+const MIN_REQUEST_INTERVAL = 2500; // 2.5 seconds between requests
 
 // Initialize Supabase client
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
@@ -81,15 +82,19 @@ async function processLcryptRequest(nickname: string) {
 
     console.log(`🌐 Cache MISS for ${nickname}, fetching from external API`)
 
-    // 2. Rate limiting with exponential backoff
+    // 2. Rate limiting with jitter to avoid ban
     const ip = 'server'
     const now = Date.now()
     const last = RATE_LIMIT.get(ip) || 0
     const timeDiff = now - last
     
-    if (timeDiff < 1000) {  // Min 1 second between requests
-      const delay = 1000 - timeDiff
-      console.log(`⏱️ Rate limiting: waiting ${delay}ms`)
+    // Add random jitter (0-500ms) to avoid collision
+    const jitter = Math.random() * 500
+    const minInterval = MIN_REQUEST_INTERVAL + jitter
+    
+    if (timeDiff < minInterval) {
+      const delay = minInterval - timeDiff
+      console.log(`⏱️ Rate limiting: waiting ${Math.round(delay)}ms (with jitter)`)
       await new Promise(resolve => setTimeout(resolve, delay))
     }
 
@@ -120,24 +125,41 @@ async function processLcryptRequest(nickname: string) {
         const data = await response.json()
         console.log(`✅ Success from lcrypt.eu for ${nickname}:`, data)
 
-        // 4. Cache the successful response
-        await supabase
-          .from('lcrypt_cache')
-          .upsert({ 
-            nickname, 
-            data,
-            expires_at: new Date(Date.now() + 5 * 60 * 1000).toISOString() // 5 minutes
-          })
+        // 4. Cache the successful response (10 minutes, safer upsert)
+        try {
+          // Delete old entry first to avoid conflicts
+          await supabase
+            .from('lcrypt_cache')
+            .delete()
+            .eq('nickname', nickname)
+          
+          // Insert new entry
+          await supabase
+            .from('lcrypt_cache')
+            .insert({ 
+              nickname, 
+              data,
+              expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString() // 10 minutes
+            })
+          
+          console.log(`💾 Cached data for ${nickname} (10 min TTL)`)
+        } catch (cacheError) {
+          console.error(`⚠️ Cache write failed for ${nickname}:`, cacheError)
+          // Continue anyway, we have the data
+        }
 
         return data
 
       } catch (error) {
         lastError = error as Error
-        console.error(`❌ Attempt ${attempt} failed for ${nickname}:`, error)
+        const errorMsg = error.message || String(error)
+        console.error(`❌ Attempt ${attempt} failed for ${nickname}:`, errorMsg)
         
         if (attempt < 3) {
-          const delay = attempt * 2000 // 2s, 4s backoff
-          console.log(`⏳ Retrying in ${delay}ms...`)
+          // Longer delay for rate limit errors (15 seconds), shorter for others
+          const isRateLimit = errorMsg.includes('429') || errorMsg.includes('rate limit')
+          const delay = isRateLimit ? 15000 : (attempt * 3000) // 15s for rate limit, 3s/6s for others
+          console.log(`⏳ Retrying in ${delay}ms... (${isRateLimit ? 'rate limit detected' : 'network error'})`)
           await new Promise(resolve => setTimeout(resolve, delay))
         }
       }

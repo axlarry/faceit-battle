@@ -60,7 +60,7 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
       return;
     }
 
-    if (!isManual && !canUpdate(45000)) {
+    if (!isManual && !canUpdate(30000)) {
       return;
     }
 
@@ -77,7 +77,7 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
       setFriendsWithLcrypt(sortedFriends.map(f => ({ ...f, lcryptData: undefined })));
     }
     
-    const batchSize = 3;
+    const batchSize = 2;
     const updatedFriends: FriendWithLcrypt[] = [];
     
     for (let i = 0; i < sortedFriends.length; i += batchSize) {
@@ -96,7 +96,7 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
       }
       
       if (i + batchSize < sortedFriends.length) {
-        await new Promise(resolve => setTimeout(resolve, 600));
+        await new Promise(resolve => setTimeout(resolve, 2000));
       }
     }
 
@@ -122,7 +122,7 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
     // Resume individual updates after a delay
     setTimeout(() => {
       startIndividualUpdates();
-    }, 45000);
+    }, 30000);
     
   }, [friends, enabled, updateFriendLcryptData, canUpdate, startLoading, finishLoading, updateProgress, stopIndividualUpdates, startIndividualUpdates]);
 
