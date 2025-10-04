@@ -11,9 +11,7 @@ import { FriendActionDialog } from "./FriendActionDialog";
 import { PasswordDialog } from "./PasswordDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import { playerService } from "@/services/playerService";
-import { lcryptOptimizedService } from "@/services/lcryptOptimizedService";
-import { usePlayerDataUpdater } from "@/hooks/usePlayerDataUpdater";
+import { useLcryptDataManager } from "@/hooks/useLcryptDataManager";
 
 interface FriendsSectionProps {
   friends: Player[];
@@ -32,102 +30,19 @@ export const FriendsSection = ({
   onUpdateFriend,
   onReloadFriends
 }: FriendsSectionProps) => {
-  // Use passed friends and add lcrypt data
-  const [friendsWithLcrypt, setFriendsWithLcrypt] = React.useState(friends.map(f => ({ ...f, lcryptData: null })));
-  const [liveMatches, setLiveMatches] = React.useState<Record<string, any>>({});
-  const [loadingFriends, setLoadingFriends] = React.useState(new Set<string>());
-const [isLoading, setIsLoading] = React.useState(false);
-
-  const { updatePlayerData } = usePlayerDataUpdater();
-
-  // Sync with passed friends
-  React.useEffect(() => {
-    setFriendsWithLcrypt(friends.map(f => ({ 
-      ...f, 
-      lcryptData: friendsWithLcrypt.find(fl => fl.player_id === f.player_id)?.lcryptData || null 
-    })));
-  }, [friends]);
-
-  // Load lcrypt data for all friends
-  React.useEffect(() => {
-    if (friends.length > 0) {
-      setIsLoading(true);
-      
-      const loadFriendData = async () => {
-        const promises = friends.map(async (friend) => {
-          setLoadingFriends(prev => new Set(prev).add(friend.nickname));
-          
-          try {
-            console.log(`🔍 Loading lcrypt data for ${friend.nickname}...`);
-            // Fetch optimized lcrypt data, fresh Faceit profile (for avatar), and cover image in parallel
-            const lcryptPromise = lcryptOptimizedService.getCompletePlayerData(friend.nickname);
-            const coverPromise = friend.cover_image 
-              ? Promise.resolve(friend.cover_image)
-              : playerService.getPlayerCoverImage(friend.nickname);
-            const faceitPromise = updatePlayerData(friend);
-
-            const [lcryptData, coverImage, updatedPlayer] = await Promise.all([lcryptPromise, coverPromise, faceitPromise]);
-            
-            console.log(`📊 Lcrypt response for ${friend.nickname}:`, lcryptData);
-            if (coverImage) {
-              console.log(`🖼️ Cover image ready for ${friend.nickname}`);
-            }
-            
-            if (lcryptData && !lcryptData.error) {
-              setFriendsWithLcrypt(prev => 
-                prev.map(f => 
-                  f.player_id === friend.player_id 
-                    ? { 
-                        ...f, 
-                        lcryptData: lcryptData, 
-                        elo: lcryptData.elo || f.elo, 
-                        isLive: lcryptData.isLive || false,
-                        cover_image: (coverImage as string) || f.cover_image,
-                        avatar: (updatedPlayer?.avatar || f.avatar)
-                      }
-                    : f
-                )
-              );
-              
-              setLiveMatches(prev => ({
-                ...prev,
-                [friend.player_id]: {
-                  isLive: lcryptData.isLive || false,
-                  matchId: lcryptData.liveInfo?.matchId,
-                  competition: lcryptData.liveInfo?.competition,
-                  matchDetails: lcryptData.liveInfo?.matchDetails
-                }
-              }));
-              console.log(`✅ Updated ${friend.nickname} with lcrypt data`);
-            } else {
-              // Even if lcrypt fails, still update cover image and avatar if we have them
-              setFriendsWithLcrypt(prev => 
-                prev.map(f => 
-                  f.player_id === friend.player_id 
-                    ? { ...f, cover_image: (coverImage as string) || f.cover_image, avatar: (updatedPlayer?.avatar || f.avatar) }
-                    : f
-                )
-              );
-              console.log(`⚠️ No valid lcrypt data for ${friend.nickname}:`, lcryptData);
-            }
-          } catch (error) {
-            console.error(`Failed to load lcrypt data for ${friend.nickname}:`, error);
-          } finally {
-            setLoadingFriends(prev => {
-              const newSet = new Set(prev);
-              newSet.delete(friend.nickname);
-              return newSet;
-            });
-          }
-        });
-        
-        await Promise.allSettled(promises);
-        setIsLoading(false);
-      };
-      
-      loadFriendData();
-    }
-  }, [friends]);
+  // Use optimized lcrypt data manager with batch processing and rate limiting
+  const {
+    friendsWithLcrypt,
+    isLoading,
+    loadingProgress,
+    loadingFriends,
+    liveMatches,
+    reloadLcryptData,
+    isIndividualUpdating
+  } = useLcryptDataManager({ 
+    friends, 
+    enabled: true 
+  });
 
   const livePlayersCount = Object.values(liveMatches).filter(m => m.isLive).length;
   const liveFriends = friendsWithLcrypt.filter(f => liveMatches[f.player_id]?.isLive);
@@ -155,8 +70,8 @@ const [isLoading, setIsLoading] = React.useState(false);
           <FriendsSectionHeader 
             friendsCount={friendsWithLcrypt.length}
             livePlayersCount={livePlayersCount}
-            isUpdating={isLoading}
-            onUpdateAll={() => {}} // Handled internally now
+            isUpdating={isLoading || isIndividualUpdating}
+            onUpdateAll={reloadLcryptData}
             lcryptFriends={friendsWithLcrypt}
             lcryptLoading={isLoading}
             liveFriends={liveFriends}
