@@ -28,13 +28,13 @@ export const useIndividualUpdates = ({
 
     const updateNextPlayer = () => {
       if (currentPlayerIndexRef.current >= friends.length) {
-        console.log(`✅ Individual updates cycle completed. Next cycle in 45 seconds.`);
+        console.log(`✅ Individual updates cycle completed. Next cycle in 20 seconds.`);
         currentPlayerIndexRef.current = 0;
         setIsIndividualUpdating(false);
         
         individualUpdateTimeoutRef.current = setTimeout(() => {
           startIndividualUpdates();
-        }, 45000);
+        }, 20000); // 20 seconds for faster LIVE status checks
         
         return;
       }

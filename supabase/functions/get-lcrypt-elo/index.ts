@@ -125,7 +125,7 @@ async function processLcryptRequest(nickname: string) {
         const data = await response.json()
         console.log(`✅ Success from lcrypt.eu for ${nickname}:`, data)
 
-        // 4. Cache the successful response (10 minutes, safer upsert)
+        // 4. Cache the successful response (2 minutes for fresh LIVE status)
         try {
           // Delete old entry first to avoid conflicts
           await supabase
@@ -139,10 +139,10 @@ async function processLcryptRequest(nickname: string) {
             .insert({ 
               nickname, 
               data,
-              expires_at: new Date(Date.now() + 10 * 60 * 1000).toISOString() // 10 minutes
+              expires_at: new Date(Date.now() + 2 * 60 * 1000).toISOString() // 2 minutes
             })
           
-          console.log(`💾 Cached data for ${nickname} (10 min TTL)`)
+          console.log(`💾 Cached data for ${nickname} (2 min TTL for fresh LIVE)`)
         } catch (cacheError) {
           console.error(`⚠️ Cache write failed for ${nickname}:`, cacheError)
           // Continue anyway, we have the data
