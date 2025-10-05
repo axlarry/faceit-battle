@@ -38,10 +38,10 @@ export class FriendDataProcessor {
         console.warn(`⚠️ Could not refresh basic data for ${friend.nickname} by id ${friend.player_id}`, e);
       }
       
-      // V2.0 Optimized Lcrypt data fetching
+      // V2.0 Optimized Lcrypt data fetching with LIVE detection
       const optimizedData = await performanceMonitor.measureAsyncTime(
         `lcrypt-api-${currentNickname}`,
-        () => optimizedApiService.lcryptApiCall(currentNickname)
+        () => lcryptOptimizedService.getCompletePlayerData(currentNickname)
       );
       
       // OPTIMIZED: Cover image doar dacă nu există în cache
