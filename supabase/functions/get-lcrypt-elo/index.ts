@@ -77,6 +77,12 @@ async function processLcryptRequest(nickname: string) {
 
     if (cached && new Date(cached.expires_at) > new Date()) {
       console.log(`🎯 Cache HIT for ${nickname}`)
+      
+      // Log LIVE status from cache
+      if (cached.data?.current?.present === true) {
+        console.log(`🟢 CACHED LIVE: ${nickname} - ${cached.data.current.status}, Map: ${cached.data.current.map}`)
+      }
+      
       return cached.data
     }
 
@@ -125,7 +131,7 @@ async function processLcryptRequest(nickname: string) {
         const data = await response.json()
         console.log(`✅ Success from lcrypt.eu for ${nickname}:`, data)
 
-        // 4. Cache the successful response (2 minutes for fresh LIVE status)
+        // 4. Cache the successful response (30 seconds for LIVE detection)
         try {
           // Delete old entry first to avoid conflicts
           await supabase
@@ -139,10 +145,17 @@ async function processLcryptRequest(nickname: string) {
             .insert({ 
               nickname, 
               data,
-              expires_at: new Date(Date.now() + 2 * 60 * 1000).toISOString() // 2 minutes
+              expires_at: new Date(Date.now() + 30 * 1000).toISOString() // 30 seconds
             })
           
-          console.log(`💾 Cached data for ${nickname} (2 min TTL for fresh LIVE)`)
+          console.log(`💾 Cached data for ${nickname} (30s TTL for LIVE detection)`)
+          
+          // Log LIVE status detection
+          if (data?.current?.present === true) {
+            console.log(`🟢 LIVE PLAYER CACHED: ${nickname} - Status: ${data.current.status}, Map: ${data.current.map}, Playing: ${data.playing}`)
+          } else {
+            console.log(`⚪ NOT LIVE: ${nickname} - present: ${data.current?.present}, playing: ${data.playing}`)
+          }
         } catch (cacheError) {
           console.error(`⚠️ Cache write failed for ${nickname}:`, cacheError)
           // Continue anyway, we have the data
