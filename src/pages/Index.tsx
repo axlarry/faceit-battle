@@ -5,6 +5,7 @@ import { RegionTabs } from "@/components/faceit/RegionTabs";
 import { LeaderboardTable } from "@/components/faceit/LeaderboardTable";
 import { FriendsSection } from "@/components/faceit/FriendsSection";
 import { FaceitTool } from "@/components/faceit/FaceitTool";
+import { TeamBalancer } from "@/components/faceit/TeamBalancer";
 import { PlayerModal } from "@/components/faceit/PlayerModal";
 import { useFriends } from "@/hooks/useFriends";
 import { usePlayerModal } from "@/hooks/usePlayerModal";
@@ -52,6 +53,8 @@ const Index = () => {
               onShowPlayerDetails={showPlayerDetails}
               onReloadFriends={loadFriendsFromDatabase}
             />
+          ) : currentRegion === 'TEAM_BALANCER' ? (
+            <TeamBalancer friends={friends} />
           ) : currentRegion === 'FACEIT_TOOL' ? (
             <FaceitTool
               onShowPlayerDetails={showPlayerDetails}

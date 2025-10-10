@@ -2,7 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useState } from "react";
-import { Globe, ChevronDown, Users, Search } from "lucide-react";
+import { Globe, ChevronDown, Users, Search, Shuffle } from "lucide-react";
 import { RegionSelectPopover } from "./RegionSelectPopover";
 
 interface RegionTabsProps {
@@ -53,6 +53,15 @@ export const RegionTabs = ({ currentRegion, onRegionChange }: RegionTabsProps) =
       iconColor: 'text-primary-foreground',
       bgColor: 'bg-gradient-to-r from-accent to-primary',
       hoverBg: 'hover:from-accent hover:to-primary'
+    },
+    { 
+      id: 'TEAM_BALANCER', 
+      name: 'Team Balancer', 
+      icon: Shuffle, 
+      gradient: 'from-green-500 to-emerald-600',
+      iconColor: 'text-primary-foreground',
+      bgColor: 'bg-gradient-to-r from-green-500 to-emerald-600',
+      hoverBg: 'hover:from-green-500 hover:to-emerald-600'
     },
     { 
       id: 'FACEIT_TOOL', 
