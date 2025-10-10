@@ -19,11 +19,21 @@ interface BalancedTeams {
   team2AvgElo: number;
 }
 
+function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
 function balanceTeams(selectedPlayers: Player[]): BalancedTeams | null {
   if (selectedPlayers.length !== 10) return null;
 
-  // Sort by ELO descending
+  // Sort by ELO descending then shuffle to add randomness
   const sorted = [...selectedPlayers].sort((a, b) => (b.elo || 0) - (a.elo || 0));
+  const shuffled = shuffleArray(sorted);
   
   const team1: Player[] = [];
   const team2: Player[] = [];
@@ -33,9 +43,9 @@ function balanceTeams(selectedPlayers: Player[]): BalancedTeams | null {
   
   draftOrder.forEach((teamNum, index) => {
     if (teamNum === 1) {
-      team1.push(sorted[index]);
+      team1.push(shuffled[index]);
     } else {
-      team2.push(sorted[index]);
+      team2.push(shuffled[index]);
     }
   });
 
