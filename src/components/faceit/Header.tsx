@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Crown, Zap, TrendingUp, Users } from "lucide-react";
+import faviconOptimized from "@/assets/favicon-optimized.webp";
 export const Header = () => {
   const [faceitIconError, setFaceitIconError] = useState(false);
   const [faviconError, setFaviconError] = useState(false);
@@ -65,7 +66,7 @@ export const Header = () => {
               <div className="absolute inset-0 bg-gradient-to-r from-[#ff6500] to-[#ff8533] rounded-2xl blur-lg opacity-75 group-hover:opacity-100 transition-opacity duration-300 animate-pulse"></div>
               <div className="relative w-20 h-20 bg-gradient-to-br from-[#ff6500] to-[#ff8533] rounded-2xl flex items-center justify-center shadow-2xl transform group-hover:scale-110 transition-all duration-300">
                 <div className="absolute inset-1 bg-gradient-to-br from-[#ff7700] to-[#ff6500] rounded-xl opacity-80"></div>
-                {!faviconError ? <img src="/favicon.ico" alt="Site Icon" onError={handleFaviconError} onLoad={() => console.log('✅ Favicon loaded successfully from /favicon.ico')} className="relative z-10 w-12 h-12 drop-shadow-lg transform group-hover:rotate-12 transition-transform duration-300" /> : <div className="relative z-10 text-white text-2xl font-bold">F</div>}
+                {!faviconError ? <img src={faviconOptimized} alt="Site Icon" onError={handleFaviconError} onLoad={() => console.log('✅ Favicon loaded successfully')} className="relative z-10 w-12 h-12 drop-shadow-lg transform group-hover:rotate-12 transition-transform duration-300" width="48" height="48" /> : <div className="relative z-10 text-white text-2xl font-bold">F</div>}
                 {/* Orbital Ring */}
                 <div className="absolute inset-0 border-2 border-[#ff6500]/30 rounded-2xl animate-spin" style={{
                 animationDuration: '8s'
