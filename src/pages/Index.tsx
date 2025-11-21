@@ -7,6 +7,7 @@ import { FriendsSection } from "@/components/faceit/FriendsSection";
 import { FaceitTool } from "@/components/faceit/FaceitTool";
 import { TeamBalancer } from "@/components/faceit/TeamBalancer";
 import { PlayerModal } from "@/components/faceit/PlayerModal";
+import Snowflakes from "@/components/common/Snowflakes";
 import { useFriends } from "@/hooks/useFriends";
 import { usePlayerModal } from "@/hooks/usePlayerModal";
 
@@ -17,6 +18,9 @@ const Index = () => {
 
   return (
     <div className="min-h-screen relative bg-background cs2-animated-bg">
+      {/* Holiday snowflakes effect */}
+      <Snowflakes />
+      
       {/* Enhanced CS2 background */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute inset-0 bg-gradient-to-b from-background via-background/95 to-background" />
