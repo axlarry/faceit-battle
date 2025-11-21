@@ -118,14 +118,8 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      clean_expired_faceit_cache: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
-      clean_expired_lcrypt_cache: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
-      }
+      clean_expired_faceit_cache: { Args: never; Returns: undefined }
+      clean_expired_lcrypt_cache: { Args: never; Returns: undefined }
     }
     Enums: {
       [_ in never]: never

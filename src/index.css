@@ -6,40 +6,47 @@
 
 @layer base {
   :root {
-    /* Futuristic Dark (default) */
-    --background: 222 47% 8%;         /* deep space */
-    --foreground: 210 20% 98%;        /* near-white */
+    /* Holiday Winter Theme */
+    --background: 210 40% 12%;        /* dark winter blue */
+    --foreground: 0 0% 98%;           /* snow white */
 
-    --card: 220 25% 12%;
-    --card-foreground: 210 20% 98%;
-    --popover: 220 25% 12%;
-    --popover-foreground: 210 20% 98%;
+    --card: 210 35% 15%;
+    --card-foreground: 0 0% 98%;
+    --popover: 210 35% 15%;
+    --popover-foreground: 0 0% 98%;
 
-    --primary: 265 85% 62%;           /* neon violet */
-    --primary-foreground: 210 20% 98%;
+    --primary: 355 78% 55%;           /* festive red */
+    --primary-foreground: 0 0% 98%;
 
-    --secondary: 200 90% 55%;         /* cyan */
-    --secondary-foreground: 210 20% 98%;
+    --secondary: 140 45% 45%;         /* pine green */
+    --secondary-foreground: 0 0% 98%;
 
-    --muted: 220 14% 18%;
-    --muted-foreground: 215 15% 70%;
+    --muted: 210 25% 20%;
+    --muted-foreground: 215 15% 75%;
 
-    --accent: 24 100% 56%;            /* faceit orange */
-    --accent-foreground: 210 20% 98%;
+    --accent: 45 95% 60%;             /* gold */
+    --accent-foreground: 210 40% 12%;
 
     --destructive: 0 84% 60%;
-    --destructive-foreground: 210 20% 98%;
+    --destructive-foreground: 0 0% 98%;
 
-    --border: 220 14% 22%;
-    --input: 220 14% 22%;
-    --ring: 265 85% 62%;
+    --border: 210 25% 25%;
+    --input: 210 25% 25%;
+    --ring: 355 78% 55%;
+
+    /* Holiday specific colors */
+    --holiday-red: 355 78% 55%;
+    --holiday-green: 140 45% 45%;
+    --holiday-gold: 45 95% 60%;
+    --holiday-silver: 220 10% 75%;
+    --holiday-snow: 0 0% 98%;
 
     /* Charts */
-    --chart-1: 265 85% 62%;
-    --chart-2: 200 90% 55%;
-    --chart-3: 24 100% 56%;
-    --chart-4: 160 84% 39%;
-    --chart-5: 280 80% 65%;
+    --chart-1: 355 78% 55%;
+    --chart-2: 140 45% 45%;
+    --chart-3: 45 95% 60%;
+    --chart-4: 220 10% 75%;
+    --chart-5: 280 65% 60%;
 
     --radius: 0.9rem;
   }
@@ -229,11 +236,61 @@
 
   .app-aurora {
     background:
-      radial-gradient(1000px 400px at 10% -10%, hsl(var(--primary) / 0.15), transparent 50%),
-      radial-gradient(800px 300px at 90% 0%, hsl(var(--secondary) / 0.12), transparent 50%),
-      radial-gradient(600px 250px at 50% 100%, hsl(var(--accent) / 0.08), transparent 60%);
+      radial-gradient(1000px 400px at 10% -10%, hsl(var(--holiday-red) / 0.2), transparent 50%),
+      radial-gradient(800px 300px at 90% 0%, hsl(var(--holiday-green) / 0.15), transparent 50%),
+      radial-gradient(600px 250px at 50% 100%, hsl(var(--holiday-gold) / 0.12), transparent 60%);
     filter: blur(40px);
     transform: translateZ(0);
+  }
+
+  /* Snowflake animation */
+  .snowflakes {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 9999;
+    overflow: hidden;
+  }
+
+  .snowflake {
+    position: absolute;
+    top: -10px;
+    color: hsl(var(--holiday-snow));
+    font-size: 1em;
+    font-family: Arial, sans-serif;
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.8);
+    animation: snowfall linear infinite;
+    user-select: none;
+  }
+
+  @keyframes snowfall {
+    0% {
+      transform: translateY(0vh) rotate(0deg);
+      opacity: 1;
+    }
+    100% {
+      transform: translateY(100vh) rotate(360deg);
+      opacity: 0.3;
+    }
+  }
+
+  /* Holiday glow effects */
+  .holiday-glow-red {
+    box-shadow: 0 0 20px hsl(var(--holiday-red) / 0.4),
+                0 0 40px hsl(var(--holiday-red) / 0.2);
+  }
+
+  .holiday-glow-green {
+    box-shadow: 0 0 20px hsl(var(--holiday-green) / 0.4),
+                0 0 40px hsl(var(--holiday-green) / 0.2);
+  }
+
+  .holiday-glow-gold {
+    box-shadow: 0 0 20px hsl(var(--holiday-gold) / 0.5),
+                0 0 40px hsl(var(--holiday-gold) / 0.3);
   }
 }
 

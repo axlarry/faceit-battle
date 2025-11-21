@@ -65,6 +65,13 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				holiday: {
+					red: 'hsl(var(--holiday-red))',
+					green: 'hsl(var(--holiday-green))',
+					gold: 'hsl(var(--holiday-gold))',
+					silver: 'hsl(var(--holiday-silver))',
+					snow: 'hsl(var(--holiday-snow))'
 				}
 			},
 			borderRadius: {
@@ -249,6 +256,27 @@ export default {
 				'elo-negative-strong': {
 					'0%, 100%': { transform: 'scale(1)', opacity: '1' },
 					'50%': { transform: 'scale(0.94)', opacity: '0.9' }
+				},
+				
+				// Holiday animations
+				'twinkle': {
+					'0%, 100%': { opacity: '1', transform: 'scale(1)' },
+					'50%': { opacity: '0.4', transform: 'scale(0.8)' }
+				},
+				'jingle': {
+					'0%, 100%': { transform: 'rotate(0deg)' },
+					'25%': { transform: 'rotate(-15deg)' },
+					'75%': { transform: 'rotate(15deg)' }
+				},
+				'sparkle': {
+					'0%, 100%': { 
+						opacity: '0',
+						transform: 'rotate(0deg) scale(0)'
+					},
+					'50%': { 
+						opacity: '1',
+						transform: 'rotate(180deg) scale(1)'
+					}
 				}
 			},
 			animation: {
@@ -271,6 +299,11 @@ export default {
 				'micro-bounce': 'micro-bounce 1.5s ease-in-out infinite',
 				'bounce-in': 'bounce-in 0.8s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
 				'slide-in-up': 'slide-in-up 0.6s cubic-bezier(0.16, 1, 0.3, 1)',
+				
+				// Holiday animations
+				'twinkle': 'twinkle 2s ease-in-out infinite',
+				'jingle': 'jingle 1s ease-in-out infinite',
+				'sparkle': 'sparkle 3s ease-in-out infinite',
 			},
 			boxShadow: {
 				'3xl': '0 35px 60px -12px rgba(0, 0, 0, 0.25)',
