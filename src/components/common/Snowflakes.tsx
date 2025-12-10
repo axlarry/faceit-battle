@@ -13,28 +13,37 @@ interface Snowflake {
   type: 'crystal' | 'soft' | 'sparkle';
   rotation: number;
   rotationSpeed: number;
-  layer: 'back' | 'mid' | 'front'; // Parallax layers
+  layer: 'back' | 'mid' | 'front';
   twinkle: boolean;
   twinkleSpeed: number;
   twinklePhase: number;
 }
 
+interface SnowPile {
+  id: number;
+  x: number;
+  width: number;
+  height: number;
+  opacity: number;
+}
+
 const Snowflakes = () => {
   const [snowflakes, setSnowflakes] = useState<Snowflake[]>([]);
+  const [snowPiles, setSnowPiles] = useState<SnowPile[]>([]);
+  const [wind, setWind] = useState({ strength: 0, direction: 1 });
   const animationRef = useRef<number>();
   const timeRef = useRef(0);
+  const windRef = useRef({ strength: 0, target: 0, direction: 1 });
 
-  // Initialize snowflakes with variety and parallax layers
+  // Initialize snowflakes and snow piles
   useEffect(() => {
     const types: Snowflake['type'][] = ['crystal', 'soft', 'sparkle'];
     const layers: Snowflake['layer'][] = ['back', 'mid', 'front'];
     
     const flakes: Snowflake[] = Array.from({ length: 90 }, (_, i) => {
       const layer = layers[Math.floor(Math.random() * layers.length)];
-      // Size based on layer for parallax depth
       const baseSize = layer === 'back' ? 2 : layer === 'mid' ? 4 : 7;
       const size = baseSize + Math.random() * (baseSize * 0.5);
-      // Speed based on layer - front (larger) falls faster
       const baseSpeed = layer === 'back' ? 0.3 : layer === 'mid' ? 0.7 : 1.2;
       
       return {
@@ -51,12 +60,38 @@ const Snowflakes = () => {
         rotation: Math.random() * 360,
         rotationSpeed: (Math.random() - 0.5) * (layer === 'front' ? 1.5 : 0.5),
         layer,
-        twinkle: Math.random() > 0.6, // 40% of flakes twinkle
+        twinkle: Math.random() > 0.6,
         twinkleSpeed: Math.random() * 3 + 2,
         twinklePhase: Math.random() * Math.PI * 2,
       };
     });
     setSnowflakes(flakes);
+
+    // Initialize snow piles at bottom
+    const piles: SnowPile[] = Array.from({ length: 25 }, (_, i) => ({
+      id: i,
+      x: (i / 25) * window.innerWidth + Math.random() * 40 - 20,
+      width: Math.random() * 80 + 60,
+      height: Math.random() * 15 + 8,
+      opacity: Math.random() * 0.3 + 0.7,
+    }));
+    setSnowPiles(piles);
+  }, []);
+
+  // Wind gusts - occasional random wind
+  useEffect(() => {
+    const windInterval = setInterval(() => {
+      // 30% chance of wind gust
+      if (Math.random() > 0.7) {
+        windRef.current = {
+          strength: 0,
+          target: Math.random() * 3 + 1,
+          direction: Math.random() > 0.5 ? 1 : -1,
+        };
+      }
+    }, 3000);
+
+    return () => clearInterval(windInterval);
   }, []);
 
   // Smooth animation loop
@@ -64,11 +99,26 @@ const Snowflakes = () => {
     const animate = () => {
       timeRef.current += 0.016;
       
+      // Smooth wind transition
+      const windDiff = windRef.current.target - windRef.current.strength;
+      if (Math.abs(windDiff) > 0.01) {
+        windRef.current.strength += windDiff * 0.02;
+      } else {
+        // Decay wind
+        windRef.current.target *= 0.995;
+      }
+      
+      const currentWind = windRef.current.strength * windRef.current.direction;
+      
       setSnowflakes(prev => prev.map(flake => {
+        // Wind affects layers differently (front more, back less)
+        const windMultiplier = flake.layer === 'front' ? 1.5 : flake.layer === 'mid' ? 1 : 0.5;
+        const windEffect = currentWind * windMultiplier;
+        
         let newY = flake.y + flake.speed;
         const wobbleOffset = Math.sin(timeRef.current * 2 + flake.wobblePhase) * flake.wobbleAmplitude;
-        let newX = flake.x + wobbleOffset * 0.1;
-        const newRotation = flake.rotation + flake.rotationSpeed;
+        let newX = flake.x + wobbleOffset * 0.1 + windEffect * 0.5;
+        const newRotation = flake.rotation + flake.rotationSpeed + windEffect * 0.5;
         
         // Reset when below screen
         if (newY > window.innerHeight + 20) {
@@ -77,11 +127,13 @@ const Snowflakes = () => {
         }
         
         // Keep within bounds horizontally
-        if (newX < -20) newX = window.innerWidth + 20;
-        if (newX > window.innerWidth + 20) newX = -20;
+        if (newX < -50) newX = window.innerWidth + 50;
+        if (newX > window.innerWidth + 50) newX = -50;
         
         return { ...flake, x: newX, y: newY, rotation: newRotation };
       }));
+
+      setWind({ strength: windRef.current.strength, direction: windRef.current.direction });
       
       animationRef.current = requestAnimationFrame(animate);
     };
@@ -114,7 +166,7 @@ const Snowflakes = () => {
   const getTwinkleOpacity = (flake: Snowflake) => {
     if (!flake.twinkle) return flake.opacity;
     const twinkle = Math.sin(timeRef.current * flake.twinkleSpeed + flake.twinklePhase);
-    const twinkleFactor = 0.3 + (twinkle + 1) * 0.35; // Range: 0.3 to 1.0
+    const twinkleFactor = 0.3 + (twinkle + 1) * 0.35;
     return flake.opacity * twinkleFactor;
   };
 
@@ -126,6 +178,60 @@ const Snowflakes = () => {
 
   return (
     <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
+      {/* Snow accumulation at bottom */}
+      <div className="absolute bottom-0 left-0 right-0 h-20 pointer-events-none">
+        {/* Base snow layer */}
+        <div 
+          className="absolute bottom-0 left-0 right-0 h-6"
+          style={{
+            background: 'linear-gradient(to top, rgba(255,255,255,0.9) 0%, rgba(240,248,255,0.7) 50%, rgba(255,255,255,0) 100%)',
+            filter: 'blur(1px)',
+          }}
+        />
+        
+        {/* Snow pile bumps */}
+        {snowPiles.map(pile => (
+          <div
+            key={pile.id}
+            className="absolute bottom-0"
+            style={{
+              left: pile.x,
+              width: pile.width,
+              height: pile.height + 6,
+              background: `radial-gradient(ellipse at 50% 100%, 
+                rgba(255,255,255,${pile.opacity}) 0%, 
+                rgba(240,248,255,${pile.opacity * 0.8}) 40%,
+                rgba(220,235,250,${pile.opacity * 0.5}) 70%,
+                rgba(255,255,255,0) 100%)`,
+              borderRadius: '50% 50% 0 0',
+              filter: 'blur(0.5px)',
+              transform: `translateX(-50%) skewX(${wind.strength * wind.direction * 2}deg)`,
+              transition: 'transform 0.5s ease-out',
+            }}
+          />
+        ))}
+        
+        {/* Sparkle effects on snow */}
+        {[...Array(12)].map((_, i) => (
+          <div
+            key={`sparkle-${i}`}
+            className="absolute bottom-2"
+            style={{
+              left: `${(i / 12) * 100 + Math.random() * 5}%`,
+              width: 3,
+              height: 3,
+              background: 'white',
+              borderRadius: '50%',
+              boxShadow: '0 0 4px 1px rgba(255,255,255,0.8)',
+              opacity: 0.5 + Math.sin(timeRef.current * 3 + i) * 0.5,
+              animation: `twinkle ${1.5 + Math.random()}s ease-in-out infinite`,
+              animationDelay: `${i * 0.2}s`,
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Snowflakes */}
       {sortedFlakes.map(flake => {
         const currentOpacity = getTwinkleOpacity(flake);
         const glowIntensity = flake.twinkle ? 1.3 : 1;
@@ -144,7 +250,6 @@ const Snowflakes = () => {
                 opacity: currentOpacity,
                 transform: `translate(-50%, -50%) rotate(${flake.rotation}deg)`,
                 filter: `blur(${flake.blur * 0.5}px) drop-shadow(0 0 ${flake.size * glowIntensity}px rgba(200, 230, 255, ${0.4 + (flake.twinkle ? 0.3 : 0)}))`,
-                transition: flake.twinkle ? 'opacity 0.15s ease-out' : 'none',
               }}
             >
               {crystalPath}
@@ -164,7 +269,6 @@ const Snowflakes = () => {
                 height: flake.size,
                 opacity: currentOpacity,
                 transform: `translate(-50%, -50%) rotate(${flake.rotation}deg) scale(${flake.twinkle ? 0.9 + Math.sin(timeRef.current * flake.twinkleSpeed) * 0.15 : 1})`,
-                transition: flake.twinkle ? 'transform 0.1s ease-out' : 'none',
               }}
             >
               <div
@@ -179,7 +283,6 @@ const Snowflakes = () => {
           );
         }
         
-        // Soft type - gentle bokeh-like dots
         return (
           <div
             key={flake.id}
@@ -206,13 +309,21 @@ const Snowflakes = () => {
         );
       })}
       
-      {/* Subtle ambient glow overlay */}
+      {/* Ambient glow */}
       <div 
         className="absolute inset-0 pointer-events-none"
         style={{
           background: 'radial-gradient(ellipse at 50% 0%, rgba(200,220,255,0.03) 0%, transparent 50%)',
         }}
       />
+
+      {/* Twinkle keyframes */}
+      <style>{`
+        @keyframes twinkle {
+          0%, 100% { opacity: 0.3; transform: scale(0.8); }
+          50% { opacity: 1; transform: scale(1.2); }
+        }
+      `}</style>
     </div>
   );
 };
