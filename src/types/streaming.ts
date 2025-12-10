@@ -2,15 +2,20 @@
 export interface StreamInfo {
   name: string;
   ready: boolean;
-  tracks?: {
+  tracks?: string[];
+  readers?: any[];
+  bytesReceived?: number;
+  bytesSent?: number;
+  source?: {
     type: string;
-    codec: string;
-  }[];
-  readers?: number;
+    id: string;
+  } | null;
 }
 
 export interface StreamsResponse {
-  items: Record<string, StreamInfo>;
+  itemCount: number;
+  pageCount: number;
+  items: StreamInfo[];
 }
 
 export interface LiveStream {
