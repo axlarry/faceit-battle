@@ -6,6 +6,7 @@ import { LeaderboardTable } from "@/components/faceit/LeaderboardTable";
 import { FriendsSection } from "@/components/faceit/FriendsSection";
 import { FaceitTool } from "@/components/faceit/FaceitTool";
 import { TeamBalancer } from "@/components/faceit/TeamBalancer";
+import { LiveStreamsTab } from "@/components/streaming/LiveStreamsTab";
 import { PlayerModal } from "@/components/faceit/PlayerModal";
 import Snowflakes from "@/components/common/Snowflakes";
 import { useFriends } from "@/hooks/useFriends";
@@ -57,6 +58,8 @@ const Index = () => {
               onShowPlayerDetails={showPlayerDetails}
               onReloadFriends={loadFriendsFromDatabase}
             />
+          ) : currentRegion === 'LIVE_STREAMS' ? (
+            <LiveStreamsTab friends={friends} />
           ) : currentRegion === 'TEAM_BALANCER' ? (
             <TeamBalancer friends={friends} />
           ) : currentRegion === 'FACEIT_TOOL' ? (

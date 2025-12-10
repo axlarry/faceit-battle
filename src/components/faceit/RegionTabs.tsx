@@ -2,7 +2,7 @@
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useState } from "react";
-import { Globe, ChevronDown, Users, Search, Shuffle } from "lucide-react";
+import { Globe, ChevronDown, Users, Search, Shuffle, Radio } from "lucide-react";
 import { RegionSelectPopover } from "./RegionSelectPopover";
 
 interface RegionTabsProps {
@@ -53,6 +53,15 @@ export const RegionTabs = ({ currentRegion, onRegionChange }: RegionTabsProps) =
       iconColor: 'text-primary-foreground',
       bgColor: 'bg-gradient-to-r from-accent to-primary',
       hoverBg: 'hover:from-accent hover:to-primary'
+    },
+    { 
+      id: 'LIVE_STREAMS', 
+      name: 'Live', 
+      icon: Radio, 
+      gradient: 'from-red-500 to-orange-500',
+      iconColor: 'text-primary-foreground',
+      bgColor: 'bg-gradient-to-r from-red-500 to-orange-500',
+      hoverBg: 'hover:from-red-500 hover:to-orange-500'
     },
     { 
       id: 'TEAM_BALANCER', 
