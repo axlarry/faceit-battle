@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 
 interface Snowflake {
   id: number;
@@ -7,306 +7,175 @@ interface Snowflake {
   size: number;
   speed: number;
   opacity: number;
-  wobble: number;
-  wobbleSpeed: number;
-}
-
-interface SleighPosition {
-  x: number;
-  y: number;
-  targetX: number;
-  targetY: number;
-}
-
-interface Sparkle {
-  id: number;
-  x: number;
-  y: number;
-  size: number;
-  opacity: number;
+  wobblePhase: number;
+  wobbleAmplitude: number;
+  blur: number;
+  type: 'crystal' | 'soft' | 'sparkle';
   rotation: number;
-  color: string;
-  createdAt: number;
+  rotationSpeed: number;
 }
-
-const SPARKLE_COLORS = ['#FFD700', '#FFF8DC', '#FFFACD', '#FFE4B5', '#FF69B4', '#87CEEB', '#E6E6FA'];
-const SPARKLE_LIFETIME = 1500;
 
 const Snowflakes = () => {
   const [snowflakes, setSnowflakes] = useState<Snowflake[]>([]);
-  const [sleigh, setSleigh] = useState<SleighPosition>({ x: 100, y: 100, targetX: 100, targetY: 100 });
-  const [sparkles, setSparkles] = useState<Sparkle[]>([]);
-  const sparkleIdRef = useRef(0);
-  const lastSparkleTime = useRef(0);
+  const animationRef = useRef<number>();
+  const timeRef = useRef(0);
 
-  // Initialize snowflakes
+  // Initialize snowflakes with variety
   useEffect(() => {
-    const flakes: Snowflake[] = Array.from({ length: 60 }, (_, i) => ({
+    const types: Snowflake['type'][] = ['crystal', 'soft', 'sparkle'];
+    const flakes: Snowflake[] = Array.from({ length: 80 }, (_, i) => ({
       id: i,
       x: Math.random() * window.innerWidth,
-      y: Math.random() * window.innerHeight - window.innerHeight,
-      size: Math.random() * 4 + 2,
-      speed: Math.random() * 1.5 + 0.5,
-      opacity: Math.random() * 0.7 + 0.3,
-      wobble: Math.random() * Math.PI * 2,
-      wobbleSpeed: Math.random() * 0.02 + 0.01,
+      y: Math.random() * window.innerHeight * 2 - window.innerHeight,
+      size: Math.random() * 6 + 3,
+      speed: Math.random() * 1.2 + 0.3,
+      opacity: Math.random() * 0.6 + 0.4,
+      wobblePhase: Math.random() * Math.PI * 2,
+      wobbleAmplitude: Math.random() * 2 + 1,
+      blur: Math.random() * 1.5,
+      type: types[Math.floor(Math.random() * types.length)],
+      rotation: Math.random() * 360,
+      rotationSpeed: (Math.random() - 0.5) * 2,
     }));
     setSnowflakes(flakes);
   }, []);
 
-  // Animate snowflakes
+  // Smooth animation loop
   useEffect(() => {
-    let animationId: number;
-    
     const animate = () => {
+      timeRef.current += 0.016;
+      
       setSnowflakes(prev => prev.map(flake => {
         let newY = flake.y + flake.speed;
-        let newX = flake.x + Math.sin(flake.wobble) * 0.5;
-        const newWobble = flake.wobble + flake.wobbleSpeed;
+        const wobbleOffset = Math.sin(timeRef.current * 2 + flake.wobblePhase) * flake.wobbleAmplitude;
+        let newX = flake.x + wobbleOffset * 0.1;
+        const newRotation = flake.rotation + flake.rotationSpeed;
         
-        // Reset snowflake when it goes below screen
-        if (newY > window.innerHeight) {
-          newY = -10;
+        // Reset when below screen
+        if (newY > window.innerHeight + 20) {
+          newY = -20;
           newX = Math.random() * window.innerWidth;
         }
         
-        return { ...flake, x: newX, y: newY, wobble: newWobble };
+        // Keep within bounds horizontally
+        if (newX < -20) newX = window.innerWidth + 20;
+        if (newX > window.innerWidth + 20) newX = -20;
+        
+        return { ...flake, x: newX, y: newY, rotation: newRotation };
       }));
       
-      animationId = requestAnimationFrame(animate);
+      animationRef.current = requestAnimationFrame(animate);
     };
     
-    animationId = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(animationId);
-  }, []);
-
-  // Track mouse for sleigh
-  const handleMouseMove = useCallback((e: MouseEvent) => {
-    setSleigh(prev => ({ ...prev, targetX: e.clientX, targetY: e.clientY }));
-  }, []);
-
-  useEffect(() => {
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, [handleMouseMove]);
-
-  // Create sparkles behind sleigh
-  useEffect(() => {
-    const interval = setInterval(() => {
-      const now = Date.now();
-      if (now - lastSparkleTime.current > 50) {
-        lastSparkleTime.current = now;
-        
-        // Add new sparkles
-        const newSparkles: Sparkle[] = Array.from({ length: 3 }, () => ({
-          id: sparkleIdRef.current++,
-          x: sleigh.x + 70 + Math.random() * 20 - 10,
-          y: sleigh.y + Math.random() * 20 - 10,
-          size: Math.random() * 8 + 4,
-          opacity: 1,
-          rotation: Math.random() * 360,
-          color: SPARKLE_COLORS[Math.floor(Math.random() * SPARKLE_COLORS.length)],
-          createdAt: now,
-        }));
-        
-        setSparkles(prev => [...prev.filter(s => now - s.createdAt < SPARKLE_LIFETIME), ...newSparkles]);
-      }
-    }, 50);
-    
-    return () => clearInterval(interval);
-  }, [sleigh.x, sleigh.y]);
-
-  // Smooth sleigh animation following mouse
-  useEffect(() => {
-    let animationId: number;
-    
-    const animateSleigh = () => {
-      setSleigh(prev => ({
-        ...prev,
-        x: prev.x + (prev.targetX - prev.x) * 0.05,
-        y: prev.y + (prev.targetY - prev.y) * 0.05,
-      }));
-      animationId = requestAnimationFrame(animateSleigh);
+    animationRef.current = requestAnimationFrame(animate);
+    return () => {
+      if (animationRef.current) cancelAnimationFrame(animationRef.current);
     };
-    
-    animationId = requestAnimationFrame(animateSleigh);
-    return () => cancelAnimationFrame(animationId);
   }, []);
+
+  // Memoized crystal SVG path
+  const crystalPath = useMemo(() => (
+    <g>
+      <line x1="12" y1="0" x2="12" y2="24" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <line x1="0" y1="12" x2="24" y2="12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <line x1="3" y1="3" x2="21" y2="21" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
+      <line x1="21" y1="3" x2="3" y2="21" stroke="currentColor" strokeWidth="1" strokeLinecap="round" />
+      {/* Crystal branches */}
+      <line x1="12" y1="4" x2="8" y2="0" stroke="currentColor" strokeWidth="0.8" strokeLinecap="round" />
+      <line x1="12" y1="4" x2="16" y2="0" stroke="currentColor" strokeWidth="0.8" strokeLinecap="round" />
+      <line x1="12" y1="20" x2="8" y2="24" stroke="currentColor" strokeWidth="0.8" strokeLinecap="round" />
+      <line x1="12" y1="20" x2="16" y2="24" stroke="currentColor" strokeWidth="0.8" strokeLinecap="round" />
+      <line x1="4" y1="12" x2="0" y2="8" stroke="currentColor" strokeWidth="0.8" strokeLinecap="round" />
+      <line x1="4" y1="12" x2="0" y2="16" stroke="currentColor" strokeWidth="0.8" strokeLinecap="round" />
+      <line x1="20" y1="12" x2="24" y2="8" stroke="currentColor" strokeWidth="0.8" strokeLinecap="round" />
+      <line x1="20" y1="12" x2="24" y2="16" stroke="currentColor" strokeWidth="0.8" strokeLinecap="round" />
+    </g>
+  ), []);
 
   return (
     <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
-      {/* Magical Sparkle Trail */}
-      {sparkles.map(sparkle => {
-        const age = Date.now() - sparkle.createdAt;
-        const lifeProgress = age / SPARKLE_LIFETIME;
-        const currentOpacity = sparkle.opacity * (1 - lifeProgress);
-        const currentScale = 1 + lifeProgress * 0.5;
-        
-        return (
-          <div
-            key={sparkle.id}
-            className="absolute"
-            style={{
-              left: sparkle.x,
-              top: sparkle.y,
-              transform: `translate(-50%, -50%) rotate(${sparkle.rotation + lifeProgress * 180}deg) scale(${currentScale})`,
-              opacity: currentOpacity,
-            }}
-          >
-            {/* Star shape */}
+      {snowflakes.map(flake => {
+        if (flake.type === 'crystal') {
+          return (
             <svg
-              width={sparkle.size}
-              height={sparkle.size}
+              key={flake.id}
+              className="absolute text-white/90"
+              width={flake.size * 2.5}
+              height={flake.size * 2.5}
               viewBox="0 0 24 24"
-              fill={sparkle.color}
               style={{
-                filter: `drop-shadow(0 0 ${sparkle.size / 2}px ${sparkle.color})`,
+                left: flake.x,
+                top: flake.y,
+                opacity: flake.opacity,
+                transform: `translate(-50%, -50%) rotate(${flake.rotation}deg)`,
+                filter: `blur(${flake.blur * 0.5}px) drop-shadow(0 0 ${flake.size}px rgba(200, 230, 255, 0.6))`,
               }}
             >
-              <path d="M12 0L14.59 8.41L23 12L14.59 15.59L12 24L9.41 15.59L1 12L9.41 8.41L12 0Z" />
+              {crystalPath}
             </svg>
-          </div>
+          );
+        }
+        
+        if (flake.type === 'sparkle') {
+          return (
+            <div
+              key={flake.id}
+              className="absolute"
+              style={{
+                left: flake.x,
+                top: flake.y,
+                width: flake.size,
+                height: flake.size,
+                opacity: flake.opacity,
+                transform: `translate(-50%, -50%) rotate(${flake.rotation}deg)`,
+              }}
+            >
+              <div
+                className="w-full h-full"
+                style={{
+                  background: 'linear-gradient(135deg, rgba(255,255,255,1) 0%, rgba(200,220,255,1) 50%, rgba(255,255,255,1) 100%)',
+                  clipPath: 'polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%)',
+                  filter: `drop-shadow(0 0 ${flake.size}px rgba(180, 210, 255, 0.8))`,
+                }}
+              />
+            </div>
+          );
+        }
+        
+        // Soft type - gentle bokeh-like dots
+        return (
+          <div
+            key={flake.id}
+            className="absolute rounded-full"
+            style={{
+              left: flake.x,
+              top: flake.y,
+              width: flake.size,
+              height: flake.size,
+              opacity: flake.opacity * 0.8,
+              transform: 'translate(-50%, -50%)',
+              background: `radial-gradient(circle at 30% 30%, 
+                rgba(255,255,255,1) 0%, 
+                rgba(220,235,255,0.9) 30%,
+                rgba(180,210,255,0.5) 60%, 
+                rgba(255,255,255,0) 100%)`,
+              boxShadow: `
+                0 0 ${flake.size * 1.5}px rgba(255,255,255,0.4),
+                0 0 ${flake.size * 3}px rgba(200,220,255,0.2)
+              `,
+              filter: `blur(${flake.blur}px)`,
+            }}
+          />
         );
       })}
       
-      {/* Modern Snowflakes */}
-      {snowflakes.map(flake => (
-        <div
-          key={flake.id}
-          className="absolute rounded-full"
-          style={{
-            left: flake.x,
-            top: flake.y,
-            width: flake.size,
-            height: flake.size,
-            opacity: flake.opacity,
-            background: `radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(200,220,255,0.8) 50%, rgba(255,255,255,0) 100%)`,
-            boxShadow: `0 0 ${flake.size * 2}px rgba(255,255,255,0.5), 0 0 ${flake.size * 4}px rgba(200,220,255,0.3)`,
-            filter: 'blur(0.5px)',
-          }}
-        />
-      ))}
-      
-      {/* Sleigh with Reindeer */}
-      <div
-        className="absolute transition-transform duration-75"
+      {/* Subtle ambient glow overlay */}
+      <div 
+        className="absolute inset-0 pointer-events-none"
         style={{
-          left: sleigh.x - 80,
-          top: sleigh.y - 25,
-          transform: `rotate(${(sleigh.targetX - sleigh.x) * 0.1}deg)`,
+          background: 'radial-gradient(ellipse at 50% 0%, rgba(200,220,255,0.03) 0%, transparent 50%)',
         }}
-      >
-        {/* Trail sparkles */}
-        <div className="absolute -right-2 top-1/2 flex gap-1">
-          {[0, 1, 2, 3, 4].map(i => (
-            <div
-              key={i}
-              className="w-1 h-1 rounded-full bg-yellow-300 animate-pulse"
-              style={{
-                opacity: 0.8 - i * 0.15,
-                animationDelay: `${i * 100}ms`,
-                boxShadow: '0 0 4px rgba(255,215,0,0.8)',
-              }}
-            />
-          ))}
-        </div>
-        
-        {/* Reindeer and Sleigh SVG */}
-        <svg width="160" height="50" viewBox="0 0 160 50" className="drop-shadow-lg">
-          {/* Connection lines (reins) */}
-          <path
-            d="M75 25 Q85 22 95 25"
-            stroke="#8B4513"
-            strokeWidth="1"
-            fill="none"
-            opacity="0.7"
-          />
-          <path
-            d="M75 28 Q85 31 95 28"
-            stroke="#8B4513"
-            strokeWidth="1"
-            fill="none"
-            opacity="0.7"
-          />
-          
-          {/* Front Reindeer */}
-          <g transform="translate(15, 12)">
-            {/* Body */}
-            <ellipse cx="20" cy="18" rx="15" ry="10" fill="#8B4513" />
-            {/* Head */}
-            <circle cx="38" cy="12" r="7" fill="#A0522D" />
-            {/* Antlers */}
-            <path d="M42 5 L48 -2 M45 -1 L50 0" stroke="#654321" strokeWidth="2" fill="none" strokeLinecap="round" />
-            <path d="M35 5 L32 -2 M33 -1 L28 0" stroke="#654321" strokeWidth="2" fill="none" strokeLinecap="round" />
-            {/* Red nose (Rudolph!) */}
-            <circle cx="44" cy="13" r="3" fill="#FF0000">
-              <animate attributeName="opacity" values="1;0.5;1" dur="1s" repeatCount="indefinite" />
-            </circle>
-            {/* Eye */}
-            <circle cx="39" cy="10" r="1.5" fill="#000" />
-            {/* Legs */}
-            <line x1="12" y1="28" x2="10" y2="38" stroke="#654321" strokeWidth="3" strokeLinecap="round" />
-            <line x1="28" y1="28" x2="30" y2="38" stroke="#654321" strokeWidth="3" strokeLinecap="round" />
-          </g>
-          
-          {/* Back Reindeer */}
-          <g transform="translate(45, 14)">
-            {/* Body */}
-            <ellipse cx="18" cy="16" rx="13" ry="9" fill="#A0522D" />
-            {/* Head */}
-            <circle cx="34" cy="11" r="6" fill="#8B4513" />
-            {/* Antlers */}
-            <path d="M37 5 L42 0" stroke="#654321" strokeWidth="1.5" fill="none" strokeLinecap="round" />
-            <path d="M32 5 L28 0" stroke="#654321" strokeWidth="1.5" fill="none" strokeLinecap="round" />
-            {/* Eye */}
-            <circle cx="35" cy="9" r="1" fill="#000" />
-            {/* Legs */}
-            <line x1="10" y1="25" x2="8" y2="33" stroke="#654321" strokeWidth="2.5" strokeLinecap="round" />
-            <line x1="24" y1="25" x2="26" y2="33" stroke="#654321" strokeWidth="2.5" strokeLinecap="round" />
-          </g>
-          
-          {/* Sleigh */}
-          <g transform="translate(95, 15)">
-            {/* Sleigh body */}
-            <path
-              d="M0 10 Q5 0 20 0 L55 0 Q65 0 60 15 L55 25 Q50 35 10 35 Q-5 35 0 20 Z"
-              fill="url(#sleighGradient)"
-              stroke="#8B0000"
-              strokeWidth="2"
-            />
-            {/* Sleigh runner */}
-            <path
-              d="M5 32 Q0 38 -5 38 L-8 38 Q-12 38 -10 35 L60 35 Q65 35 62 38 L58 38"
-              fill="#FFD700"
-              stroke="#DAA520"
-              strokeWidth="1"
-            />
-            {/* Decorative swirl */}
-            <path
-              d="M10 15 Q15 10 25 12"
-              stroke="#FFD700"
-              strokeWidth="2"
-              fill="none"
-              strokeLinecap="round"
-            />
-            {/* Santa silhouette */}
-            <circle cx="35" cy="5" r="8" fill="#DC143C" />
-            <circle cx="35" cy="-2" r="5" fill="#FFE4C4" />
-            {/* Santa hat */}
-            <path d="M30 -5 Q35 -15 42 -8" fill="#DC143C" />
-            <circle cx="42" cy="-8" r="2" fill="white" />
-          </g>
-          
-          {/* Gradient definitions */}
-          <defs>
-            <linearGradient id="sleighGradient" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#DC143C" />
-              <stop offset="50%" stopColor="#B22222" />
-              <stop offset="100%" stopColor="#8B0000" />
-            </linearGradient>
-          </defs>
-        </svg>
-      </div>
+      />
     </div>
   );
 };
