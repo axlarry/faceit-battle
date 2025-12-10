@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 
 interface Snowflake {
   id: number;
@@ -18,9 +18,26 @@ interface SleighPosition {
   targetY: number;
 }
 
+interface Sparkle {
+  id: number;
+  x: number;
+  y: number;
+  size: number;
+  opacity: number;
+  rotation: number;
+  color: string;
+  createdAt: number;
+}
+
+const SPARKLE_COLORS = ['#FFD700', '#FFF8DC', '#FFFACD', '#FFE4B5', '#FF69B4', '#87CEEB', '#E6E6FA'];
+const SPARKLE_LIFETIME = 1500;
+
 const Snowflakes = () => {
   const [snowflakes, setSnowflakes] = useState<Snowflake[]>([]);
   const [sleigh, setSleigh] = useState<SleighPosition>({ x: 100, y: 100, targetX: 100, targetY: 100 });
+  const [sparkles, setSparkles] = useState<Sparkle[]>([]);
+  const sparkleIdRef = useRef(0);
+  const lastSparkleTime = useRef(0);
 
   // Initialize snowflakes
   useEffect(() => {
@@ -73,6 +90,32 @@ const Snowflakes = () => {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, [handleMouseMove]);
 
+  // Create sparkles behind sleigh
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = Date.now();
+      if (now - lastSparkleTime.current > 50) {
+        lastSparkleTime.current = now;
+        
+        // Add new sparkles
+        const newSparkles: Sparkle[] = Array.from({ length: 3 }, () => ({
+          id: sparkleIdRef.current++,
+          x: sleigh.x + 70 + Math.random() * 20 - 10,
+          y: sleigh.y + Math.random() * 20 - 10,
+          size: Math.random() * 8 + 4,
+          opacity: 1,
+          rotation: Math.random() * 360,
+          color: SPARKLE_COLORS[Math.floor(Math.random() * SPARKLE_COLORS.length)],
+          createdAt: now,
+        }));
+        
+        setSparkles(prev => [...prev.filter(s => now - s.createdAt < SPARKLE_LIFETIME), ...newSparkles]);
+      }
+    }, 50);
+    
+    return () => clearInterval(interval);
+  }, [sleigh.x, sleigh.y]);
+
   // Smooth sleigh animation following mouse
   useEffect(() => {
     let animationId: number;
@@ -92,6 +135,40 @@ const Snowflakes = () => {
 
   return (
     <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden">
+      {/* Magical Sparkle Trail */}
+      {sparkles.map(sparkle => {
+        const age = Date.now() - sparkle.createdAt;
+        const lifeProgress = age / SPARKLE_LIFETIME;
+        const currentOpacity = sparkle.opacity * (1 - lifeProgress);
+        const currentScale = 1 + lifeProgress * 0.5;
+        
+        return (
+          <div
+            key={sparkle.id}
+            className="absolute"
+            style={{
+              left: sparkle.x,
+              top: sparkle.y,
+              transform: `translate(-50%, -50%) rotate(${sparkle.rotation + lifeProgress * 180}deg) scale(${currentScale})`,
+              opacity: currentOpacity,
+            }}
+          >
+            {/* Star shape */}
+            <svg
+              width={sparkle.size}
+              height={sparkle.size}
+              viewBox="0 0 24 24"
+              fill={sparkle.color}
+              style={{
+                filter: `drop-shadow(0 0 ${sparkle.size / 2}px ${sparkle.color})`,
+              }}
+            >
+              <path d="M12 0L14.59 8.41L23 12L14.59 15.59L12 24L9.41 15.59L1 12L9.41 8.41L12 0Z" />
+            </svg>
+          </div>
+        );
+      })}
+      
       {/* Modern Snowflakes */}
       {snowflakes.map(flake => (
         <div
