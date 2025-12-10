@@ -31,18 +31,20 @@ class StreamingService {
       }
 
       const data: StreamsResponse = await response.json();
-      
+
       this.cachedStreams.clear();
       
-      if (data.items) {
-        Object.entries(data.items).forEach(([path, info]) => {
-          // Extract stream name from path (e.g., "live/Lacurte" -> "Lacurte")
-          const streamName = path.replace('live/', '');
-          if (info.ready) {
+      if (data.items && Array.isArray(data.items)) {
+        data.items.forEach((item) => {
+          // Extract stream name from path (e.g., "live/Suzeta" -> "Suzeta")
+          if (item.name.startsWith('live/') && item.ready) {
+            const streamName = item.name.replace('live/', '');
             this.cachedStreams.set(streamName.toLowerCase(), true);
           }
         });
       }
+      
+      console.log('Active streams found:', Object.fromEntries(this.cachedStreams));
 
       this.lastFetch = now;
       return Object.fromEntries(this.cachedStreams);
