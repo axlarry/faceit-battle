@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { memo, useMemo } from 'react';
 
 interface PlayerStatsCompactProps {
   wins: number;
@@ -8,25 +7,30 @@ interface PlayerStatsCompactProps {
   kdRatio: number;
 }
 
-export const PlayerStatsCompact = ({ wins, winRate, hsRate, kdRatio }: PlayerStatsCompactProps) => {
+const StatItem = memo(({ value, label }: { value: string | number; label: string }) => (
+  <div className="text-center">
+    <div className="text-foreground font-bold">{value}</div>
+    <div className="text-muted-foreground">{label}</div>
+  </div>
+));
+
+StatItem.displayName = 'StatItem';
+
+export const PlayerStatsCompact = memo(({ wins, winRate, hsRate, kdRatio }: PlayerStatsCompactProps) => {
+  const stats = useMemo(() => [
+    { value: wins, label: 'W' },
+    { value: `${winRate}%`, label: 'WR' },
+    { value: `${hsRate}%`, label: 'HS' },
+    { value: kdRatio, label: 'K/D' },
+  ], [wins, winRate, hsRate, kdRatio]);
+
   return (
     <div className="flex gap-3 text-xs">
-      <div className="text-center">
-        <div className="text-white font-bold">{wins}</div>
-        <div className="text-gray-400">W</div>
-      </div>
-      <div className="text-center">
-        <div className="text-white font-bold">{winRate}%</div>
-        <div className="text-gray-400">WR</div>
-      </div>
-      <div className="text-center">
-        <div className="text-white font-bold">{hsRate}%</div>
-        <div className="text-gray-400">HS</div>
-      </div>
-      <div className="text-center">
-        <div className="text-white font-bold">{kdRatio}</div>
-        <div className="text-gray-400">K/D</div>
-      </div>
+      {stats.map((stat, idx) => (
+        <StatItem key={idx} value={stat.value} label={stat.label} />
+      ))}
     </div>
   );
-};
+});
+
+PlayerStatsCompact.displayName = 'PlayerStatsCompact';
