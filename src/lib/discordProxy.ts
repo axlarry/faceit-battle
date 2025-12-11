@@ -86,7 +86,8 @@ export const invokeEdgeFunction = async (
   console.log(`🎮 Discord proxy: Calling ${functionName}`, {
     isDiscord,
     baseUrl,
-    fullUrl: url
+    fullUrl: url,
+    body: JSON.stringify(body).substring(0, 200)
   });
   
   try {
@@ -99,6 +100,8 @@ export const invokeEdgeFunction = async (
       },
       body: JSON.stringify(body),
     });
+
+    console.log(`📡 Response status for ${functionName}:`, response.status, response.statusText);
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -115,11 +118,16 @@ export const invokeEdgeFunction = async (
     }
 
     const data = await response.json();
-    console.log(`✅ Edge function ${functionName} success`);
+    console.log(`✅ Edge function ${functionName} success:`, {
+      hasData: !!data,
+      dataType: typeof data,
+      keys: data ? Object.keys(data) : [],
+      itemsCount: data?.items?.length
+    });
     return { data, error: null };
   } catch (error) {
     console.error(`❌ Edge function ${functionName} fetch error:`, {
-      error,
+      error: error instanceof Error ? error.message : String(error),
       url,
       isDiscord
     });
