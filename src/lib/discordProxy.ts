@@ -4,10 +4,11 @@
  * Discord Activities have strict CSP that blocks external connections.
  * All external requests MUST go through Discord's proxy at /.proxy/
  * 
- * URL Mapping required in Discord Developer Portal → Activities → URL Mappings:
+ * URL Mappings required in Discord Developer Portal → Activities → URL Mappings:
  * 
  * PREFIX          | TARGET
  * /supabase       | https://rwizxoeyatdtggrpnpmq.supabase.co
+ * /lacurte        | https://faceit.lacurte.ro
  * 
  * In Discord, requests to /.proxy/supabase/* will be forwarded to the target.
  * The /.proxy/ prefix is REQUIRED by Discord's CSP.
@@ -15,6 +16,8 @@
 
 const SUPABASE_URL = "https://rwizxoeyatdtggrpnpmq.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ3aXp4b2V5YXRkdGdncnBucG1xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2OTkwOTYsImV4cCI6MjA2NDI3NTA5Nn0.6Rpmb1a2iFqw2VZaHl-k-3otQlQuDpaxUPf28uOlLRU";
+
+const LACURTE_URL = "https://faceit.lacurte.ro";
 
 // Cache the detection result
 let _isDiscordActivity: boolean | null = null;
@@ -49,16 +52,23 @@ export const isDiscordActivity = (): boolean => {
 /**
  * Get the base URL for Supabase requests
  * Uses Discord proxy when running as Discord Activity
- * 
- * IMPORTANT: Discord requires /.proxy/ prefix for all mapped URLs
  */
 export const getSupabaseBaseUrl = (): string => {
   if (isDiscordActivity()) {
-    // Discord proxy format: /.proxy/{mapping_prefix}
-    // The /supabase mapping must be configured in Discord Developer Portal
     return '/.proxy/supabase';
   }
   return SUPABASE_URL;
+};
+
+/**
+ * Get the base URL for faceit.lacurte.ro requests
+ * Uses Discord proxy when running as Discord Activity
+ */
+export const getLacurteBaseUrl = (): string => {
+  if (isDiscordActivity()) {
+    return '/.proxy/lacurte';
+  }
+  return LACURTE_URL;
 };
 
 /**

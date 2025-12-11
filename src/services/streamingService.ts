@@ -1,8 +1,6 @@
 
 import { StreamsResponse, LiveStream } from '@/types/streaming';
-
-const STREAM_API_BASE = 'https://faceit.lacurte.ro/stream-api';
-const HLS_BASE = 'https://faceit.lacurte.ro/hls';
+import { getLacurteBaseUrl, isDiscordActivity } from '@/lib/discordProxy';
 
 interface StreamData {
   originalName: string;
@@ -15,6 +13,14 @@ class StreamingService {
   private lastFetch: number = 0;
   private readonly CACHE_DURATION = 5000; // 5 seconds
 
+  private getStreamApiBase(): string {
+    return `${getLacurteBaseUrl()}/stream-api`;
+  }
+
+  private getHlsBase(): string {
+    return `${getLacurteBaseUrl()}/hls`;
+  }
+
   async getActiveStreams(): Promise<Record<string, StreamData>> {
     const now = Date.now();
     
@@ -23,8 +29,15 @@ class StreamingService {
       return Object.fromEntries(this.cachedStreams);
     }
 
+    const apiUrl = `${this.getStreamApiBase()}/v3/paths/list`;
+    
+    console.log('📺 Fetching active streams:', {
+      url: apiUrl,
+      isDiscord: isDiscordActivity()
+    });
+
     try {
-      const response = await fetch(`${STREAM_API_BASE}/v3/paths/list`, {
+      const response = await fetch(apiUrl, {
         method: 'GET',
         headers: {
           'Accept': 'application/json',
@@ -54,12 +67,12 @@ class StreamingService {
         });
       }
       
-      console.log('Active streams found:', Object.fromEntries(this.cachedStreams));
+      console.log('✅ Active streams found:', Object.fromEntries(this.cachedStreams));
 
       this.lastFetch = now;
       return Object.fromEntries(this.cachedStreams);
     } catch (error) {
-      console.error('Error fetching active streams:', error);
+      console.error('❌ Error fetching active streams:', error);
       return Object.fromEntries(this.cachedStreams);
     }
   }
@@ -72,11 +85,12 @@ class StreamingService {
   getStreamUrl(nickname: string): string {
     // Use original case from cache if available, otherwise use provided nickname
     const streamData = this.cachedStreams.get(nickname.toLowerCase());
-    return `${HLS_BASE}/live/${streamData?.originalName || nickname}/index.m3u8`;
+    return `${this.getHlsBase()}/live/${streamData?.originalName || nickname}/index.m3u8`;
   }
 
   async getLiveStreamsForFriends(nicknames: string[]): Promise<LiveStream[]> {
     const activeStreams = await this.getActiveStreams();
+    const hlsBase = this.getHlsBase();
     
     return nicknames.map(nickname => {
       const streamData = activeStreams[nickname.toLowerCase()];
@@ -85,7 +99,7 @@ class StreamingService {
       return {
         nickname,
         isLive,
-        streamUrl: isLive ? `${HLS_BASE}/live/${streamData.originalName}/index.m3u8` : undefined,
+        streamUrl: isLive ? `${hlsBase}/live/${streamData.originalName}/index.m3u8` : undefined,
         viewers: streamData?.viewers || 0,
       };
     });
