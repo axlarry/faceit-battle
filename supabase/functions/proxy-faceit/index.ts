@@ -113,6 +113,11 @@ serve(async (req) => {
       if (response.status === 429) {
         return new Response(JSON.stringify({ error: 'Rate limited' }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       }
+      // For search endpoints, 404 means no results - return empty array instead of error
+      if (response.status === 404 && endpoint.includes('/search/')) {
+        console.log(`[proxy-faceit] search 404 - returning empty result`);
+        return new Response(JSON.stringify({ items: [] }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
       const text = await response.text();
       return new Response(JSON.stringify({ error: 'Faceit API error', status: response.status, details: text }), { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
