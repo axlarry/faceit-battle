@@ -22,5 +22,5 @@ export interface LiveStream {
   nickname: string;
   isLive: boolean;
   streamUrl?: string;
-  viewers?: number;
+  viewers: number;
 }
