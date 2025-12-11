@@ -437,8 +437,11 @@ serve(async (req) => {
       return new Response(JSON.stringify({ success: true, updated: updateData }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    // Automatic nickname sync (no password required - for internal use)
+    // Nickname sync (password required to prevent unauthorized modifications)
     if (action === 'sync_nickname') {
+      if (!requirePassword(body.password)) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
       const { playerId, newNickname, newAvatar } = body;
       if (!playerId || !newNickname) {
         return new Response(JSON.stringify({ error: 'Missing playerId or newNickname' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
