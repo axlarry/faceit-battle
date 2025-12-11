@@ -5,11 +5,12 @@ const STREAM_API_BASE = 'https://faceit.lacurte.ro/stream-api';
 const HLS_BASE = 'https://faceit.lacurte.ro/hls';
 
 class StreamingService {
-  private cachedStreams: Map<string, boolean> = new Map();
+  // Key: lowercase nickname, Value: original stream name (preserves case)
+  private cachedStreams: Map<string, string> = new Map();
   private lastFetch: number = 0;
   private readonly CACHE_DURATION = 5000; // 5 seconds
 
-  async getActiveStreams(): Promise<Record<string, boolean>> {
+  async getActiveStreams(): Promise<Record<string, string>> {
     const now = Date.now();
     
     // Return cached data if fresh
@@ -39,7 +40,8 @@ class StreamingService {
           // Extract stream name from path (e.g., "live/Suzeta" -> "Suzeta")
           if (item.name.startsWith('live/') && item.ready) {
             const streamName = item.name.replace('live/', '');
-            this.cachedStreams.set(streamName.toLowerCase(), true);
+            // Store: key=lowercase, value=original name (preserves case for HLS URL)
+            this.cachedStreams.set(streamName.toLowerCase(), streamName);
           }
         });
       }
@@ -56,21 +58,29 @@ class StreamingService {
 
   async checkStreamStatus(nickname: string): Promise<boolean> {
     const activeStreams = await this.getActiveStreams();
-    return activeStreams[nickname.toLowerCase()] ?? false;
+    return !!activeStreams[nickname.toLowerCase()];
   }
 
   getStreamUrl(nickname: string): string {
-    return `${HLS_BASE}/live/${nickname}/index.m3u8`;
+    // Use original case from cache if available, otherwise use provided nickname
+    const originalName = this.cachedStreams.get(nickname.toLowerCase());
+    return `${HLS_BASE}/live/${originalName || nickname}/index.m3u8`;
   }
 
   async getLiveStreamsForFriends(nicknames: string[]): Promise<LiveStream[]> {
     const activeStreams = await this.getActiveStreams();
     
-    return nicknames.map(nickname => ({
-      nickname,
-      isLive: activeStreams[nickname.toLowerCase()] ?? false,
-      streamUrl: this.getStreamUrl(nickname),
-    }));
+    return nicknames.map(nickname => {
+      const originalName = activeStreams[nickname.toLowerCase()];
+      const isLive = !!originalName;
+      
+      return {
+        nickname,
+        isLive,
+        // Use original case-preserved name from MediaMTX for HLS URL
+        streamUrl: isLive ? `${HLS_BASE}/live/${originalName}/index.m3u8` : undefined,
+      };
+    });
   }
 }
 

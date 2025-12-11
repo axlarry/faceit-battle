@@ -3,7 +3,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import Hls from 'hls.js';
 import { X, Maximize2, Minimize2, Volume2, VolumeX, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { LiveStream } from '@/types/streaming';
 
 interface LiveStreamPlayerProps {
@@ -100,7 +101,10 @@ export const LiveStreamPlayer = ({ stream, isOpen, onClose }: LiveStreamPlayerPr
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-5xl w-[95vw] p-0 bg-black border-border overflow-hidden">
+      <DialogContent className="max-w-5xl w-[95vw] p-0 bg-black border-border overflow-hidden" aria-describedby={undefined}>
+        <VisuallyHidden>
+          <DialogTitle>Live Stream - {stream?.nickname}</DialogTitle>
+        </VisuallyHidden>
         {/* Header */}
         <div className="flex items-center justify-between p-4 bg-gradient-to-b from-black/80 to-transparent absolute top-0 left-0 right-0 z-10">
           <div className="flex items-center gap-3">
