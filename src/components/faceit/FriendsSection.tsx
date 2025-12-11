@@ -10,6 +10,7 @@ import { FriendsList } from "./FriendsList";
 import { FriendActionDialog } from "./FriendActionDialog";
 import { PasswordDialog } from "./PasswordDialog";
 import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction, isDiscordActivity } from "@/lib/discordProxy";
 import { toast } from "@/hooks/use-toast";
 import { useLcryptDataManager } from "@/hooks/useLcryptDataManager";
 import { useLiveStreams } from "@/hooks/useLiveStreams";
@@ -142,9 +143,11 @@ export const FriendsSection = ({
         onClose={() => setShowMigratePassword(false)}
         onConfirm={async (password) => {
           try {
-            const { data, error } = await supabase.functions.invoke('friends-gateway', {
-              body: { action: 'migrate_auto', password }
-            });
+            const invokeFn = isDiscordActivity() 
+              ? (body: Record<string, unknown>) => invokeEdgeFunction('friends-gateway', body)
+              : (body: Record<string, unknown>) => supabase.functions.invoke('friends-gateway', { body });
+            
+            const { data, error } = await invokeFn({ action: 'migrate_auto', password });
             if (error) {
               toast({ title: 'Migrare eșuată', description: 'Parola invalidă sau eroare la gateway.', variant: 'destructive' });
               return;

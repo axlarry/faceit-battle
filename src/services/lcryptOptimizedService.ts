@@ -1,5 +1,14 @@
 
 import { supabase } from '@/integrations/supabase/client';
+import { invokeEdgeFunction, isDiscordActivity } from '@/lib/discordProxy';
+
+// Helper to invoke edge functions with Discord proxy support
+const invokeFunction = async (functionName: string, body: Record<string, unknown>) => {
+  if (isDiscordActivity()) {
+    return invokeEdgeFunction(functionName, body);
+  }
+  return supabase.functions.invoke(functionName, { body });
+};
 
 export interface OptimizedLcryptData {
   // Datele ELO și statistici generale
@@ -53,9 +62,7 @@ export class LcryptOptimizedService {
     try {
       console.log(`🔍 Fetching complete Lcrypt data for nickname: ${nickname}`);
       
-      const { data, error } = await supabase.functions.invoke('get-lcrypt-elo', {
-        body: { nickname }
-      });
+      const { data, error } = await invokeFunction('get-lcrypt-elo', { nickname });
 
       if (error) {
         console.warn(`Lcrypt API error for ${nickname}:`, error);
