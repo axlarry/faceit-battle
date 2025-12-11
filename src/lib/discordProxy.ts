@@ -2,11 +2,15 @@
  * Discord Activity Proxy Helper
  * 
  * Discord Activities have strict CSP that blocks external connections.
- * We need to use URL mappings configured in Discord Developer Portal
- * and route requests through Discord's proxy at /.proxy/
+ * All external requests MUST go through Discord's proxy at /.proxy/
  * 
- * URL Mapping required in Discord Developer Portal:
- * Prefix: /supabase -> Target: https://rwizxoeyatdtggrpnpmq.supabase.co
+ * URL Mapping required in Discord Developer Portal → Activities → URL Mappings:
+ * 
+ * PREFIX          | TARGET
+ * /supabase       | https://rwizxoeyatdtggrpnpmq.supabase.co
+ * 
+ * In Discord, requests to /.proxy/supabase/* will be forwarded to the target.
+ * The /.proxy/ prefix is REQUIRED by Discord's CSP.
  */
 
 const SUPABASE_URL = "https://rwizxoeyatdtggrpnpmq.supabase.co";
@@ -26,27 +30,32 @@ export const isDiscordActivity = (): boolean => {
     return false;
   }
   
-  // Check if we're on Discord's domain
-  const isDiscordDomain = window.location.hostname.endsWith('.discordsays.com') ||
-                          window.location.hostname.endsWith('.discord.com');
+  // Check if we're on Discord's domain (*.discordsays.com for activities)
+  const hostname = window.location.hostname;
+  const isDiscordDomain = hostname.endsWith('.discordsays.com') ||
+                          hostname.includes('discordsays.com');
   
-  // Check for Discord-specific indicators in iframe
-  const isInIframe = window.self !== window.top;
+  // Log for debugging
+  console.log('🎮 Discord Activity Check:', {
+    hostname,
+    isDiscordDomain,
+    href: window.location.href
+  });
   
-  // Check for Discord referrer
-  const hasDiscordReferrer = document.referrer.includes('discord.com');
-  
-  _isDiscordActivity = isDiscordDomain || (isInIframe && hasDiscordReferrer);
+  _isDiscordActivity = isDiscordDomain;
   return _isDiscordActivity;
 };
 
 /**
  * Get the base URL for Supabase requests
  * Uses Discord proxy when running as Discord Activity
+ * 
+ * IMPORTANT: Discord requires /.proxy/ prefix for all mapped URLs
  */
 export const getSupabaseBaseUrl = (): string => {
   if (isDiscordActivity()) {
-    // Use Discord's proxy path (configured in Developer Portal)
+    // Discord proxy format: /.proxy/{mapping_prefix}
+    // The /supabase mapping must be configured in Discord Developer Portal
     return '/.proxy/supabase';
   }
   return SUPABASE_URL;
@@ -62,9 +71,15 @@ export const invokeEdgeFunction = async (
   const baseUrl = getSupabaseBaseUrl();
   const url = `${baseUrl}/functions/v1/${functionName}`;
   
+  const isDiscord = isDiscordActivity();
+  
+  console.log(`🎮 Discord proxy: Calling ${functionName}`, {
+    isDiscord,
+    baseUrl,
+    fullUrl: url
+  });
+  
   try {
-    console.log(`🎮 Discord proxy: Calling ${functionName} via ${isDiscordActivity() ? 'proxy' : 'direct'}`);
-    
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -77,7 +92,12 @@ export const invokeEdgeFunction = async (
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error(`Edge function ${functionName} error:`, response.status, errorText);
+      console.error(`❌ Edge function ${functionName} error:`, {
+        status: response.status,
+        statusText: response.statusText,
+        error: errorText,
+        url
+      });
       return {
         data: null,
         error: new Error(`${response.status}: ${errorText}`),
@@ -85,9 +105,14 @@ export const invokeEdgeFunction = async (
     }
 
     const data = await response.json();
+    console.log(`✅ Edge function ${functionName} success`);
     return { data, error: null };
   } catch (error) {
-    console.error(`Edge function ${functionName} fetch error:`, error);
+    console.error(`❌ Edge function ${functionName} fetch error:`, {
+      error,
+      url,
+      isDiscord
+    });
     return {
       data: null,
       error: error instanceof Error ? error : new Error(String(error)),
@@ -95,13 +120,20 @@ export const invokeEdgeFunction = async (
   }
 };
 
+/**
+ * Get anon key for direct usage
+ */
+export const getSupabaseAnonKey = (): string => SUPABASE_ANON_KEY;
+
 // Log environment on load
 if (typeof window !== 'undefined') {
   // Defer logging to avoid blocking
   setTimeout(() => {
-    console.log('🎮 Discord Activity detected:', isDiscordActivity());
-    if (isDiscordActivity()) {
-      console.log('🔗 Using Discord proxy for Supabase calls');
-    }
+    const isDiscord = isDiscordActivity();
+    console.log('🎮 Discord Activity Environment:', {
+      detected: isDiscord,
+      hostname: window.location.hostname,
+      proxyUrl: isDiscord ? getSupabaseBaseUrl() : 'N/A (direct)',
+    });
   }, 100);
 }
