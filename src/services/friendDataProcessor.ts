@@ -22,9 +22,7 @@ export class FriendDataProcessor {
     setLoadingFriends(prev => new Set(prev).add(friend.nickname));
 
     try {
-      console.log(`🚀 OPTIMIZED: Fetching complete data for ${friend.nickname}...`);
-      
-      // V2.0 Optimized data fetching with performance monitoring
+      // Optimized data fetching
       let currentNickname = friend.nickname;
       let basicData: any = null;
       
@@ -35,28 +33,23 @@ export class FriendDataProcessor {
         );
         currentNickname = basicData?.nickname || friend.nickname;
       } catch (e) {
-        console.warn(`⚠️ Could not refresh basic data for ${friend.nickname} by id ${friend.player_id}`, e);
+        // Silent fail for basic data
       }
       
-      // V2.0 Optimized Lcrypt data fetching with LIVE detection
+      // Lcrypt data fetching with LIVE detection
       const optimizedData = await performanceMonitor.measureAsyncTime(
         `lcrypt-api-${currentNickname}`,
         () => lcryptOptimizedService.getCompletePlayerData(currentNickname)
       );
       
-      // OPTIMIZED: Cover image doar dacă nu există în cache
+      // Cover image with caching
       let coverImage = friend.cover_image;
       if (!coverImage) {
         if (this.coverImageCache.has(currentNickname)) {
           coverImage = this.coverImageCache.get(currentNickname);
-          console.log(`📦 OPTIMIZED: Using cached cover image for ${currentNickname}`);
         } else {
-          console.log(`🖼️ OPTIMIZED: Fetching cover image for ${currentNickname} (first time only)`);
           coverImage = await playerService.getPlayerCoverImage(currentNickname);
           this.coverImageCache.set(currentNickname, coverImage);
-          if (coverImage) {
-            console.log(`✅ OPTIMIZED: Cover image fetched and cached for ${currentNickname}`);
-          }
         }
       }
       
@@ -77,11 +70,12 @@ export class FriendDataProcessor {
         cover_image: coverImage || friend.cover_image
       };
 
-      // Auto-sync nickname changes to database if detected
-      if (currentNickname !== friend.nickname) {
-        console.log(`🔄 AUTO-SYNC: Nickname changed ${friend.nickname} -> ${currentNickname}`);
+      // Auto-sync changes (nickname or avatar) to database
+      const nicknameChanged = currentNickname !== friend.nickname;
+      const avatarChanged = basicData?.avatar && basicData.avatar !== friend.avatar;
+      
+      if (nicknameChanged || avatarChanged) {
         try {
-          // Update nickname in Supabase friends table (silent update, no password required for data sync)
           const { invokeEdgeFunction, isDiscordActivity } = await import('@/lib/discordProxy');
           const { supabase } = await import('@/integrations/supabase/client');
           
@@ -94,11 +88,9 @@ export class FriendDataProcessor {
             playerId: friend.player_id,
             newNickname: currentNickname,
             newAvatar: basicData?.avatar
-          }).catch(() => {
-            console.warn(`⚠️ Could not sync nickname change for ${friend.player_id}`);
-          });
+          }).catch(() => {});
         } catch (error) {
-          console.warn('Nickname sync failed:', error);
+          // Silent fail for sync
         }
       }
 
@@ -117,9 +109,6 @@ export class FriendDataProcessor {
         ...prev,
         [friend.player_id]: liveMatchInfo
       }));
-
-      console.log(`✅ OPTIMIZED: Updated ${friend.nickname} with 1 API call instead of 3`);
-      console.log(`📊 OPTIMIZATION: ELO=${updatedFriend.elo}, Live=${updatedFriend.isLive}, Cover=${!!coverImage ? 'cached' : 'none'}`);
       
       // Actualizează prietenul în lista principală
       setFriendsWithLcrypt(prevFriends => 
@@ -137,7 +126,6 @@ export class FriendDataProcessor {
 
       return updatedFriend;
     } catch (error) {
-      console.error(`❌ Failed to fetch OPTIMIZED data for ${friend.nickname}:`, error);
       
       // Actualizează cu date null în caz de eroare
       const failedFriend: FriendWithLcrypt = { ...friend, lcryptData: null };
@@ -178,10 +166,8 @@ export class FriendDataProcessor {
       .map(result => result.value);
   }
 
-  // Metodă pentru curățarea cache-ului dacă este necesar
   clearCoverImageCache() {
     this.coverImageCache.clear();
-    console.log('🧹 OPTIMIZED: Cover image cache cleared');
   }
 }
 
