@@ -12,6 +12,9 @@ import { PasswordDialog } from "./PasswordDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useLcryptDataManager } from "@/hooks/useLcryptDataManager";
+import { useLiveStreams } from "@/hooks/useLiveStreams";
+import { LiveStreamPlayer } from "@/components/streaming/LiveStreamPlayer";
+import { LiveStream } from "@/types/streaming";
 
 interface FriendsSectionProps {
   friends: Player[];
@@ -50,6 +53,22 @@ export const FriendsSection = ({
   // Password dialog pentru migrare
   const [showMigratePassword, setShowMigratePassword] = React.useState(false);
 
+  // Streaming state
+  const { liveStreams } = useLiveStreams({ friends, enabled: true, refreshInterval: 10000 });
+  const [selectedStream, setSelectedStream] = React.useState<LiveStream | null>(null);
+  const [isPlayerOpen, setIsPlayerOpen] = React.useState(false);
+
+  // Create a map of streaming friends for quick lookup
+  const streamingFriends = React.useMemo(() => {
+    const map = new Map<string, LiveStream>();
+    liveStreams.forEach(stream => {
+      if (stream.isLive) {
+        map.set(stream.nickname.toLowerCase(), stream);
+      }
+    });
+    return map;
+  }, [liveStreams]);
+
   // Handle pending friend actions with optimized functions
   const {
     showPasswordDialog,
@@ -62,6 +81,17 @@ export const FriendsSection = ({
 
   // Handle flashing player state
   const { flashingPlayer, handlePlayerClick } = useFlashingPlayer(onShowPlayerDetails);
+
+  // Handle streaming friend click
+  const handleFriendClick = React.useCallback((player: Player) => {
+    const stream = streamingFriends.get(player.nickname.toLowerCase());
+    if (stream) {
+      setSelectedStream(stream);
+      setIsPlayerOpen(true);
+    } else {
+      handlePlayerClick(player);
+    }
+  }, [streamingFriends, handlePlayerClick]);
 
   return (
     <div className="space-y-4 px-4 md:px-0">
@@ -89,7 +119,8 @@ export const FriendsSection = ({
               flashingPlayer={flashingPlayer}
               loadingFriends={loadingFriends}
               liveMatches={liveMatches}
-              onPlayerClick={handlePlayerClick}
+              streamingFriends={streamingFriends}
+              onPlayerClick={handleFriendClick}
             />
           )}
         </div>
@@ -125,6 +156,16 @@ export const FriendsSection = ({
         }}
         title="Migrează lista veche"
         description="Introdu parola pentru a migra lista ta veche de prieteni în lista publică."
+      />
+
+      {/* Stream Player */}
+      <LiveStreamPlayer
+        stream={selectedStream}
+        isOpen={isPlayerOpen}
+        onClose={() => {
+          setIsPlayerOpen(false);
+          setSelectedStream(null);
+        }}
       />
     </div>
   );

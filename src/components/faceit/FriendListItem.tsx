@@ -1,7 +1,7 @@
 import React from 'react';
 import { Player } from "@/types/Player";
 import { useSteamIdConverter } from './SteamIdConverter';
-import { LoaderCircle, Zap, Crown } from 'lucide-react';
+import { LoaderCircle, Zap, Crown, Video } from 'lucide-react';
 import { PlayerAvatar } from './PlayerAvatar';
 import { PlayerInfo } from './PlayerInfo';
 import { PlayerStatsCompact } from './PlayerStatsCompact';
@@ -16,6 +16,7 @@ interface FriendListItemProps {
   isFlashing: boolean;
   isLoadingElo: boolean;
   isLive?: boolean;
+  isStreaming?: boolean;
   liveCompetition?: string;
   liveMatchDetails?: any;
   onPlayerClick: (player: Player) => void;
@@ -26,6 +27,7 @@ export const FriendListItem = React.memo(({
   isFlashing,
   isLoadingElo,
   isLive = false,
+  isStreaming = false,
   liveCompetition,
   liveMatchDetails,
   onPlayerClick
@@ -42,6 +44,17 @@ export const FriendListItem = React.memo(({
 
   // Modern styling system
   const getPlayerStyles = () => {
+    // Streaming takes highest priority
+    if (isStreaming) {
+      return {
+        border: 'border-red-500/70',
+        background: 'from-red-600/25 via-orange-500/15 to-red-600/25',
+        glow: 'shadow-2xl shadow-red-500/50',
+        accent: 'red',
+        pulseColor: 'bg-red-500'
+      };
+    }
+
     if (isLive) {
       return {
         border: 'border-emerald-400/60',
@@ -143,8 +156,17 @@ export const FriendListItem = React.memo(({
             </div>
           </div>}
 
-        {/* Live indicator */}
-        {isLive && <div className="absolute top-4 right-4 z-20">
+        {/* Streaming indicator - takes priority over live match indicator */}
+        {isStreaming && <div className="absolute top-4 right-4 z-20">
+            <div className="flex items-center gap-2 bg-gradient-to-r from-red-600 to-orange-500 px-3 py-1.5 rounded-full border border-red-400/50 backdrop-blur-sm animate-pulse">
+              <Video size={14} className="text-white" />
+              <span className="text-white text-xs font-bold">STREAMING</span>
+              <div className="w-2 h-2 bg-white rounded-full animate-ping"></div>
+            </div>
+          </div>}
+
+        {/* Live match indicator - only show if not streaming */}
+        {isLive && !isStreaming && <div className="absolute top-4 right-4 z-20">
             <div className="flex items-center gap-2 bg-gradient-to-r from-red-500 to-red-600 px-3 py-1.5 rounded-full border border-red-400/50 backdrop-blur-sm">
               <div className="w-2 h-2 bg-red-200 rounded-full animate-pulse"></div>
               <span className="text-white text-xs font-bold">LIVE</span>
