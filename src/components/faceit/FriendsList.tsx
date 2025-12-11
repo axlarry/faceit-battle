@@ -1,9 +1,7 @@
-
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Player } from "@/types/Player";
 import { FriendListItem } from './FriendListItem';
 import { LiveStream } from '@/types/streaming';
-
 
 interface FriendsWithLcrypt extends Player {
   lcryptData?: any;
@@ -23,6 +21,7 @@ interface FriendsListProps {
   liveMatches: Record<string, LiveMatchInfo>;
   streamingFriends: Map<string, LiveStream>;
   onPlayerClick: (player: Player) => void;
+  onWatchStream?: (player: Player) => void;
 }
 
 export const FriendsList = React.memo(({ 
@@ -31,7 +30,8 @@ export const FriendsList = React.memo(({
   loadingFriends,
   liveMatches,
   streamingFriends,
-  onPlayerClick 
+  onPlayerClick,
+  onWatchStream
 }: FriendsListProps) => {
   // Sort friends by ELO in descending order (highest first)
   const sortedFriends = React.useMemo(() => {
@@ -42,10 +42,8 @@ export const FriendsList = React.memo(({
     });
   }, [friends]);
 
-
   return (
     <div className="relative space-y-3 px-1">
-
       {/* All Friends in Rank Order */}
       {sortedFriends.map((friend, index) => {
         const liveInfo = liveMatches[friend.player_id];
@@ -62,6 +60,7 @@ export const FriendsList = React.memo(({
             liveCompetition={liveInfo?.competition}
             liveMatchDetails={liveInfo?.matchDetails}
             onPlayerClick={onPlayerClick}
+            onWatchStream={onWatchStream}
           />
         );
       })}

@@ -1,5 +1,4 @@
-
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Player } from '@/types/Player';
 
 interface PendingAction {
@@ -15,31 +14,31 @@ export const usePendingFriendActions = (
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
 
-  const handlePlayerFound = (player: Player) => {
+  const handlePlayerFound = useCallback((player: Player) => {
     setPendingAction({ type: 'add', player });
     setShowPasswordDialog(true);
-  };
+  }, []);
 
-  const handleRemoveFriend = (playerId: string) => {
+  const handleRemoveFriend = useCallback((playerId: string) => {
     setPendingAction({ type: 'remove', playerId });
     setShowPasswordDialog(true);
-  };
+  }, []);
 
-  const confirmAction = (password: string) => {
-    if (pendingAction) {
-      if (pendingAction.type === 'add' && pendingAction.player) {
-        onAddFriend(pendingAction.player, password);
-      } else if (pendingAction.type === 'remove' && pendingAction.playerId) {
-        onRemoveFriend(pendingAction.playerId, password);
-      }
-      setPendingAction(null);
+  const confirmAction = useCallback((password: string) => {
+    if (!pendingAction) return;
+    
+    if (pendingAction.type === 'add' && pendingAction.player) {
+      onAddFriend(pendingAction.player, password);
+    } else if (pendingAction.type === 'remove' && pendingAction.playerId) {
+      onRemoveFriend(pendingAction.playerId, password);
     }
-  };
+    setPendingAction(null);
+  }, [pendingAction, onAddFriend, onRemoveFriend]);
 
-  const closePasswordDialog = () => {
+  const closePasswordDialog = useCallback(() => {
     setShowPasswordDialog(false);
     setPendingAction(null);
-  };
+  }, []);
 
   return {
     showPasswordDialog,

@@ -82,16 +82,19 @@ export const FriendsSection = ({
   // Handle flashing player state
   const { flashingPlayer, handlePlayerClick } = useFlashingPlayer(onShowPlayerDetails);
 
-  // Handle streaming friend click
-  const handleFriendClick = React.useCallback((player: Player) => {
+  // Handle watching a stream - separate from player details
+  const handleWatchStream = React.useCallback((player: Player) => {
     const stream = streamingFriends.get(player.nickname.toLowerCase());
     if (stream) {
       setSelectedStream(stream);
       setIsPlayerOpen(true);
-    } else {
-      handlePlayerClick(player);
     }
-  }, [streamingFriends, handlePlayerClick]);
+  }, [streamingFriends]);
+
+  // Handle clicking on a friend - always open player details
+  const handleFriendClick = React.useCallback((player: Player) => {
+    handlePlayerClick(player);
+  }, [handlePlayerClick]);
 
   return (
     <div className="space-y-4 px-4 md:px-0">
@@ -121,6 +124,7 @@ export const FriendsSection = ({
               liveMatches={liveMatches}
               streamingFriends={streamingFriends}
               onPlayerClick={handleFriendClick}
+              onWatchStream={handleWatchStream}
             />
           )}
         </div>

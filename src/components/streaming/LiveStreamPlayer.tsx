@@ -1,8 +1,9 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState, useCallback, memo } from 'react';
 import Hls from 'hls.js';
 import { X, Maximize2, Minimize2, Volume2, VolumeX, RefreshCw, Users, Share2, Clock, Play, Pause, Radio, SkipBack, SkipForward } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
+import { Slider } from '@/components/ui/slider';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { LiveStream } from '@/types/streaming';
 import { toast } from '@/hooks/use-toast';
@@ -14,7 +15,7 @@ interface LiveStreamPlayerProps {
   onClose: () => void;
 }
 
-export const LiveStreamPlayer = ({ stream, isOpen, onClose }: LiveStreamPlayerProps) => {
+export const LiveStreamPlayer = memo(({ stream, isOpen, onClose }: LiveStreamPlayerProps) => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const hlsRef = useRef<Hls | null>(null);
   const progressRef = useRef<HTMLDivElement | null>(null);
@@ -23,6 +24,8 @@ export const LiveStreamPlayer = ({ stream, isOpen, onClose }: LiveStreamPlayerPr
   
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
+  const [volume, setVolume] = useState(100);
+  const [showVolumeSlider, setShowVolumeSlider] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -38,6 +41,7 @@ export const LiveStreamPlayer = ({ stream, isOpen, onClose }: LiveStreamPlayerPr
   const [isDragging, setIsDragging] = useState(false);
   
   const durationIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const volumeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Format time as HH:MM:SS or MM:SS
   const formatTime = (seconds: number): string => {
@@ -251,12 +255,39 @@ export const LiveStreamPlayer = ({ stream, isOpen, onClose }: LiveStreamPlayerPr
     }
   };
 
-  const toggleMute = () => {
+  const toggleMute = useCallback(() => {
     if (videoRef.current) {
-      videoRef.current.muted = !videoRef.current.muted;
-      setIsMuted(!isMuted);
+      const newMuted = !videoRef.current.muted;
+      videoRef.current.muted = newMuted;
+      setIsMuted(newMuted);
+      if (!newMuted && volume === 0) {
+        setVolume(50);
+        videoRef.current.volume = 0.5;
+      }
     }
-  };
+  }, [volume]);
+
+  const handleVolumeChange = useCallback((newVolume: number[]) => {
+    if (videoRef.current) {
+      const vol = newVolume[0];
+      setVolume(vol);
+      videoRef.current.volume = vol / 100;
+      setIsMuted(vol === 0);
+    }
+  }, []);
+
+  const handleVolumeHover = useCallback((show: boolean) => {
+    if (volumeTimeoutRef.current) {
+      clearTimeout(volumeTimeoutRef.current);
+    }
+    if (show) {
+      setShowVolumeSlider(true);
+    } else {
+      volumeTimeoutRef.current = setTimeout(() => {
+        setShowVolumeSlider(false);
+      }, 300);
+    }
+  }, []);
 
   const togglePlayPause = () => {
     if (videoRef.current) {
@@ -510,15 +541,46 @@ export const LiveStreamPlayer = ({ stream, isOpen, onClose }: LiveStreamPlayerPr
                   <SkipForward size={18} className="md:w-[18px] md:h-[18px]" />
                 </Button>
 
-                {/* Volume */}
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={toggleMute}
-                  className="text-white hover:bg-white/20 h-10 w-10 md:h-9 md:w-9"
+                {/* Volume with Slider */}
+                <div 
+                  className="relative flex items-center"
+                  onMouseEnter={() => handleVolumeHover(true)}
+                  onMouseLeave={() => handleVolumeHover(false)}
                 >
-                  {isMuted ? <VolumeX size={18} className="md:w-5 md:h-5" /> : <Volume2 size={18} className="md:w-5 md:h-5" />}
-                </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={toggleMute}
+                    className="text-white hover:bg-white/20 h-10 w-10 md:h-9 md:w-9"
+                  >
+                    {isMuted || volume === 0 ? (
+                      <VolumeX size={18} className="md:w-5 md:h-5" />
+                    ) : (
+                      <Volume2 size={18} className="md:w-5 md:h-5" />
+                    )}
+                  </Button>
+                  
+                  {/* Desktop Volume Slider */}
+                  <div 
+                    className={cn(
+                      "hidden md:flex absolute left-full ml-2 items-center bg-black/80 rounded-lg px-3 py-2 transition-all duration-200",
+                      showVolumeSlider ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-2 pointer-events-none"
+                    )}
+                    onMouseEnter={() => handleVolumeHover(true)}
+                    onMouseLeave={() => handleVolumeHover(false)}
+                  >
+                    <Slider
+                      value={[isMuted ? 0 : volume]}
+                      onValueChange={handleVolumeChange}
+                      max={100}
+                      step={1}
+                      className="w-24"
+                    />
+                    <span className="text-white/70 text-xs ml-2 w-8 text-right">
+                      {isMuted ? 0 : volume}%
+                    </span>
+                  </div>
+                </div>
 
                 {/* Time Display */}
                 <span className="text-white/80 text-xs md:text-sm font-mono ml-2">
@@ -578,4 +640,6 @@ export const LiveStreamPlayer = ({ stream, isOpen, onClose }: LiveStreamPlayerPr
       </DialogContent>
     </Dialog>
   );
-};
+});
+
+LiveStreamPlayer.displayName = 'LiveStreamPlayer';

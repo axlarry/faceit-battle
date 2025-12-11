@@ -1,15 +1,18 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { Player } from "@/types/Player";
 import { useSteamIdConverter } from './SteamIdConverter';
-import { LoaderCircle, Zap, Crown, Video } from 'lucide-react';
+import { LoaderCircle, Zap, Crown, Video, Play } from 'lucide-react';
 import { PlayerAvatar } from './PlayerAvatar';
 import { PlayerInfo } from './PlayerInfo';
 import { PlayerStatsCompact } from './PlayerStatsCompact';
 import { PlayerActionsCompact } from './PlayerActionsCompact';
 import { LiveMatchDetails } from './LiveMatchDetails';
+import { Button } from '@/components/ui/button';
+
 interface FriendWithLcrypt extends Player {
   lcryptData?: any;
 }
+
 interface FriendListItemProps {
   friend: FriendWithLcrypt;
   index: number;
@@ -20,7 +23,9 @@ interface FriendListItemProps {
   liveCompetition?: string;
   liveMatchDetails?: any;
   onPlayerClick: (player: Player) => void;
+  onWatchStream?: (player: Player) => void;
 }
+
 export const FriendListItem = React.memo(({
   friend,
   index,
@@ -30,17 +35,25 @@ export const FriendListItem = React.memo(({
   isStreaming = false,
   liveCompetition,
   liveMatchDetails,
-  onPlayerClick
+  onPlayerClick,
+  onWatchStream
 }: FriendListItemProps) => {
   const {
     steamId64
   } = useSteamIdConverter(friend.player_id);
-  const handleClick = () => {
+  
+  const handleClick = useCallback(() => {
     onPlayerClick(friend);
-  };
-  const handleLinkClick = (e: React.MouseEvent) => {
+  }, [onPlayerClick, friend]);
+
+  const handleWatchStreamClick = useCallback((e: React.MouseEvent) => {
     e.stopPropagation();
-  };
+    onWatchStream?.(friend);
+  }, [onWatchStream, friend]);
+
+  const handleLinkClick = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
+  }, []);
 
   // Modern styling system
   const getPlayerStyles = () => {
@@ -156,12 +169,22 @@ export const FriendListItem = React.memo(({
             </div>
           </div>}
 
-        {/* Streaming indicator - takes priority over live match indicator */}
+        {/* Streaming indicator with Watch button */}
         {isStreaming && <div className="absolute top-4 right-4 z-20">
-            <div className="flex items-center gap-2 bg-gradient-to-r from-red-600 to-orange-500 px-3 py-1.5 rounded-full border border-red-400/50 backdrop-blur-sm animate-pulse">
-              <Video size={14} className="text-white" />
-              <span className="text-white text-xs font-bold">STREAMING</span>
-              <div className="w-2 h-2 bg-white rounded-full animate-ping"></div>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 bg-gradient-to-r from-red-600 to-orange-500 px-3 py-1.5 rounded-full border border-red-400/50 backdrop-blur-sm animate-pulse">
+                <Video size={14} className="text-white" />
+                <span className="text-white text-xs font-bold">STREAMING</span>
+                <div className="w-2 h-2 bg-white rounded-full animate-ping"></div>
+              </div>
+              <Button
+                size="sm"
+                onClick={handleWatchStreamClick}
+                className="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 h-auto rounded-full border border-red-400/50 flex items-center gap-1.5"
+              >
+                <Play size={12} className="fill-white" />
+                <span className="text-xs font-bold">WATCH</span>
+              </Button>
             </div>
           </div>}
 
