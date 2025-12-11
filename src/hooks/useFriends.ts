@@ -22,17 +22,7 @@ export const useFriends = () => {
 
   const loadFriendsFromDatabase = async (refreshData = true) => {
     try {
-      console.log('📋 Loading friends from database...', { isDiscord: isDiscordActivity() });
-      
-      // First load existing data immediately
       const { data, error } = await invokeFunction('friends-gateway', { action: 'list' });
-
-      console.log('📋 Friends gateway response:', { 
-        hasData: !!data, 
-        error: error?.message,
-        dataType: typeof data,
-        rawData: data
-      });
 
       if (error) {
         console.error('Error loading friends via gateway:', error);
@@ -45,7 +35,6 @@ export const useFriends = () => {
       }
 
       const items = (data as any)?.items || [];
-      console.log(`📋 Parsed ${items.length} friends from response`);
       
       const friendsData: Player[] = items.map((friend: any) => ({
         player_id: friend.player_id,
@@ -59,22 +48,14 @@ export const useFriends = () => {
         kdRatio: friend.kdRatio || 0,
       }));
       setFriends(friendsData);
-      console.log(`✅ Set ${friendsData.length} friends in state`);
 
-      // Then refresh all friends data in the background if requested
+      // Refresh friends data in the background if requested
       if (refreshData) {
-        console.log('🔄 Refreshing friends data from lcrypt in background...');
-        invokeFunction('friends-gateway', { action: 'refresh_all' }).then(({ data: refreshData, error: refreshError }) => {
-          if (refreshError) {
-            console.warn('Failed to refresh friends data:', refreshError);
-          } else {
-            console.log(`✅ Refreshed ${(refreshData as any)?.updated || 0}/${(refreshData as any)?.total || 0} friends`);
-            // Reload the data after refresh
+        invokeFunction('friends-gateway', { action: 'refresh_all' }).then(({ error: refreshError }) => {
+          if (!refreshError) {
             loadFriendsFromDatabase(false);
           }
-        }).catch((refreshErr: unknown) => {
-          console.warn('Error refreshing friends data:', refreshErr);
-        });
+        }).catch(() => {});
       }
     } catch (error) {
       console.error('Error loading friends from gateway:', error);
@@ -142,8 +123,6 @@ export const useFriends = () => {
 
   const updateFriend = async (updatedPlayer: Player, password?: string) => {
     try {
-      console.log(`Updating friend ${updatedPlayer.nickname} via gateway...`, updatedPlayer);
-
       const { error } = await invokeFunction('friends-gateway', {
         action: 'update',
         password,
@@ -164,8 +143,6 @@ export const useFriends = () => {
         console.error('Error updating friend in gateway:', error);
         throw error;
       }
-
-      console.log(`Successfully updated ${updatedPlayer.nickname} in gateway`);
 
       setFriends(prevFriends => 
         prevFriends.map(f => 

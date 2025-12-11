@@ -33,19 +33,8 @@ export const isDiscordActivity = (): boolean => {
     return false;
   }
   
-  // Check if we're on Discord's domain (*.discordsays.com for activities)
   const hostname = window.location.hostname;
-  const isDiscordDomain = hostname.endsWith('.discordsays.com') ||
-                          hostname.includes('discordsays.com');
-  
-  // Log for debugging
-  console.log('🎮 Discord Activity Check:', {
-    hostname,
-    isDiscordDomain,
-    href: window.location.href
-  });
-  
-  _isDiscordActivity = isDiscordDomain;
+  _isDiscordActivity = hostname.endsWith('.discordsays.com') || hostname.includes('discordsays.com');
   return _isDiscordActivity;
 };
 
@@ -81,15 +70,6 @@ export const invokeEdgeFunction = async (
   const baseUrl = getSupabaseBaseUrl();
   const url = `${baseUrl}/functions/v1/${functionName}`;
   
-  const isDiscord = isDiscordActivity();
-  
-  console.log(`🎮 Discord proxy: Calling ${functionName}`, {
-    isDiscord,
-    baseUrl,
-    fullUrl: url,
-    body: JSON.stringify(body).substring(0, 200)
-  });
-  
   try {
     const response = await fetch(url, {
       method: 'POST',
@@ -101,54 +81,26 @@ export const invokeEdgeFunction = async (
       body: JSON.stringify(body),
     });
 
-    console.log(`📡 Response status for ${functionName}:`, response.status, response.statusText);
-
-    // Read raw text first to debug what Discord is returning
     const rawText = await response.text();
-    console.log(`📄 Raw response for ${functionName}:`, rawText.substring(0, 500));
 
     // Check if it's HTML (Discord error page) instead of JSON
     if (rawText.startsWith('<!DOCTYPE') || rawText.startsWith('<html')) {
-      console.error(`❌ Discord proxy returned HTML instead of JSON for ${functionName}:`, {
-        url,
-        isDiscord,
-        hint: 'Check URL Mapping in Discord Developer Portal. The mapping might be missing or incorrect.',
-        expectedMapping: 'PREFIX: /supabase → TARGET: https://rwizxoeyatdtggrpnpmq.supabase.co'
-      });
       return {
         data: null,
-        error: new Error('Discord proxy returned HTML instead of JSON. URL mapping may be misconfigured.'),
+        error: new Error('Discord proxy returned HTML instead of JSON. Check URL mapping.'),
       };
     }
 
     if (!response.ok) {
-      console.error(`❌ Edge function ${functionName} error:`, {
-        status: response.status,
-        statusText: response.statusText,
-        error: rawText,
-        url
-      });
       return {
         data: null,
         error: new Error(`${response.status}: ${rawText}`),
       };
     }
 
-    // Parse the JSON from raw text
     const data = JSON.parse(rawText);
-    console.log(`✅ Edge function ${functionName} success:`, {
-      hasData: !!data,
-      dataType: typeof data,
-      keys: data ? Object.keys(data) : [],
-      itemsCount: data?.items?.length
-    });
     return { data, error: null };
   } catch (error) {
-    console.error(`❌ Edge function ${functionName} fetch error:`, {
-      error: error instanceof Error ? error.message : String(error),
-      url,
-      isDiscord
-    });
     return {
       data: null,
       error: error instanceof Error ? error : new Error(String(error)),
@@ -161,15 +113,3 @@ export const invokeEdgeFunction = async (
  */
 export const getSupabaseAnonKey = (): string => SUPABASE_ANON_KEY;
 
-// Log environment on load
-if (typeof window !== 'undefined') {
-  // Defer logging to avoid blocking
-  setTimeout(() => {
-    const isDiscord = isDiscordActivity();
-    console.log('🎮 Discord Activity Environment:', {
-      detected: isDiscord,
-      hostname: window.location.hostname,
-      proxyUrl: isDiscord ? getSupabaseBaseUrl() : 'N/A (direct)',
-    });
-  }, 100);
-}
