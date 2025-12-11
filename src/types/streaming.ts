@@ -24,3 +24,22 @@ export interface LiveStream {
   streamUrl?: string;
   viewers: number;
 }
+
+export interface Recording {
+  id: string;
+  nickname: string;
+  filename: string;
+  url: string;
+  date: Date;
+  size: number;
+}
+
+export interface RecordingsApiResponse {
+  recordings: {
+    nickname: string;
+    filename: string;
+    url: string;
+    date: number;
+    size: number;
+  }[];
+}
