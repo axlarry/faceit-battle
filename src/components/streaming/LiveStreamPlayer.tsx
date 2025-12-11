@@ -1,7 +1,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import Hls from 'hls.js';
-import { X, Maximize2, Minimize2, Volume2, VolumeX, RefreshCw } from 'lucide-react';
+import { X, Maximize2, Minimize2, Volume2, VolumeX, RefreshCw, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
@@ -111,6 +111,12 @@ export const LiveStreamPlayer = ({ stream, isOpen, onClose }: LiveStreamPlayerPr
             <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
             <span className="font-bold text-white">{stream?.nickname}</span>
             <span className="text-white/60 text-sm">• LIVE</span>
+            {stream && stream.viewers > 0 && (
+              <span className="flex items-center gap-1 text-white/60 text-sm">
+                <Users size={14} />
+                {stream.viewers}
+              </span>
+            )}
           </div>
           <div className="flex items-center gap-2">
             <Button

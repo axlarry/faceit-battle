@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Play } from 'lucide-react';
+import { Play, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { StreamStatusBadge } from './StreamStatusBadge';
 import { LiveStream } from '@/types/streaming';
@@ -43,7 +43,15 @@ export const LiveStreamCard = ({ stream, friend, onWatch }: LiveStreamCardProps)
         
         <div className="flex-1 min-w-0">
           <h3 className="font-bold text-foreground truncate">{stream.nickname}</h3>
-          <StreamStatusBadge isLive={stream.isLive} size="sm" />
+          <div className="flex items-center gap-2">
+            <StreamStatusBadge isLive={stream.isLive} size="sm" />
+            {stream.isLive && stream.viewers > 0 && (
+              <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Users size={12} />
+                {stream.viewers}
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
