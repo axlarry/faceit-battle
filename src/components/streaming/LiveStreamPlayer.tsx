@@ -1,11 +1,13 @@
 
+
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import Hls from 'hls.js';
-import { X, Maximize2, Minimize2, Volume2, VolumeX, RefreshCw, Users } from 'lucide-react';
+import { X, Maximize2, Minimize2, Volume2, VolumeX, RefreshCw, Users, Share2, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { LiveStream } from '@/types/streaming';
+import { toast } from '@/hooks/use-toast';
 
 interface LiveStreamPlayerProps {
   stream: LiveStream | null;
@@ -21,6 +23,57 @@ export const LiveStreamPlayer = ({ stream, isOpen, onClose }: LiveStreamPlayerPr
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [videoReady, setVideoReady] = useState(false);
+  const [watchDuration, setWatchDuration] = useState(0);
+  const durationIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Format duration as HH:MM:SS
+  const formatDuration = (seconds: number): string => {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = seconds % 60;
+    if (h > 0) {
+      return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    }
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
+  // Start/stop duration timer
+  useEffect(() => {
+    if (isOpen && !isLoading && !error) {
+      setWatchDuration(0);
+      durationIntervalRef.current = setInterval(() => {
+        setWatchDuration(prev => prev + 1);
+      }, 1000);
+    } else {
+      if (durationIntervalRef.current) {
+        clearInterval(durationIntervalRef.current);
+        durationIntervalRef.current = null;
+      }
+    }
+    return () => {
+      if (durationIntervalRef.current) {
+        clearInterval(durationIntervalRef.current);
+      }
+    };
+  }, [isOpen, isLoading, error]);
+
+  const handleShare = async () => {
+    if (stream?.streamUrl) {
+      try {
+        await navigator.clipboard.writeText(stream.streamUrl);
+        toast({
+          title: "Link copied!",
+          description: "Stream link copied to clipboard",
+        });
+      } catch {
+        toast({
+          title: "Failed to copy",
+          description: "Could not copy link to clipboard",
+          variant: "destructive",
+        });
+      }
+    }
+  };
 
   const setVideoRef = useCallback((node: HTMLVideoElement | null) => {
     videoRef.current = node;
@@ -140,6 +193,12 @@ export const LiveStreamPlayer = ({ stream, isOpen, onClose }: LiveStreamPlayerPr
             <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
             <span className="font-bold text-white">{stream?.nickname}</span>
             <span className="text-white/60 text-sm">• LIVE</span>
+            {!isLoading && !error && (
+              <span className="flex items-center gap-1 text-white/60 text-sm font-mono">
+                <Clock size={14} />
+                {formatDuration(watchDuration)}
+              </span>
+            )}
             {stream && stream.viewers > 0 && (
               <span className="flex items-center gap-1 text-white/60 text-sm">
                 <Users size={14} />
@@ -148,6 +207,15 @@ export const LiveStreamPlayer = ({ stream, isOpen, onClose }: LiveStreamPlayerPr
             )}
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleShare}
+              className="text-white hover:bg-white/20"
+              title="Share stream link"
+            >
+              <Share2 size={18} />
+            </Button>
             <Button
               variant="ghost"
               size="icon"

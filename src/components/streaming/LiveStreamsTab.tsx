@@ -1,11 +1,14 @@
 
 import React, { useState } from 'react';
-import { RefreshCw, Radio } from 'lucide-react';
+import { RefreshCw, Radio, Film } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { LiveStreamsList } from './LiveStreamsList';
 import { LiveStreamPlayer } from './LiveStreamPlayer';
+import { RecordingsList } from './RecordingsList';
+import { RecordingPlayer } from './RecordingPlayer';
 import { useLiveStreams } from '@/hooks/useLiveStreams';
-import { LiveStream } from '@/types/streaming';
+import { useRecordings } from '@/hooks/useRecordings';
+import { LiveStream, Recording } from '@/types/streaming';
 import { Player } from '@/types/Player';
 
 interface LiveStreamsTabProps {
@@ -15,6 +18,8 @@ interface LiveStreamsTabProps {
 export const LiveStreamsTab = ({ friends }: LiveStreamsTabProps) => {
   const [selectedStream, setSelectedStream] = useState<LiveStream | null>(null);
   const [isPlayerOpen, setIsPlayerOpen] = useState(false);
+  const [selectedRecording, setSelectedRecording] = useState<Recording | null>(null);
+  const [isRecordingPlayerOpen, setIsRecordingPlayerOpen] = useState(false);
 
   const { 
     liveStreamsList, 
@@ -24,6 +29,13 @@ export const LiveStreamsTab = ({ friends }: LiveStreamsTabProps) => {
     refresh 
   } = useLiveStreams({ friends });
 
+  const {
+    recordings,
+    groupedRecordings,
+    isLoading: isLoadingRecordings,
+    refresh: refreshRecordings,
+  } = useRecordings();
+
   const handleWatch = (stream: LiveStream) => {
     setSelectedStream(stream);
     setIsPlayerOpen(true);
@@ -32,6 +44,21 @@ export const LiveStreamsTab = ({ friends }: LiveStreamsTabProps) => {
   const handleClosePlayer = () => {
     setIsPlayerOpen(false);
     setSelectedStream(null);
+  };
+
+  const handlePlayRecording = (recording: Recording) => {
+    setSelectedRecording(recording);
+    setIsRecordingPlayerOpen(true);
+  };
+
+  const handleCloseRecordingPlayer = () => {
+    setIsRecordingPlayerOpen(false);
+    setSelectedRecording(null);
+  };
+
+  const handleRefreshAll = () => {
+    refresh();
+    refreshRecordings();
   };
 
   return (
@@ -58,11 +85,11 @@ export const LiveStreamsTab = ({ friends }: LiveStreamsTabProps) => {
         <Button
           variant="outline"
           size="sm"
-          onClick={refresh}
-          disabled={isLoading}
+          onClick={handleRefreshAll}
+          disabled={isLoading || isLoadingRecordings}
           className="gap-2"
         >
-          <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
+          <RefreshCw size={16} className={(isLoading || isLoadingRecordings) ? 'animate-spin' : ''} />
           Refresh
         </Button>
       </div>
@@ -87,19 +114,62 @@ export const LiveStreamsTab = ({ friends }: LiveStreamsTabProps) => {
           </p>
         </div>
       ) : (
-        <LiveStreamsList
-          liveStreams={liveStreamsList}
-          offlineStreams={offlineStreamsList}
-          friends={friends}
-          onWatch={handleWatch}
-        />
+        <div className="space-y-8">
+          {/* Live Streams Section */}
+          <LiveStreamsList
+            liveStreams={liveStreamsList}
+            offlineStreams={offlineStreamsList}
+            friends={friends}
+            onWatch={handleWatch}
+          />
+
+          {/* Recordings Section */}
+          <div className="border-t border-border pt-8">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 rounded-xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 border border-blue-500/30">
+                <Film className="text-blue-500" size={20} />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-foreground">Recent Recordings</h2>
+                <p className="text-muted-foreground text-sm">
+                  Watch past streams from your friends
+                </p>
+              </div>
+              {recordings.length > 0 && (
+                <span className="ml-2 px-2 py-0.5 bg-muted text-muted-foreground text-xs rounded-full">
+                  {recordings.length}
+                </span>
+              )}
+            </div>
+
+            {isLoadingRecordings ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : (
+              <RecordingsList
+                recordings={recordings}
+                groupedRecordings={groupedRecordings}
+                friends={friends}
+                onPlay={handlePlayRecording}
+              />
+            )}
+          </div>
+        </div>
       )}
 
-      {/* Player Modal */}
+      {/* Live Stream Player Modal */}
       <LiveStreamPlayer
         stream={selectedStream}
         isOpen={isPlayerOpen}
         onClose={handleClosePlayer}
+      />
+
+      {/* Recording Player Modal */}
+      <RecordingPlayer
+        recording={selectedRecording}
+        isOpen={isRecordingPlayerOpen}
+        onClose={handleCloseRecordingPlayer}
       />
     </div>
   );
