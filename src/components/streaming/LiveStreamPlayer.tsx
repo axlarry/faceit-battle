@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import Hls from 'hls.js';
 import { X, Maximize2, Minimize2, Volume2, VolumeX, RefreshCw, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -14,16 +14,33 @@ interface LiveStreamPlayerProps {
 }
 
 export const LiveStreamPlayer = ({ stream, isOpen, onClose }: LiveStreamPlayerProps) => {
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
   const hlsRef = useRef<Hls | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [videoReady, setVideoReady] = useState(false);
+
+  const setVideoRef = useCallback((node: HTMLVideoElement | null) => {
+    videoRef.current = node;
+    if (node) {
+      setVideoReady(true);
+    }
+  }, []);
+
+  // Reset videoReady when dialog closes
+  useEffect(() => {
+    if (!isOpen) {
+      setVideoReady(false);
+    }
+  }, [isOpen]);
 
   useEffect(() => {
-    if (!isOpen || !stream?.streamUrl || !videoRef.current) return;
+    if (!isOpen || !stream?.streamUrl || !videoReady || !videoRef.current) return;
 
+    console.log('🎬 Initializing HLS player with URL:', stream.streamUrl);
+    
     setIsLoading(true);
     setError(null);
 
@@ -38,17 +55,29 @@ export const LiveStreamPlayer = ({ stream, isOpen, onClose }: LiveStreamPlayerPr
         enableWorker: true,
       });
 
+      console.log('📺 HLS: Loading source...');
       hls.loadSource(stream.streamUrl);
       hls.attachMedia(video);
 
+      hls.on(Hls.Events.MANIFEST_LOADING, () => {
+        console.log('📡 HLS: Manifest loading...');
+      });
+
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        console.log('✅ HLS: Manifest parsed successfully');
         setIsLoading(false);
         video.play().catch(console.error);
       });
 
       hls.on(Hls.Events.ERROR, (_, data) => {
+        console.error('❌ HLS Error:', {
+          type: data.type,
+          details: data.details,
+          fatal: data.fatal,
+          url: data.url,
+        });
         if (data.fatal) {
-          setError('Stream connection lost. The streamer may have gone offline.');
+          setError(`Stream error: ${data.details}`);
           setIsLoading(false);
         }
       });
@@ -72,7 +101,7 @@ export const LiveStreamPlayer = ({ stream, isOpen, onClose }: LiveStreamPlayerPr
         hlsRef.current = null;
       }
     };
-  }, [isOpen, stream?.streamUrl]);
+  }, [isOpen, stream?.streamUrl, videoReady]);
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -149,7 +178,7 @@ export const LiveStreamPlayer = ({ stream, isOpen, onClose }: LiveStreamPlayerPr
         {/* Video Player */}
         <div className="relative aspect-video bg-black">
           <video
-            ref={videoRef}
+            ref={setVideoRef}
             className="w-full h-full"
             controls
             playsInline
