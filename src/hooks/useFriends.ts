@@ -2,6 +2,15 @@ import { useState, useEffect } from 'react';
 import { Player } from '@/types/Player';
 import { toast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { invokeEdgeFunction, isDiscordActivity } from '@/lib/discordProxy';
+
+// Helper to invoke edge functions with Discord proxy support
+const invokeFunction = async (functionName: string, body: Record<string, unknown>) => {
+  if (isDiscordActivity()) {
+    return invokeEdgeFunction(functionName, body);
+  }
+  return supabase.functions.invoke(functionName, { body });
+};
 
 export const useFriends = () => {
   const [friends, setFriends] = useState<Player[]>([]);
@@ -14,9 +23,7 @@ export const useFriends = () => {
   const loadFriendsFromDatabase = async (refreshData = true) => {
     try {
       // First load existing data immediately
-      const { data, error } = await supabase.functions.invoke('friends-gateway', {
-        body: { action: 'list' }
-      });
+      const { data, error } = await invokeFunction('friends-gateway', { action: 'list' });
 
       if (error) {
         console.error('Error loading friends via gateway:', error);
@@ -45,17 +52,15 @@ export const useFriends = () => {
       // Then refresh all friends data in the background if requested
       if (refreshData) {
         console.log('🔄 Refreshing friends data from lcrypt in background...');
-        supabase.functions.invoke('friends-gateway', {
-          body: { action: 'refresh_all' }
-        }).then(({ data: refreshData, error: refreshError }) => {
+        invokeFunction('friends-gateway', { action: 'refresh_all' }).then(({ data: refreshData, error: refreshError }) => {
           if (refreshError) {
             console.warn('Failed to refresh friends data:', refreshError);
           } else {
-            console.log(`✅ Refreshed ${refreshData?.updated || 0}/${refreshData?.total || 0} friends`);
+            console.log(`✅ Refreshed ${(refreshData as any)?.updated || 0}/${(refreshData as any)?.total || 0} friends`);
             // Reload the data after refresh
             loadFriendsFromDatabase(false);
           }
-        }).catch((refreshErr) => {
+        }).catch((refreshErr: unknown) => {
           console.warn('Error refreshing friends data:', refreshErr);
         });
       }
@@ -73,23 +78,21 @@ export const useFriends = () => {
     const exists = friends.some(f => f.player_id === player.player_id);
     if (!exists) {
       try {
-        const { error } = await supabase.functions.invoke('friends-gateway', {
-          body: {
-            action: 'add',
-            password,
-            player: {
-              player_id: player.player_id,
-              nickname: player.nickname,
-              avatar: player.avatar,
-              level: player.level || 0,
-              elo: player.elo || 0,
-              wins: player.wins || 0,
-              win_rate: player.winRate || 0,
-              hs_rate: player.hsRate || 0,
-              kd_ratio: player.kdRatio || 0,
-            }
+        const { error } = await invokeFunction('friends-gateway', {
+          action: 'add',
+          password,
+          player: {
+            player_id: player.player_id,
+            nickname: player.nickname,
+            avatar: player.avatar,
+            level: player.level || 0,
+            elo: player.elo || 0,
+            wins: player.wins || 0,
+            win_rate: player.winRate || 0,
+            hs_rate: player.hsRate || 0,
+            kd_ratio: player.kdRatio || 0,
           }
-        } as any);
+        });
 
         if (error) {
           console.error('Error adding friend (gateway):', error);
@@ -129,23 +132,21 @@ export const useFriends = () => {
     try {
       console.log(`Updating friend ${updatedPlayer.nickname} via gateway...`, updatedPlayer);
 
-      const { error } = await supabase.functions.invoke('friends-gateway', {
-        body: {
-          action: 'update',
-          password,
-          player: {
-            player_id: updatedPlayer.player_id,
-            nickname: updatedPlayer.nickname,
-            avatar: updatedPlayer.avatar,
-            level: updatedPlayer.level || 0,
-            elo: updatedPlayer.elo || 0,
-            wins: updatedPlayer.wins || 0,
-            win_rate: updatedPlayer.winRate || 0,
-            hs_rate: updatedPlayer.hsRate || 0,
-            kd_ratio: updatedPlayer.kdRatio || 0,
-          }
+      const { error } = await invokeFunction('friends-gateway', {
+        action: 'update',
+        password,
+        player: {
+          player_id: updatedPlayer.player_id,
+          nickname: updatedPlayer.nickname,
+          avatar: updatedPlayer.avatar,
+          level: updatedPlayer.level || 0,
+          elo: updatedPlayer.elo || 0,
+          wins: updatedPlayer.wins || 0,
+          win_rate: updatedPlayer.winRate || 0,
+          hs_rate: updatedPlayer.hsRate || 0,
+          kd_ratio: updatedPlayer.kdRatio || 0,
         }
-      } as any);
+      });
 
       if (error) {
         console.error('Error updating friend in gateway:', error);
@@ -168,13 +169,11 @@ export const useFriends = () => {
 
   const removeFriend = async (playerId: string, password: string) => {
     try {
-      const { error } = await supabase.functions.invoke('friends-gateway', {
-        body: {
-          action: 'remove',
-          password,
-          playerId
-        }
-      } as any);
+      const { error } = await invokeFunction('friends-gateway', {
+        action: 'remove',
+        password,
+        playerId
+      });
 
       if (error) {
         console.error('Error removing friend (gateway):', error);

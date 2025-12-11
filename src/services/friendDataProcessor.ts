@@ -82,14 +82,18 @@ export class FriendDataProcessor {
         console.log(`🔄 AUTO-SYNC: Nickname changed ${friend.nickname} -> ${currentNickname}`);
         try {
           // Update nickname in Supabase friends table (silent update, no password required for data sync)
+          const { invokeEdgeFunction, isDiscordActivity } = await import('@/lib/discordProxy');
           const { supabase } = await import('@/integrations/supabase/client');
-          await supabase.functions.invoke('friends-gateway', {
-            body: {
-              action: 'sync_nickname',
-              playerId: friend.player_id,
-              newNickname: currentNickname,
-              newAvatar: basicData?.avatar
-            }
+          
+          const invokeFn = isDiscordActivity() 
+            ? (fn: string, body: Record<string, unknown>) => invokeEdgeFunction(fn, body)
+            : (fn: string, body: Record<string, unknown>) => supabase.functions.invoke(fn, { body });
+          
+          await invokeFn('friends-gateway', {
+            action: 'sync_nickname',
+            playerId: friend.player_id,
+            newNickname: currentNickname,
+            newAvatar: basicData?.avatar
           }).catch(() => {
             console.warn(`⚠️ Could not sync nickname change for ${friend.player_id}`);
           });

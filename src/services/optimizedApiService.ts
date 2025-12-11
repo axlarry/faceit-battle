@@ -1,5 +1,14 @@
 // V2.0 Consolidated API Service with advanced caching and deduplication
 import { supabase } from '@/integrations/supabase/client';
+import { invokeEdgeFunction, isDiscordActivity } from '@/lib/discordProxy';
+
+// Helper to invoke edge functions with Discord proxy support
+const invokeFunction = async (functionName: string, body: Record<string, unknown>) => {
+  if (isDiscordActivity()) {
+    return invokeEdgeFunction(functionName, body);
+  }
+  return supabase.functions.invoke(functionName, { body });
+};
 
 interface CacheEntry<T> {
   data: T;
@@ -112,9 +121,7 @@ export class OptimizedApiService {
     return this.dedupedRequest(requestKey, async () => {
       console.log(`🌐 Faceit API: ${endpoint}`);
       
-      const { data, error } = await supabase.functions.invoke('proxy-faceit', {
-        body: { endpoint, useLeaderboardApi },
-      });
+      const { data, error } = await invokeFunction('proxy-faceit', { endpoint, useLeaderboardApi });
       
       if (error) {
         if (this.isRateLimitError(error)) {
@@ -135,9 +142,7 @@ export class OptimizedApiService {
     return this.dedupedRequest(requestKey, async () => {
       console.log(`🔍 Lcrypt API: ${nickname}`);
       
-      const { data, error } = await supabase.functions.invoke('get-lcrypt-elo', {
-        body: { nickname }
-      });
+      const { data, error } = await invokeFunction('get-lcrypt-elo', { nickname });
 
       if (error) {
         console.warn(`Lcrypt API error for ${nickname}:`, error);

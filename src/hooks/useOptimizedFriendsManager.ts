@@ -3,7 +3,16 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Player } from '@/types/Player';
 import { friendDataProcessor } from '@/services/friendDataProcessor';
 import { supabase } from '@/integrations/supabase/client';
+import { invokeEdgeFunction, isDiscordActivity } from '@/lib/discordProxy';
 import { toast } from '@/hooks/use-toast';
+
+// Helper to invoke edge functions with Discord proxy support
+const invokeFunction = async (functionName: string, body: Record<string, unknown>) => {
+  if (isDiscordActivity()) {
+    return invokeEdgeFunction(functionName, body);
+  }
+  return supabase.functions.invoke(functionName, { body });
+};
 
 interface OptimizedFriendsState {
   friends: Player[];
@@ -46,9 +55,7 @@ export const useOptimizedFriendsManager = ({
   const loadFriends = useCallback(async (refreshData = false) => {
     try {
       // Load cached data first for instant display
-      const { data } = await supabase.functions.invoke('friends-gateway', {
-        body: { action: 'list' }
-      });
+      const { data } = await invokeFunction('friends-gateway', { action: 'list' });
 
       const items = (data as any)?.items || [];
       const friendsData: Player[] = items.map((friend: any) => ({
@@ -70,9 +77,7 @@ export const useOptimizedFriendsManager = ({
 
       // Background refresh if requested
       if (refreshData) {
-        supabase.functions.invoke('friends-gateway', {
-          body: { action: 'refresh_all' }
-        }).then(() => {
+        invokeFunction('friends-gateway', { action: 'refresh_all' }).then(() => {
           // Reload after background update
           loadFriends(false);
         }).catch(console.warn);
@@ -154,13 +159,11 @@ export const useOptimizedFriendsManager = ({
         
         // Update the nickname in database and local state
         try {
-          await supabase.functions.invoke('friends-gateway', {
-            body: {
-              action: 'update_nickname',
-              password,
-              playerId: player.player_id,
-              newNickname: player.nickname
-            }
+          await invokeFunction('friends-gateway', {
+            action: 'update_nickname',
+            password,
+            playerId: player.player_id,
+            newNickname: player.nickname
           });
 
           // Update local state with new nickname
@@ -199,21 +202,19 @@ export const useOptimizedFriendsManager = ({
     }
 
     try {
-      const { error } = await supabase.functions.invoke('friends-gateway', {
-        body: {
-          action: 'add',
-          password,
-          player: {
-            player_id: player.player_id,
-            nickname: player.nickname,
-            avatar: player.avatar,
-            level: player.level || 0,
-            elo: player.elo || 0,
-            wins: player.wins || 0,
-            win_rate: player.winRate || 0,
-            hs_rate: player.hsRate || 0,
-            kd_ratio: player.kdRatio || 0,
-          }
+      const { error } = await invokeFunction('friends-gateway', {
+        action: 'add',
+        password,
+        player: {
+          player_id: player.player_id,
+          nickname: player.nickname,
+          avatar: player.avatar,
+          level: player.level || 0,
+          elo: player.elo || 0,
+          wins: player.wins || 0,
+          win_rate: player.winRate || 0,
+          hs_rate: player.hsRate || 0,
+          kd_ratio: player.kdRatio || 0,
         }
       });
 
@@ -243,9 +244,7 @@ export const useOptimizedFriendsManager = ({
   // Remove friend with optimized state management
   const removeFriend = useCallback(async (playerId: string, password: string) => {
     try {
-      const { error } = await supabase.functions.invoke('friends-gateway', {
-        body: { action: 'remove', password, playerId }
-      });
+      const { error } = await invokeFunction('friends-gateway', { action: 'remove', password, playerId });
 
       if (error) {
         toast({

@@ -1,6 +1,15 @@
 
 import { apiService } from './apiService';
 import { supabase } from '@/integrations/supabase/client';
+import { invokeEdgeFunction, isDiscordActivity } from '@/lib/discordProxy';
+
+// Helper to invoke edge functions with Discord proxy support
+const invokeFunction = async (functionName: string, body: Record<string, unknown>) => {
+  if (isDiscordActivity()) {
+    return invokeEdgeFunction(functionName, body);
+  }
+  return supabase.functions.invoke(functionName, { body });
+};
 
 export class FaceitApiClient {
   async makeApiCall(endpoint: string, useLeaderboardApi: boolean = false) {
@@ -10,9 +19,7 @@ export class FaceitApiClient {
       return apiService.retryRequest(async () => {
         console.log(`Proxying Faceit API call to: ${endpoint}`);
         
-        const { data, error } = await supabase.functions.invoke('proxy-faceit', {
-          body: { endpoint, useLeaderboardApi },
-        });
+        const { data, error } = await invokeFunction('proxy-faceit', { endpoint, useLeaderboardApi });
         
         if (error) {
           // Surface rate limit conditions to the retry handler
