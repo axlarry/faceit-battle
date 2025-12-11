@@ -1,5 +1,6 @@
 import React, { memo, useCallback, useMemo } from 'react';
 import { Crown, Trophy } from 'lucide-react';
+import { getProxiedAvatarUrl } from '@/lib/discordProxy';
 
 interface PlayerAvatarProps {
   avatar: string;
@@ -12,7 +13,8 @@ const FALLBACK_AVATAR = '/faceit-icons/faceit_icon.png';
 
 export const PlayerAvatar = memo(({ avatar, nickname, index, isLive }: PlayerAvatarProps) => {
   const safeAvatar = useMemo(() => {
-    return avatar && avatar.trim() ? avatar : FALLBACK_AVATAR;
+    const rawAvatar = avatar && avatar.trim() ? avatar : FALLBACK_AVATAR;
+    return getProxiedAvatarUrl(rawAvatar);
   }, [avatar]);
 
   const handleImageError = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {

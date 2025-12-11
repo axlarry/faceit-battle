@@ -19,6 +19,12 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 
 const LACURTE_URL = "https://faceit.lacurte.ro";
 
+// Faceit CDN domains that need proxying in Discord
+const FACEIT_CDN_DOMAINS = [
+  'distribution.faceit-cdn.net',
+  'assets.faceit-cdn.net'
+];
+
 // Cache the detection result
 let _isDiscordActivity: boolean | null = null;
 
@@ -112,4 +118,27 @@ export const invokeEdgeFunction = async (
  * Get anon key for direct usage
  */
 export const getSupabaseAnonKey = (): string => SUPABASE_ANON_KEY;
+
+/**
+ * Proxy avatar URLs for Discord Activity
+ * Discord's CSP blocks external images from faceit-cdn.net
+ * We proxy them through faceit.lacurte.ro/avatar-proxy/
+ */
+export const getProxiedAvatarUrl = (avatarUrl: string): string => {
+  if (!avatarUrl || !isDiscordActivity()) {
+    return avatarUrl;
+  }
+  
+  // Check if this is a Faceit CDN URL that needs proxying
+  const needsProxy = FACEIT_CDN_DOMAINS.some(domain => avatarUrl.includes(domain));
+  
+  if (!needsProxy) {
+    return avatarUrl;
+  }
+  
+  // Proxy through lacurte.ro which will forward to Faceit CDN
+  // Format: /.proxy/lacurte/avatar-proxy?url=<encoded_url>
+  const encodedUrl = encodeURIComponent(avatarUrl);
+  return `/.proxy/lacurte/avatar-proxy?url=${encodedUrl}`;
+};
 
