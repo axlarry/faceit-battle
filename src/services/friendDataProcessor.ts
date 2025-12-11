@@ -79,12 +79,16 @@ export class FriendDataProcessor {
           const { invokeEdgeFunction, isDiscordActivity } = await import('@/lib/discordProxy');
           const { supabase } = await import('@/integrations/supabase/client');
           
+          // Get stored password for sync authorization
+          const storedPassword = localStorage.getItem('faceit_friends_password') || '';
+          
           const invokeFn = isDiscordActivity() 
             ? (fn: string, body: Record<string, unknown>) => invokeEdgeFunction(fn, body)
             : (fn: string, body: Record<string, unknown>) => supabase.functions.invoke(fn, { body });
           
           await invokeFn('friends-gateway', {
             action: 'sync_nickname',
+            password: storedPassword,
             playerId: friend.player_id,
             newNickname: currentNickname,
             newAvatar: basicData?.avatar
