@@ -1,12 +1,15 @@
 
 import { Recording, RecordingsApiResponse } from '@/types/streaming';
-
-const RECORDINGS_API = 'https://faceit.lacurte.ro/recordings.php';
+import { getLacurteBaseUrl, isDiscordActivity } from '@/lib/discordProxy';
 
 class RecordingsService {
   private cache: Recording[] = [];
   private lastFetch: number = 0;
   private readonly CACHE_DURATION = 30000; // 30 seconds
+
+  private getRecordingsApiUrl(): string {
+    return `${getLacurteBaseUrl()}/recordings.php`;
+  }
 
   async getAllRecordings(): Promise<Recording[]> {
     const now = Date.now();
@@ -15,8 +18,15 @@ class RecordingsService {
       return this.cache;
     }
 
+    const apiUrl = this.getRecordingsApiUrl();
+    
+    console.log('📹 Fetching recordings:', {
+      url: apiUrl,
+      isDiscord: isDiscordActivity()
+    });
+
     try {
-      const response = await fetch(RECORDINGS_API);
+      const response = await fetch(apiUrl);
       
       if (!response.ok) {
         console.warn('Failed to fetch recordings:', response.status);
@@ -25,19 +35,26 @@ class RecordingsService {
 
       const data: RecordingsApiResponse = await response.json();
       
+      // Build recording URLs using the correct base
+      const baseUrl = getLacurteBaseUrl();
+      
       this.cache = data.recordings.map((rec, index) => ({
         id: `${rec.nickname}-${rec.date}-${index}`,
         nickname: rec.nickname,
         filename: rec.filename,
-        url: rec.url,
+        // Update URL to use proxy if in Discord
+        url: isDiscordActivity() 
+          ? rec.url.replace('https://faceit.lacurte.ro', baseUrl)
+          : rec.url,
         date: new Date(rec.date * 1000),
         size: rec.size,
       }));
 
       this.lastFetch = now;
+      console.log('✅ Recordings fetched:', this.cache.length);
       return this.cache;
     } catch (error) {
-      console.error('Error fetching recordings:', error);
+      console.error('❌ Error fetching recordings:', error);
       return this.cache;
     }
   }
