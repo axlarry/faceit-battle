@@ -103,21 +103,39 @@ export const invokeEdgeFunction = async (
 
     console.log(`📡 Response status for ${functionName}:`, response.status, response.statusText);
 
+    // Read raw text first to debug what Discord is returning
+    const rawText = await response.text();
+    console.log(`📄 Raw response for ${functionName}:`, rawText.substring(0, 500));
+
+    // Check if it's HTML (Discord error page) instead of JSON
+    if (rawText.startsWith('<!DOCTYPE') || rawText.startsWith('<html')) {
+      console.error(`❌ Discord proxy returned HTML instead of JSON for ${functionName}:`, {
+        url,
+        isDiscord,
+        hint: 'Check URL Mapping in Discord Developer Portal. The mapping might be missing or incorrect.',
+        expectedMapping: 'PREFIX: /supabase → TARGET: https://rwizxoeyatdtggrpnpmq.supabase.co'
+      });
+      return {
+        data: null,
+        error: new Error('Discord proxy returned HTML instead of JSON. URL mapping may be misconfigured.'),
+      };
+    }
+
     if (!response.ok) {
-      const errorText = await response.text();
       console.error(`❌ Edge function ${functionName} error:`, {
         status: response.status,
         statusText: response.statusText,
-        error: errorText,
+        error: rawText,
         url
       });
       return {
         data: null,
-        error: new Error(`${response.status}: ${errorText}`),
+        error: new Error(`${response.status}: ${rawText}`),
       };
     }
 
-    const data = await response.json();
+    // Parse the JSON from raw text
+    const data = JSON.parse(rawText);
     console.log(`✅ Edge function ${functionName} success:`, {
       hasData: !!data,
       dataType: typeof data,
