@@ -48,6 +48,7 @@ export const RegionTabs = ({ currentRegion, onRegionChange }: RegionTabsProps) =
     { 
       id: 'FRIENDS', 
       name: 'Prietenii Mei', 
+      shortName: 'Prieteni',
       icon: Users, 
       gradient: 'from-accent to-primary',
       iconColor: 'text-primary-foreground',
@@ -57,6 +58,7 @@ export const RegionTabs = ({ currentRegion, onRegionChange }: RegionTabsProps) =
     { 
       id: 'LIVE_STREAMS', 
       name: 'Live', 
+      shortName: 'Live',
       icon: Radio, 
       gradient: 'from-red-500 to-orange-500',
       iconColor: 'text-primary-foreground',
@@ -66,6 +68,7 @@ export const RegionTabs = ({ currentRegion, onRegionChange }: RegionTabsProps) =
     { 
       id: 'TEAM_BALANCER', 
       name: 'Team Balancer', 
+      shortName: 'Teams',
       icon: Shuffle, 
       gradient: 'from-green-500 to-emerald-600',
       iconColor: 'text-primary-foreground',
@@ -75,6 +78,7 @@ export const RegionTabs = ({ currentRegion, onRegionChange }: RegionTabsProps) =
     { 
       id: 'FACEIT_TOOL', 
       name: 'FACEIT Tool', 
+      shortName: 'Caută',
       icon: Search, 
       gradient: 'from-primary to-secondary',
       iconColor: 'text-primary-foreground',
@@ -89,8 +93,8 @@ export const RegionTabs = ({ currentRegion, onRegionChange }: RegionTabsProps) =
   };
 
   return (
-    <div className="flex justify-center items-center p-6">
-      <div className="flex gap-4 items-center">
+    <div className="flex justify-center items-center p-3 sm:p-6">
+      <div className="flex flex-wrap justify-center gap-2 sm:gap-4 items-center">
         {/* Modern Special Tabs */}
         {specialTabs.map((tab) => {
           const IconComponent = tab.icon;
@@ -101,7 +105,7 @@ export const RegionTabs = ({ currentRegion, onRegionChange }: RegionTabsProps) =
               <Button
                 onClick={() => onRegionChange(tab.id)}
                 className={`
-                  relative px-6 py-3 text-sm font-semibold transition-all duration-300 rounded-xl
+                  relative px-3 py-2 sm:px-6 sm:py-3 text-xs sm:text-sm font-semibold transition-all duration-300 rounded-xl
                   transform hover:scale-105 hover:shadow-lg
                   ${isActive 
                     ? `${tab.bgColor} text-primary-foreground shadow-lg scale-105` 
@@ -109,13 +113,13 @@ export const RegionTabs = ({ currentRegion, onRegionChange }: RegionTabsProps) =
                   }
                 `}
               >
-                <div className="flex items-center gap-3">
-                  <IconComponent size={18} className={isActive ? 'text-primary-foreground' : tab.iconColor} />
+                <div className="flex items-center gap-1.5 sm:gap-3">
+                  <IconComponent size={16} className={`sm:w-[18px] sm:h-[18px] ${isActive ? 'text-primary-foreground' : tab.iconColor}`} />
                   <span className="hidden sm:inline">
                     {tab.name}
                   </span>
                   <span className="sm:hidden">
-                    {tab.id === 'FRIENDS' ? 'Prieteni' : 'Tool'}
+                    {tab.shortName}
                   </span>
                 </div>
               </Button>
@@ -129,7 +133,7 @@ export const RegionTabs = ({ currentRegion, onRegionChange }: RegionTabsProps) =
             <PopoverTrigger asChild>
               <Button
                 className={`
-                  relative px-6 py-3 text-sm font-semibold transition-all duration-300 rounded-xl
+                  relative px-3 py-2 sm:px-6 sm:py-3 text-xs sm:text-sm font-semibold transition-all duration-300 rounded-xl
                   transform hover:scale-105 hover:shadow-lg
                   ${regions.some(r => r.id === currentRegion)
                     ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg scale-105' 
@@ -137,24 +141,25 @@ export const RegionTabs = ({ currentRegion, onRegionChange }: RegionTabsProps) =
                   }
                 `}
               >
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1.5 sm:gap-3">
                   <Globe 
-                    size={18} 
-                    className={`transition-all duration-300 ${isOpen ? 'rotate-180' : ''} ${regions.some(r => r.id === currentRegion) ? 'text-primary-foreground' : 'text-primary'}`} 
+                    size={16} 
+                    className={`sm:w-[18px] sm:h-[18px] transition-all duration-300 ${isOpen ? 'rotate-180' : ''} ${regions.some(r => r.id === currentRegion) ? 'text-primary-foreground' : 'text-primary'}`} 
                   />
                   
-                  <span>Rank Global</span>
+                  <span className="hidden sm:inline">Rank Global</span>
+                  <span className="sm:hidden">Rank</span>
                   
                   <ChevronDown 
-                    size={16} 
-                    className={`transition-all duration-300 ${isOpen ? 'rotate-180' : ''}`} 
+                    size={14} 
+                    className={`sm:w-4 sm:h-4 transition-all duration-300 ${isOpen ? 'rotate-180' : ''}`} 
                   />
                 </div>
               </Button>
             </PopoverTrigger>
 
             <PopoverContent 
-              className="w-[520px] md:w-[560px] p-0 bg-gradient-to-b from-background/80 to-background/60 border-border shadow-2xl rounded-2xl overflow-hidden backdrop-blur-xl border"
+              className="w-[90vw] sm:w-[520px] md:w-[560px] max-w-[560px] p-0 bg-gradient-to-b from-background/80 to-background/60 border-border shadow-2xl rounded-2xl overflow-hidden backdrop-blur-xl border"
               align="center"
               side="bottom"
               sideOffset={12}
