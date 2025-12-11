@@ -22,8 +22,17 @@ export const useFriends = () => {
 
   const loadFriendsFromDatabase = async (refreshData = true) => {
     try {
+      console.log('📋 Loading friends from database...', { isDiscord: isDiscordActivity() });
+      
       // First load existing data immediately
       const { data, error } = await invokeFunction('friends-gateway', { action: 'list' });
+
+      console.log('📋 Friends gateway response:', { 
+        hasData: !!data, 
+        error: error?.message,
+        dataType: typeof data,
+        rawData: data
+      });
 
       if (error) {
         console.error('Error loading friends via gateway:', error);
@@ -36,6 +45,8 @@ export const useFriends = () => {
       }
 
       const items = (data as any)?.items || [];
+      console.log(`📋 Parsed ${items.length} friends from response`);
+      
       const friendsData: Player[] = items.map((friend: any) => ({
         player_id: friend.player_id,
         nickname: friend.nickname,
@@ -48,6 +59,7 @@ export const useFriends = () => {
         kdRatio: friend.kdRatio || 0,
       }));
       setFriends(friendsData);
+      console.log(`✅ Set ${friendsData.length} friends in state`);
 
       // Then refresh all friends data in the background if requested
       if (refreshData) {
