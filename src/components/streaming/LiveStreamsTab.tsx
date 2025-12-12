@@ -13,7 +13,7 @@ import { PasswordDialog } from '@/components/faceit/PasswordDialog';
 import { toast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { recordingsService } from '@/services/recordingsService';
-import { getProxiedImageUrl, getLacurteBaseUrl } from '@/lib/discordProxy';
+import { getProxiedImageUrl, getLacurteBaseUrl, getProxiedLacurteUrl } from '@/lib/discordProxy';
 
 interface LiveStreamsTabProps {
   friends: Player[];
@@ -243,9 +243,22 @@ export const LiveStreamsTab = ({ friends }: LiveStreamsTabProps) => {
                             className="group relative bg-card/50 rounded-lg border border-border/50 overflow-hidden hover:border-purple-500/50 transition-all cursor-pointer"
                             onClick={() => handlePlayRecording(recording)}
                           >
-                            {/* Thumbnail placeholder */}
-                            <div className="aspect-video bg-gradient-to-br from-purple-900/30 to-purple-600/10 flex items-center justify-center">
-                              <Film className="text-purple-500/50" size={32} />
+                            {/* Thumbnail */}
+                            <div className="aspect-video bg-gradient-to-br from-purple-900/30 to-purple-600/10 relative">
+                              {recording.thumbnailUrl ? (
+                                <img 
+                                  src={getProxiedLacurteUrl(recording.thumbnailUrl)}
+                                  alt={recording.filename}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => {
+                                    e.currentTarget.style.display = 'none';
+                                    e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                                  }}
+                                />
+                              ) : null}
+                              <div className={`absolute inset-0 flex items-center justify-center ${recording.thumbnailUrl ? 'hidden' : ''}`}>
+                                <Film className="text-purple-500/50" size={32} />
+                              </div>
                               
                               {/* Play overlay */}
                               <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
