@@ -30,8 +30,10 @@ export interface Recording {
   nickname: string;
   filename: string;
   url: string;
+  thumbnailUrl?: string;
   date: Date;
   size: number;
+  duration?: number;
 }
 
 export interface RecordingsApiResponse {
@@ -39,7 +41,9 @@ export interface RecordingsApiResponse {
     nickname: string;
     filename: string;
     url: string;
+    thumbnailUrl?: string;
     date: number;
     size: number;
+    duration?: number;
   }[];
 }

@@ -46,8 +46,10 @@ class RecordingsService {
         url: isDiscordActivity() 
           ? rec.url.replace('https://faceit.lacurte.ro', baseUrl)
           : rec.url,
+        thumbnailUrl: rec.thumbnailUrl,
         date: new Date(rec.date * 1000),
         size: rec.size,
+        duration: rec.duration,
       }));
 
       this.lastFetch = now;
