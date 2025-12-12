@@ -5,7 +5,7 @@ import { Recording } from '@/types/streaming';
 import { recordingsService } from '@/services/recordingsService';
 import { format } from 'date-fns';
 import { Player } from '@/types/Player';
-import { getProxiedImageUrl, getLacurteBaseUrl } from '@/lib/discordProxy';
+import { getProxiedImageUrl, getProxiedLacurteUrl } from '@/lib/discordProxy';
 
 interface RecordingsListProps {
   recordings: Recording[];
@@ -26,8 +26,10 @@ const formatDuration = (seconds?: number): string => {
 const RecordingThumbnail = ({ recording, onClick }: { recording: Recording; onClick: () => void }) => {
   const [imageError, setImageError] = useState(false);
   const thumbnailUrl = recording.thumbnailUrl 
-    ? `${getLacurteBaseUrl()}${recording.thumbnailUrl}`
+    ? getProxiedLacurteUrl(recording.thumbnailUrl)
     : null;
+  
+  console.log('📷 Thumbnail URL:', { original: recording.thumbnailUrl, proxied: thumbnailUrl });
 
   return (
     <div 
