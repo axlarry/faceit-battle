@@ -167,8 +167,15 @@ export const RecordingPlayer = ({ recording, isOpen, onClose }: RecordingPlayerP
             controls
             playsInline
             muted={isMuted}
+            preload="metadata"
             onPlay={() => setIsPlaying(true)}
             onPause={() => setIsPlaying(false)}
+            onLoadedMetadata={() => {
+              // Start playing as soon as metadata is loaded
+              if (videoRef.current) {
+                videoRef.current.play().catch(() => {});
+              }
+            }}
           />
         </div>
       </DialogContent>
