@@ -6,6 +6,7 @@ import { Recording } from '@/types/streaming';
 import { recordingsService } from '@/services/recordingsService';
 import { format } from 'date-fns';
 import { Player } from '@/types/Player';
+import { getProxiedImageUrl } from '@/lib/discordProxy';
 
 interface RecordingsListProps {
   recordings: Recording[];
@@ -43,7 +44,7 @@ export const RecordingsList = ({ recordings, groupedRecordings, friends, onPlay 
             <div className="flex items-center gap-3">
               {friend?.avatar ? (
                 <img 
-                  src={friend.avatar} 
+                  src={getProxiedImageUrl(friend.avatar)} 
                   alt={nickname}
                   className="w-8 h-8 rounded-full border border-border"
                 />
