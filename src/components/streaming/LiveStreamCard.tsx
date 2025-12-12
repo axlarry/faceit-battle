@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { StreamStatusBadge } from './StreamStatusBadge';
 import { LiveStream } from '@/types/streaming';
 import { Player } from '@/types/Player';
+import { getProxiedImageUrl } from '@/lib/discordProxy';
 
 interface LiveStreamCardProps {
   stream: LiveStream;
@@ -13,7 +14,8 @@ interface LiveStreamCardProps {
 }
 
 export const LiveStreamCard = ({ stream, friend, onWatch }: LiveStreamCardProps) => {
-  const avatar = friend?.avatar || `https://ui-avatars.com/api/?name=${stream.nickname}&background=random`;
+  const rawAvatar = friend?.avatar || `https://ui-avatars.com/api/?name=${stream.nickname}&background=random`;
+  const avatar = getProxiedImageUrl(rawAvatar);
   const level = friend?.level;
 
   return (
