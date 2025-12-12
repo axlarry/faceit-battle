@@ -79,7 +79,7 @@ export const LiveStreamsTab = ({ friends }: LiveStreamsTabProps) => {
         body: JSON.stringify({
           filename: recordingToDelete.filename,
           nickname: recordingToDelete.nickname,
-          password
+          adminPassword: password
         })
       });
 
