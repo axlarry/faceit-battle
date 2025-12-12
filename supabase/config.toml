@@ -11,3 +11,6 @@ verify_jwt = true
 
 [functions.friends-gateway]
 verify_jwt = false
+
+[functions.proxy-image]
+verify_jwt = false
