@@ -35,6 +35,8 @@ class RecordingsService {
 
       const data: RecordingsApiResponse = await response.json();
       
+      console.log('📹 Recordings API response:', data);
+      
       // Build recording URLs using the correct base
       const baseUrl = getLacurteBaseUrl();
       
