@@ -145,3 +145,23 @@ export const getProxiedImageUrl = (imageUrl: string): string => {
 // Backward compatibility alias
 export const getProxiedAvatarUrl = getProxiedImageUrl;
 
+/**
+ * Proxy lacurte.ro URLs (thumbnails, recordings) for Discord Activity
+ * Constructs full URL from relative path and adds Discord proxy prefix
+ */
+export const getProxiedLacurteUrl = (relativePath: string): string => {
+  if (!relativePath) return '';
+  
+  // If it's already a full URL, return as-is (but proxy if in Discord)
+  if (relativePath.startsWith('http')) {
+    if (isDiscordActivity() && relativePath.includes('faceit.lacurte.ro')) {
+      return relativePath.replace('https://faceit.lacurte.ro', '/.proxy/lacurte');
+    }
+    return relativePath;
+  }
+  
+  // Build full URL from relative path
+  const baseUrl = getLacurteBaseUrl();
+  return `${baseUrl}${relativePath.startsWith('/') ? '' : '/'}${relativePath}`;
+};
+

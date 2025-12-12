@@ -53,13 +53,46 @@ export const RecordingPlayer = ({ recording, isOpen, onClose }: RecordingPlayerP
     };
   }, [isOpen]);
 
-  const toggleFullscreen = () => {
-    if (!document.fullscreenElement) {
-      videoRef.current?.requestFullscreen();
-      setIsFullscreen(true);
-    } else {
-      document.exitFullscreen();
-      setIsFullscreen(false);
+  const toggleFullscreen = async () => {
+    try {
+      const video = videoRef.current;
+      const container = document.querySelector('[data-recording-player-container]') as HTMLElement;
+      
+      if (!isFullscreen) {
+        // Try iOS Safari first
+        if (video && 'webkitEnterFullscreen' in video) {
+          (video as any).webkitEnterFullscreen();
+          setIsFullscreen(true);
+        } else if (container?.requestFullscreen) {
+          await container.requestFullscreen();
+          setIsFullscreen(true);
+        } else if (video?.requestFullscreen) {
+          await video.requestFullscreen();
+          setIsFullscreen(true);
+        } else if ((container as any)?.webkitRequestFullscreen) {
+          (container as any).webkitRequestFullscreen();
+          setIsFullscreen(true);
+        } else if ((video as any)?.webkitRequestFullscreen) {
+          (video as any).webkitRequestFullscreen();
+          setIsFullscreen(true);
+        } else {
+          // CSS fallback for Discord iframe - maximize dialog
+          setIsFullscreen(true);
+        }
+      } else {
+        if (document.fullscreenElement) {
+          if (document.exitFullscreen) {
+            await document.exitFullscreen();
+          } else if ((document as any).webkitExitFullscreen) {
+            (document as any).webkitExitFullscreen();
+          }
+        }
+        setIsFullscreen(false);
+      }
+    } catch (err) {
+      console.warn('Fullscreen not available, using CSS fallback:', err);
+      // Toggle CSS fullscreen fallback for Discord
+      setIsFullscreen(!isFullscreen);
     }
   };
 
@@ -119,7 +152,15 @@ export const RecordingPlayer = ({ recording, isOpen, onClose }: RecordingPlayerP
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-5xl w-[95vw] p-0 bg-black border-border overflow-hidden" aria-describedby={undefined}>
+      <DialogContent 
+        data-recording-player-container
+        className={`p-0 bg-black border-border overflow-hidden transition-all duration-300 ${
+          isFullscreen 
+            ? 'fixed inset-0 max-w-none w-screen h-screen rounded-none z-[100]' 
+            : 'max-w-5xl w-[95vw]'
+        }`} 
+        aria-describedby={undefined}
+      >
         <VisuallyHidden>
           <DialogTitle>Recording - {recording.nickname}</DialogTitle>
         </VisuallyHidden>
