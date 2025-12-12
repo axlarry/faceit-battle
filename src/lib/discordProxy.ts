@@ -120,25 +120,28 @@ export const invokeEdgeFunction = async (
 export const getSupabaseAnonKey = (): string => SUPABASE_ANON_KEY;
 
 /**
- * Proxy avatar URLs for Discord Activity
+ * Proxy image URLs for Discord Activity
  * Discord's CSP blocks external images from faceit-cdn.net
- * We proxy them through faceit.lacurte.ro/avatar-proxy/
+ * We proxy them through our Supabase edge function
  */
-export const getProxiedAvatarUrl = (avatarUrl: string): string => {
-  if (!avatarUrl || !isDiscordActivity()) {
-    return avatarUrl;
+export const getProxiedImageUrl = (imageUrl: string): string => {
+  if (!imageUrl || !isDiscordActivity()) {
+    return imageUrl;
   }
   
   // Check if this is a Faceit CDN URL that needs proxying
-  const needsProxy = FACEIT_CDN_DOMAINS.some(domain => avatarUrl.includes(domain));
+  const needsProxy = FACEIT_CDN_DOMAINS.some(domain => imageUrl.includes(domain));
   
   if (!needsProxy) {
-    return avatarUrl;
+    return imageUrl;
   }
   
-  // Proxy through lacurte.ro which will forward to Faceit CDN
-  // Format: /.proxy/lacurte/avatar-proxy?url=<encoded_url>
-  const encodedUrl = encodeURIComponent(avatarUrl);
-  return `/.proxy/lacurte/avatar-proxy?url=${encodedUrl}`;
+  // Proxy through Supabase edge function via Discord proxy
+  // Format: /.proxy/supabase/functions/v1/proxy-image?url=<encoded_url>
+  const encodedUrl = encodeURIComponent(imageUrl);
+  return `/.proxy/supabase/functions/v1/proxy-image?url=${encodedUrl}`;
 };
+
+// Backward compatibility alias
+export const getProxiedAvatarUrl = getProxiedImageUrl;
 
