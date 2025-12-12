@@ -1,6 +1,6 @@
 
 import React, { useRef, useState } from 'react';
-import { X, Maximize2, Minimize2, Volume2, VolumeX, Download, Share2, Play, Pause } from 'lucide-react';
+import { X, Maximize2, Minimize2, Volume2, VolumeX, Download, Share2, Play, Pause, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
@@ -21,6 +21,8 @@ export const RecordingPlayer = ({ recording, isOpen, onClose }: RecordingPlayerP
   const [isMuted, setIsMuted] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
+  const [isLoading, setIsLoading] = useState(true);
+  const [bufferedPercent, setBufferedPercent] = useState(0);
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -160,6 +162,27 @@ export const RecordingPlayer = ({ recording, isOpen, onClose }: RecordingPlayerP
 
         {/* Video Player */}
         <div className="relative aspect-video bg-black">
+          {/* Loading Overlay */}
+          {isLoading && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 z-20">
+              <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
+              <span className="text-white/80 text-sm">Se încarcă înregistrarea...</span>
+              {bufferedPercent > 0 && (
+                <div className="mt-3 w-48">
+                  <div className="h-1 bg-white/20 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-primary transition-all duration-300"
+                      style={{ width: `${bufferedPercent}%` }}
+                    />
+                  </div>
+                  <span className="text-white/60 text-xs mt-1 block text-center">
+                    {bufferedPercent.toFixed(0)}% încărcat
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+          
           <video
             ref={videoRef}
             src={recording.url}
@@ -167,11 +190,18 @@ export const RecordingPlayer = ({ recording, isOpen, onClose }: RecordingPlayerP
             controls
             playsInline
             muted={isMuted}
-            preload="metadata"
+            preload="auto"
             onPlay={() => setIsPlaying(true)}
             onPause={() => setIsPlaying(false)}
+            onWaiting={() => setIsLoading(true)}
+            onCanPlay={() => setIsLoading(false)}
+            onProgress={() => {
+              if (videoRef.current && videoRef.current.buffered.length > 0 && videoRef.current.duration) {
+                const buffered = videoRef.current.buffered.end(videoRef.current.buffered.length - 1);
+                setBufferedPercent((buffered / videoRef.current.duration) * 100);
+              }
+            }}
             onLoadedMetadata={() => {
-              // Start playing as soon as metadata is loaded
               if (videoRef.current) {
                 videoRef.current.play().catch(() => {});
               }
