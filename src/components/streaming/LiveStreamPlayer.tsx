@@ -8,6 +8,7 @@ import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { LiveStream } from '@/types/streaming';
 import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { useStreamViewerTracking, useStreamViewerCount } from '@/hooks/useStreamViewerTracking';
 
 interface LiveStreamPlayerProps {
   stream: LiveStream | null;
@@ -42,6 +43,10 @@ export const LiveStreamPlayer = memo(({ stream, isOpen, onClose }: LiveStreamPla
   
   const durationIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const volumeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Real-time viewer tracking using Supabase Presence
+  useStreamViewerTracking(stream?.nickname || null, isOpen && !!stream?.streamUrl);
+  const realtimeViewerCount = useStreamViewerCount(isOpen && stream?.nickname ? stream.nickname : null);
 
   // Format time as HH:MM:SS or MM:SS
   const formatTime = (seconds: number): string => {
@@ -451,10 +456,10 @@ export const LiveStreamPlayer = memo(({ stream, isOpen, onClose }: LiveStreamPla
                   </span>
                 )}
                 
-                {stream && stream.viewers > 0 && (
+                {realtimeViewerCount > 0 && (
                   <span className="flex items-center gap-1 text-white/60 text-xs md:text-sm">
                     <Users size={12} className="md:w-3.5 md:h-3.5" />
-                    {stream.viewers}
+                    {realtimeViewerCount}
                   </span>
                 )}
               </div>
