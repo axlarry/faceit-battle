@@ -6,6 +6,7 @@ import { MiniStreamPlayer } from './MiniStreamPlayer';
 import { LiveStream } from '@/types/streaming';
 import { Player } from '@/types/Player';
 import { getProxiedImageUrl } from '@/lib/discordProxy';
+import { useStreamViewerCount } from '@/hooks/useStreamViewerTracking';
 
 interface LiveStreamCardProps {
   stream: LiveStream;
@@ -17,6 +18,9 @@ export const LiveStreamCard = ({ stream, friend, onWatch }: LiveStreamCardProps)
   const rawAvatar = friend?.avatar || `https://ui-avatars.com/api/?name=${stream.nickname}&background=random`;
   const avatar = getProxiedImageUrl(rawAvatar);
   const level = friend?.level;
+  
+  // Real-time viewer count from Supabase Presence
+  const realtimeViewerCount = useStreamViewerCount(stream.isLive ? stream.nickname : null);
 
   return (
     <div className={`
@@ -62,11 +66,11 @@ export const LiveStreamCard = ({ stream, friend, onWatch }: LiveStreamCardProps)
         </>
       )}
 
-      {/* Viewer count overlay for live streams */}
-      {stream.isLive && stream.viewers > 0 && (
+      {/* Viewer count overlay for live streams - using real-time count */}
+      {stream.isLive && realtimeViewerCount > 0 && (
         <div className="absolute top-2 right-2 px-2 py-0.5 bg-black/60 rounded text-xs text-white flex items-center gap-1">
           <Users size={12} />
-          {stream.viewers}
+          {realtimeViewerCount}
         </div>
       )}
     </div>
