@@ -11,7 +11,9 @@ class StreamingService {
   // Key: lowercase nickname, Value: stream data with original name and viewers
   private cachedStreams: Map<string, StreamData> = new Map();
   private lastFetch: number = 0;
+  private lastError: number = 0;
   private readonly CACHE_DURATION = 5000; // 5 seconds
+  private readonly ERROR_BACKOFF = 60000; // 1 minute backoff on errors
 
   private getStreamApiBase(): string {
     return `${getLacurteBaseUrl()}/stream-api`;
@@ -29,12 +31,12 @@ class StreamingService {
       return Object.fromEntries(this.cachedStreams);
     }
 
+    // If we had a recent error, use longer backoff to avoid spamming
+    if (this.lastError > 0 && now - this.lastError < this.ERROR_BACKOFF) {
+      return Object.fromEntries(this.cachedStreams);
+    }
+
     const apiUrl = `${this.getStreamApiBase()}/v3/paths/list`;
-    
-    console.log('📺 Fetching active streams:', {
-      url: apiUrl,
-      isDiscord: isDiscordActivity()
-    });
 
     try {
       const response = await fetch(apiUrl, {
@@ -45,9 +47,11 @@ class StreamingService {
       });
 
       if (!response.ok) {
-        console.warn('Failed to fetch active streams:', response.status);
+        this.lastError = now;
         return Object.fromEntries(this.cachedStreams);
       }
+      
+      this.lastError = 0; // Clear error state on success
 
       const data: StreamsResponse = await response.json();
 
@@ -67,12 +71,10 @@ class StreamingService {
         });
       }
       
-      console.log('✅ Active streams found:', Object.fromEntries(this.cachedStreams));
-
       this.lastFetch = now;
       return Object.fromEntries(this.cachedStreams);
     } catch (error) {
-      console.error('❌ Error fetching active streams:', error);
+      this.lastError = now;
       return Object.fromEntries(this.cachedStreams);
     }
   }
