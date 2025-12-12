@@ -1,6 +1,6 @@
 
-import React, { useRef, useState } from 'react';
-import { X, Maximize2, Minimize2, Volume2, VolumeX, Download, Share2, Play, Pause, Loader2 } from 'lucide-react';
+import React, { useRef, useState, useEffect } from 'react';
+import { X, Maximize2, Minimize2, Volume2, VolumeX, Download, Share2, Play, Pause, Loader2, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
@@ -15,6 +15,17 @@ interface RecordingPlayerProps {
   onClose: () => void;
 }
 
+const formatTime = (seconds: number): string => {
+  if (!isFinite(seconds) || isNaN(seconds)) return '0:00';
+  const hrs = Math.floor(seconds / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
+  const secs = Math.floor(seconds % 60);
+  if (hrs > 0) {
+    return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  }
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+};
+
 export const RecordingPlayer = ({ recording, isOpen, onClose }: RecordingPlayerProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -23,6 +34,24 @@ export const RecordingPlayer = ({ recording, isOpen, onClose }: RecordingPlayerP
   const [playbackSpeed, setPlaybackSpeed] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [bufferedPercent, setBufferedPercent] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const handleTimeUpdate = () => setCurrentTime(video.currentTime);
+    const handleDurationChange = () => setDuration(video.duration);
+
+    video.addEventListener('timeupdate', handleTimeUpdate);
+    video.addEventListener('durationchange', handleDurationChange);
+
+    return () => {
+      video.removeEventListener('timeupdate', handleTimeUpdate);
+      video.removeEventListener('durationchange', handleDurationChange);
+    };
+  }, [isOpen]);
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -97,14 +126,20 @@ export const RecordingPlayer = ({ recording, isOpen, onClose }: RecordingPlayerP
         
         {/* Header */}
         <div className="flex items-center justify-between p-4 bg-gradient-to-b from-black/80 to-transparent absolute top-0 left-0 right-0 z-10">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <div className="w-2 h-2 bg-blue-500 rounded-full" />
             <span className="font-bold text-white">{recording.nickname}</span>
             <span className="text-white/60 text-sm">• Recording</span>
-            <span className="text-white/40 text-xs">
+            <div className="flex items-center gap-1.5 px-2 py-1 bg-white/10 rounded-md">
+              <Clock size={12} className="text-white/60" />
+              <span className="text-white text-xs font-mono">
+                {formatTime(currentTime)} / {formatTime(duration)}
+              </span>
+            </div>
+            <span className="text-white/40 text-xs hidden sm:inline">
               {format(recording.date, 'MMM d, yyyy HH:mm')}
             </span>
-            <span className="text-white/40 text-xs">
+            <span className="text-white/40 text-xs hidden sm:inline">
               ({recordingsService.formatFileSize(recording.size)})
             </span>
           </div>
