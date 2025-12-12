@@ -244,14 +244,40 @@ export const LiveStreamPlayer = memo(({ stream, isOpen, onClose }: LiveStreamPla
     };
   }, [isOpen, stream?.streamUrl, videoReady]);
 
-  const toggleFullscreen = () => {
-    const container = document.querySelector('.live-player-container');
-    if (!document.fullscreenElement && container) {
-      container.requestFullscreen();
-      setIsFullscreen(true);
-    } else {
-      document.exitFullscreen();
-      setIsFullscreen(false);
+  const toggleFullscreen = async () => {
+    try {
+      // Try video element fullscreen first (works better in Discord/iframes)
+      const video = videoRef.current;
+      const container = document.querySelector('.live-player-container') as HTMLElement;
+      
+      if (!document.fullscreenElement) {
+        // Try video element first for better iframe/Discord compatibility
+        if (video && 'webkitEnterFullscreen' in video) {
+          // iOS Safari
+          (video as any).webkitEnterFullscreen();
+          setIsFullscreen(true);
+        } else if (video?.requestFullscreen) {
+          await video.requestFullscreen();
+          setIsFullscreen(true);
+        } else if (container?.requestFullscreen) {
+          await container.requestFullscreen();
+          setIsFullscreen(true);
+        } else if ((video as any)?.webkitRequestFullscreen) {
+          (video as any).webkitRequestFullscreen();
+          setIsFullscreen(true);
+        }
+      } else {
+        if (document.exitFullscreen) {
+          await document.exitFullscreen();
+        } else if ((document as any).webkitExitFullscreen) {
+          (document as any).webkitExitFullscreen();
+        }
+        setIsFullscreen(false);
+      }
+    } catch (err) {
+      console.warn('Fullscreen not available:', err);
+      // Fallback: maximize the dialog instead
+      setIsFullscreen(!isFullscreen);
     }
   };
 
