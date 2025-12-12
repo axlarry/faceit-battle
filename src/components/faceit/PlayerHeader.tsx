@@ -1,8 +1,10 @@
 
+import { useMemo } from "react";
 import { Player } from "@/types/Player";
 import { useLcryptApi } from "@/hooks/useLcryptApi";
 import { ModernSkillCard } from "./ModernSkillCard";
 import { ModernTodayCard } from "./ModernTodayCard";
+import { getProxiedImageUrl } from "@/lib/discordProxy";
 
 interface PlayerHeaderProps {
   player: Player;
@@ -12,16 +14,24 @@ interface PlayerHeaderProps {
 export const PlayerHeader = ({ player, isFriend = false }: PlayerHeaderProps) => {
   const { data: lcryptData } = useLcryptApi(player.nickname);
 
+  // Proxy images for Discord Activity
+  const proxiedCoverImage = useMemo(() => {
+    return player.cover_image ? getProxiedImageUrl(player.cover_image) : null;
+  }, [player.cover_image]);
+
+  const proxiedAvatar = useMemo(() => {
+    return getProxiedImageUrl(player.avatar);
+  }, [player.avatar]);
 
   return (
     <div className="relative text-center space-y-6 rounded-2xl overflow-hidden">
       {/* Background Cover Image */}
-      {player.cover_image && (
+      {proxiedCoverImage && (
         <>
           <div 
             className="absolute inset-0 bg-cover bg-center bg-no-repeat"
             style={{
-              backgroundImage: `url(${player.cover_image})`,
+              backgroundImage: `url(${proxiedCoverImage})`,
             }}
           />
           {/* Uniform dark overlay - no gradient to avoid bright streak */}
@@ -32,7 +42,7 @@ export const PlayerHeader = ({ player, isFriend = false }: PlayerHeaderProps) =>
       {/* Content - positioned above background */}
       <div className="relative z-10 p-6">
         <img
-          src={player.avatar}
+          src={proxiedAvatar}
           alt={player.nickname}
           loading="lazy"
           className="w-28 h-28 rounded-full border-4 border-orange-400 mx-auto animate-fade-in"

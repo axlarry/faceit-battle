@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import { Player } from "@/types/Player";
 import { useSteamIdConverter } from './SteamIdConverter';
 import { LoaderCircle, Zap, Crown, Video, Play } from 'lucide-react';
@@ -8,6 +8,7 @@ import { PlayerStatsCompact } from './PlayerStatsCompact';
 import { PlayerActionsCompact } from './PlayerActionsCompact';
 import { LiveMatchDetails } from './LiveMatchDetails';
 import { Button } from '@/components/ui/button';
+import { getProxiedImageUrl } from '@/lib/discordProxy';
 
 interface FriendWithLcrypt extends Player {
   lcryptData?: any;
@@ -115,11 +116,16 @@ export const FriendListItem = React.memo(({
   const playerStyles = getPlayerStyles();
   const shouldShowLoadingOverlay = friend.lcryptData === undefined && isLoadingElo;
 
+  // Proxy cover image for Discord Activity
+  const proxiedCoverImage = useMemo(() => {
+    return friend.cover_image ? getProxiedImageUrl(friend.cover_image) : null;
+  }, [friend.cover_image]);
+
   // Enhanced background with 3D depth
-  const backgroundStyle = friend.cover_image ? {
+  const backgroundStyle = proxiedCoverImage ? {
     backgroundImage: `
       linear-gradient(135deg, rgba(0, 0, 0, 0.8) 0%, rgba(0, 0, 0, 0.6) 50%, rgba(0, 0, 0, 0.8) 100%),
-      url(${friend.cover_image})
+      url(${proxiedCoverImage})
     `,
     backgroundSize: 'cover',
     backgroundPosition: 'center',
@@ -140,9 +146,9 @@ export const FriendListItem = React.memo(({
           transform-gpu will-change-transform hover:scale-[1.01]
           backdrop-blur-xl overflow-hidden
           ${isFlashing ? 'animate-pulse border-orange-400 bg-gradient-to-br from-orange-500/30 via-red-500/20 to-orange-500/30' : ''}
-          ${!friend.cover_image ? `bg-gradient-to-br ${playerStyles.background}` : ''}
+          ${!proxiedCoverImage ? `bg-gradient-to-br ${playerStyles.background}` : ''}
         `} 
-        style={friend.cover_image ? backgroundStyle : {}}
+        style={proxiedCoverImage ? backgroundStyle : {}}
       >
         {/* 3D depth layers */}
         <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-black/20 rounded-3xl"></div>
@@ -213,7 +219,7 @@ export const FriendListItem = React.memo(({
           </div>}
 
         {/* Enhanced background overlay for readability */}
-        {friend.cover_image && <div className="absolute inset-0 bg-gradient-to-br from-black/40 via-black/20 to-black/40 rounded-3xl"></div>}
+        {proxiedCoverImage && <div className="absolute inset-0 bg-gradient-to-br from-black/40 via-black/20 to-black/40 rounded-3xl"></div>}
 
         {/* Main content */}
         <div className="flex items-center gap-4 relative z-10 mb-3">
