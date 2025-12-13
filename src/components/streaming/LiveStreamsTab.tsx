@@ -15,6 +15,18 @@ import { format } from 'date-fns';
 import { recordingsService } from '@/services/recordingsService';
 import { getProxiedImageUrl, getLacurteBaseUrl, getProxiedLacurteUrl } from '@/lib/discordProxy';
 
+// Format duration from seconds to HH:MM:SS
+const formatDuration = (seconds: number): string => {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+  
+  if (hours > 0) {
+    return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  }
+  return `${minutes}:${secs.toString().padStart(2, '0')}`;
+};
+
 interface LiveStreamsTabProps {
   friends: Player[];
 }
@@ -282,7 +294,7 @@ export const LiveStreamsTab = ({ friends }: LiveStreamsTabProps) => {
 
                               {/* Duration badge */}
                               <div className="absolute bottom-2 right-2 px-1.5 py-0.5 bg-black/80 rounded text-xs text-white font-mono">
-                                {recordingsService.formatFileSize(recording.size)}
+                                {recording.duration ? formatDuration(recording.duration) : recordingsService.formatFileSize(recording.size)}
                               </div>
                             </div>
 
