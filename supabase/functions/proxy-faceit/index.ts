@@ -53,6 +53,40 @@ function getClientIp(req: Request): string {
 
 const proxyLimiter = new RateLimiter(60, 60_000); // 60 Faceit calls/min per IP
 
+// Retry fetch with exponential backoff for network errors
+async function fetchWithRetry(url: string, options: RequestInit, maxRetries = 3): Promise<Response> {
+  let lastError: Error | null = null;
+  
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+      
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal,
+      });
+      
+      clearTimeout(timeoutId);
+      return response;
+    } catch (error) {
+      lastError = error as Error;
+      console.log(`[proxy-faceit] fetch attempt ${attempt + 1} failed:`, error.message);
+      
+      // Don't retry on abort (timeout)
+      if (error.name === 'AbortError') {
+        throw new Error('Request timeout');
+      }
+      
+      // Wait before retry (exponential backoff)
+      if (attempt < maxRetries - 1) {
+        await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 500));
+      }
+    }
+  }
+  
+  throw lastError || new Error('Network request failed');
+}
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -100,7 +134,7 @@ serve(async (req) => {
     }
 
     const url = `${FACEIT_BASE}${endpoint}`;
-    const response = await fetch(url, {
+    const response = await fetchWithRetry(url, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
@@ -126,6 +160,7 @@ serve(async (req) => {
     console.log(`[proxy-faceit] success`, { endpoint });
     return new Response(JSON.stringify(data), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   } catch (e) {
+    console.error(`[proxy-faceit] error:`, e.message);
     return new Response(JSON.stringify({ error: e.message || 'Unknown error' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   }
 });
