@@ -75,26 +75,28 @@ export class FriendDataProcessor {
       const avatarChanged = basicData?.avatar && basicData.avatar !== friend.avatar;
       
       if (nicknameChanged || avatarChanged) {
-        try {
-          const { invokeEdgeFunction, isDiscordActivity } = await import('@/lib/discordProxy');
-          const { supabase } = await import('@/integrations/supabase/client');
-          
-          // Get stored password for sync authorization
-          const storedPassword = localStorage.getItem('faceit_friends_password') || '';
-          
-          const invokeFn = isDiscordActivity() 
-            ? (fn: string, body: Record<string, unknown>) => invokeEdgeFunction(fn, body)
-            : (fn: string, body: Record<string, unknown>) => supabase.functions.invoke(fn, { body });
-          
-          await invokeFn('friends-gateway', {
-            action: 'sync_nickname',
-            password: storedPassword,
-            playerId: friend.player_id,
-            newNickname: currentNickname,
-            newAvatar: basicData?.avatar
-          }).catch(() => {});
-        } catch (error) {
-          // Silent fail for sync
+        const storedPassword = localStorage.getItem('faceit_friends_password') || '';
+        
+        // Only sync if password is available to avoid 401 errors
+        if (storedPassword) {
+          try {
+            const { invokeEdgeFunction, isDiscordActivity } = await import('@/lib/discordProxy');
+            const { supabase } = await import('@/integrations/supabase/client');
+            
+            const invokeFn = isDiscordActivity() 
+              ? (fn: string, body: Record<string, unknown>) => invokeEdgeFunction(fn, body)
+              : (fn: string, body: Record<string, unknown>) => supabase.functions.invoke(fn, { body });
+            
+            await invokeFn('friends-gateway', {
+              action: 'sync_nickname',
+              password: storedPassword,
+              playerId: friend.player_id,
+              newNickname: currentNickname,
+              newAvatar: basicData?.avatar
+            }).catch(() => {});
+          } catch (error) {
+            // Silent fail for sync
+          }
         }
       }
 
