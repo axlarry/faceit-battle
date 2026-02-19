@@ -53,8 +53,19 @@ export const FriendInfo = memo(({ nickname, level, elo, lcryptData }: FriendInfo
         )}
       </div>
       
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-0.5">
         <span className="text-primary font-bold text-sm">{elo} ELO</span>
+        {lcryptData?.country_ranking && (
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            {lcryptData?.country_flag && (
+              <span>{lcryptData.country_flag}</span>
+            )}
+            <span>#{lcryptData.country_ranking?.toLocaleString()}</span>
+            {lcryptData?.region_ranking && (
+              <span className="text-muted-foreground/70">• EU #{lcryptData.region_ranking?.toLocaleString()}</span>
+            )}
+          </div>
+        )}
         <TrendIndicator trend={lcryptData?.trend} report={lcryptData?.report} />
       </div>
       
