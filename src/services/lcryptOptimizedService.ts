@@ -69,7 +69,7 @@ export class LcryptOptimizedService {
         return { isLive: false, error: true };
       }
 
-      if (data?.error === true || data?.message === "player not found") {
+      if (data?.message === "player not found" && !data?.elo) {
         console.log(`❌ Player ${nickname} not found in Lcrypt database`);
         return { isLive: false, error: true };
       }

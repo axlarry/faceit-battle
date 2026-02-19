@@ -52,7 +52,7 @@ export const useLcryptApi = (nickname: string) => {
         // Folosește serviciul optimizat pentru un singur apel
         const result = await lcryptOptimizedService.getCompletePlayerData(nickname);
 
-        if (result?.error) {
+        if (!result?.elo && result?.error) {
           throw new Error('Failed to fetch ELO data');
         }
 

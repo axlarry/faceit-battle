@@ -26,7 +26,7 @@ export class LcryptLiveService {
       console.log(`📊 Lcrypt data for ${nickname}:`, data);
 
       // Check if the response indicates player not found
-      if (data?.error === true || data?.message === "player not found") {
+      if (data?.message === "player not found" && !data?.elo) {
         console.log(`❌ Player ${nickname} not found in Lcrypt database`);
         return { isLive: false };
       }
@@ -185,7 +185,7 @@ export const fetchLcryptData = async (nickname: string) => {
       throw error;
     }
 
-    if (data?.error === true || data?.message === "player not found") {
+    if (data?.message === "player not found" && !data?.elo) {
       console.log(`❌ Player ${nickname} not found in Lcrypt database`);
       return null;
     }
