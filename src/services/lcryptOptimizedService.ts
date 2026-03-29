@@ -1,14 +1,11 @@
-
+/**
+ * LcryptOptimizedService — fetches data from faceit.lcrypt.eu via the
+ * get-lcrypt-elo edge function (which presents as fossabot web proxy).
+ * Falls back to FACEIT match history (playerTodayService) on failure.
+ */
 import { supabase } from '@/integrations/supabase/client';
 import { invokeEdgeFunction, isDiscordActivity } from '@/lib/discordProxy';
-
-// Helper to invoke edge functions with Discord proxy support
-const invokeFunction = async (functionName: string, body: Record<string, unknown>) => {
-  if (isDiscordActivity()) {
-    return invokeEdgeFunction(functionName, body);
-  }
-  return supabase.functions.invoke(functionName, { body });
-};
+import { getPlayerTodayData, countryCodeToFlag } from './playerTodayService';
 
 export interface OptimizedLcryptData {
   elo?: number;
@@ -50,156 +47,154 @@ export interface OptimizedLcryptData {
   error?: boolean;
 }
 
+// Parse the "today.elo" string like "+14" or "-21" into a number
+function parseEloString(s?: string): number {
+  if (!s) return 0;
+  const n = parseInt(s.replace(/\s/g, ''), 10);
+  return isNaN(n) ? 0 : n;
+}
+
 export class LcryptOptimizedService {
-  async getCompletePlayerData(nickname: string): Promise<OptimizedLcryptData | null> {
+  async getCompletePlayerData(
+    nickname: string,
+    playerId?: string,
+    country?: string
+  ): Promise<OptimizedLcryptData | null> {
+    // Try lcrypt.eu via edge function first
     try {
-      const { data, error } = await invokeFunction('get-lcrypt-elo', { nickname });
+      const invokeFn = isDiscordActivity()
+        ? (fn: string, body: Record<string, unknown>) => invokeEdgeFunction(fn, body)
+        : (fn: string, body: Record<string, unknown>) => supabase.functions.invoke(fn, { body });
 
-      if (error) {
-        console.warn(`Lcrypt API error for ${nickname}:`, error);
-        return { isLive: false, error: true };
+      const { data, error } = await invokeFn('get-lcrypt-elo', { nickname });
+
+      if (!error && data && data.error !== true) {
+        return this.mapLcryptResponse(data, playerId);
+      }
+    } catch {
+      // fall through to FACEIT fallback
+    }
+
+    // Fallback: FACEIT match history
+    return this.faceitFallback(nickname, playerId, country);
+  }
+
+  private mapLcryptResponse(data: any, playerId?: string): OptimizedLcryptData {
+    const isLive = data.current?.present === true;
+
+    let liveInfo: OptimizedLcryptData['liveInfo'] | undefined;
+    if (isLive) {
+      liveInfo = {
+        matchId: data.current?.match_id || '',
+        competition: data.current?.what || 'FACEIT Match',
+        status: data.current?.status || 'LIVE',
+        state: 'ONGOING',
+        matchDetails: {
+          map: data.current?.map,
+          server: data.current?.server,
+          score: data.current?.score,
+          result: data.current?.result,
+          elo_change: data.current?.elo,
+        },
+        liveMatch: {
+          match_id: data.current?.match_id || '',
+          competition_name: data.current?.what || 'FACEIT Match',
+          status: data.current?.status || 'LIVE',
+          started_at: Math.floor(Date.now() / 1000),
+          finished_at: null,
+          teams: {},
+          voting: { map: { pick: data.current?.map ? [data.current.map] : [] } },
+          isLiveMatch: true,
+          liveMatchDetails: data.current || {},
+        },
+      };
+    }
+
+    const todayEloStr: string | undefined = data.today?.elo;
+    const todayEloNum = parseEloString(todayEloStr);
+
+    return {
+      elo: data.elo,
+      level: data.level != null ? String(data.level) : undefined,
+      region: data.region,
+      country: data.country,
+      country_flag: data.country_flag,
+      region_ranking: data.region_ranking,
+      country_ranking: data.country_ranking,
+      report: data.report,
+      today: data.today
+        ? {
+            present: data.today.present ?? false,
+            win: data.today.win ?? 0,
+            lose: data.today.lose ?? 0,
+            elo: todayEloNum,
+            elo_win: data.today.elo_win ?? 0,
+            elo_lose: data.today.elo_lose ?? 0,
+            count: data.today.count ?? 0,
+          }
+        : undefined,
+      isLive,
+      liveInfo,
+      rawData: { detail: data.detail },
+      error: false,
+    };
+  }
+
+  private async faceitFallback(
+    nickname: string,
+    playerId?: string,
+    country?: string
+  ): Promise<OptimizedLcryptData | null> {
+    try {
+      if (!playerId) {
+        return { isLive: false, error: false };
       }
 
-      // Detect error responses from edge function (HTTP 200 with error payload)
-      if (data?.error === true || (data?.message === 'player not found' && !data?.elo)) {
-        console.warn(`Lcrypt returned error for ${nickname}:`, data?.message);
-        return { isLive: false, error: true };
-      }
+      const todayResult = await getPlayerTodayData(playerId);
+      const country_flag = country ? countryCodeToFlag(country) : undefined;
 
-      const liveInfo = this.extractLiveInfo(data, nickname);
+      let liveInfo: OptimizedLcryptData['liveInfo'] | undefined;
+      if (todayResult?.isLive && todayResult.liveMatchId) {
+        const matchId = todayResult.liveMatchId;
+        liveInfo = {
+          matchId,
+          competition: 'FACEIT Match',
+          status: 'LIVE',
+          state: 'ONGOING',
+          matchDetails: {},
+          liveMatch: {
+            match_id: matchId,
+            competition_name: 'FACEIT Match',
+            status: 'LIVE',
+            started_at: Math.floor(Date.now() / 1000),
+            finished_at: null,
+            teams: {},
+            voting: { map: { pick: [] } },
+            isLiveMatch: true,
+            liveMatchDetails: {},
+          },
+        };
+      }
 
       return {
-        elo: data?.elo,
-        level: data?.level,
-        region: data?.region,
-        country: data?.country,
-        country_flag: data?.country_flag,
-        region_ranking: data?.region_ranking,
-        country_ranking: data?.country_ranking,
-        report: data?.report,
-        today: data?.today,
-        isLive: liveInfo.isLive,
-        liveInfo: liveInfo.isLive ? liveInfo.liveData : undefined,
-        rawData: data,
+        elo: undefined,
+        level: undefined,
+        region: undefined,
+        country,
+        country_flag,
+        region_ranking: undefined,
+        country_ranking: undefined,
+        report: todayResult?.report,
+        today: todayResult?.today ?? undefined,
+        isLive: todayResult?.isLive ?? false,
+        liveInfo,
+        rawData: null,
         error: false,
       };
     } catch (error) {
-      console.error(`Failed to fetch complete Lcrypt data for ${nickname}:`, error);
+      console.error(`Failed to fetch fallback data for ${nickname}:`, error);
       return { isLive: false, error: true };
     }
-  }
-
-  private extractLiveInfo(data: any, nickname: string): { isLive: boolean; liveData?: any } {
-    const currentData = data?.current;
-    if (currentData?.present === true && currentData?.status === 'LIVE') {
-      const matchId = `live-${Date.now()}-${nickname}`;
-      return {
-        isLive: true,
-        liveData: {
-          matchId,
-          competition: currentData.what || 'Live Match',
-          status: 'LIVE',
-          state: 'ONGOING',
-          matchDetails: {
-            map: currentData.map,
-            server: currentData.server,
-            score: currentData.score,
-            duration: currentData.duration,
-            round: currentData.round,
-            elo_change: currentData.elo,
-            result: currentData.result,
-            chance: currentData.chance,
-          },
-          liveMatch: {
-            match_id: matchId,
-            competition_name: currentData.what || 'Live Match',
-            status: 'LIVE',
-            started_at: Date.now() / 1000 - this.parseMinutesToSeconds(currentData.duration || '0'),
-            finished_at: null,
-            teams: {},
-            voting: { map: { pick: [currentData.map] } },
-            lcryptData: currentData,
-            fullLcryptData: data,
-            isLiveMatch: true,
-            liveMatchDetails: {
-              map: currentData.map,
-              server: currentData.server,
-              score: currentData.score,
-              duration: currentData.duration,
-              round: currentData.round,
-              competition: currentData.what,
-              elo_change: currentData.elo,
-              result: currentData.result,
-              chance: currentData.chance,
-            },
-          },
-        },
-      };
-    }
-
-    // Fallback: check "playing" field
-    if (data?.playing && data.playing !== 'nothing' && data.playing.includes('Queue')) {
-      const playingInfo = this.parsePlayingString(data.playing);
-      const matchId = `live-${Date.now()}-${nickname}`;
-      return {
-        isLive: true,
-        liveData: {
-          matchId,
-          competition: playingInfo.queue || 'Live Match',
-          status: 'LIVE',
-          state: 'ONGOING',
-          matchDetails: {
-            map: playingInfo.map,
-            server: playingInfo.server,
-            elo_change: playingInfo.elo,
-            competition: playingInfo.queue,
-          },
-          liveMatch: {
-            match_id: matchId,
-            competition_name: playingInfo.queue || 'Live Match',
-            status: 'LIVE',
-            started_at: Date.now() / 1000,
-            finished_at: null,
-            teams: {},
-            voting: { map: { pick: [playingInfo.map] } },
-            fullLcryptData: data,
-            isLiveMatch: true,
-            liveMatchDetails: {
-              map: playingInfo.map,
-              server: playingInfo.server,
-              competition: playingInfo.queue,
-              elo_change: playingInfo.elo,
-            },
-          },
-        },
-      };
-    }
-
-    return { isLive: false };
-  }
-
-  private parseMinutesToSeconds(duration: string): number {
-    if (!duration) return 0;
-    return (parseInt(duration.replace("'", '')) || 0) * 60;
-  }
-
-  private parsePlayingString(playing: string): { queue?: string; map?: string; server?: string; elo?: string } {
-    const parts = playing.split(', ');
-    const result: { queue?: string; map?: string; server?: string; elo?: string } = {};
-    for (const part of parts) {
-      if (part.includes('Queue')) {
-        result.queue = part.trim();
-      } else if (part.includes('(') && part.includes(')')) {
-        const mapMatch = part.match(/^([^(]+)\s*\(([^)]+)\)$/);
-        if (mapMatch) {
-          result.map = mapMatch[1].trim();
-          result.server = mapMatch[2].trim();
-        }
-      } else if (part.includes('Elo:')) {
-        result.elo = part.replace('Elo:', '').trim();
-      }
-    }
-    return result;
   }
 }
 

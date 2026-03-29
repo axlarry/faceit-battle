@@ -185,7 +185,7 @@ async function processLcryptRequest(nickname: string) {
           const response = await fetch(lcryptUrl, {
             signal: controller.signal,
             headers: {
-              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+              'User-Agent': 'fossabot web proxy',
               'Accept': 'application/json, text/plain, */*',
               'Accept-Language': 'en-US,en;q=0.9',
             }

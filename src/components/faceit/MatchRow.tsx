@@ -39,7 +39,7 @@ export const MatchRow = ({
   const kda = getKDA(playerStats);
   const {
     data: lcryptData
-  } = useLcryptApi(player.nickname);
+  } = useLcryptApi(player.nickname, player.player_id);
   const [imageLoadErrors, setImageLoadErrors] = useState<Set<string>>(new Set());
   const [liveMatchUrl, setLiveMatchUrl] = useState<string | null>(null);
 

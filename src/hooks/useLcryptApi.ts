@@ -20,21 +20,11 @@ interface LcryptEloData {
     elo_lose: number;
     count: number;
   };
-  detail?: {
-    ladder?: {
-      position: number;
-      region: string;
-      division: string;
-      points: number;
-      won: number;
-      played: number;
-      win_rate: number;
-    };
-  };
+  detail?: any;
   error: boolean;
 }
 
-export const useLcryptApi = (nickname: string) => {
+export const useLcryptApi = (nickname: string, playerId?: string, country?: string) => {
   const [data, setData] = useState<LcryptEloData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,21 +32,22 @@ export const useLcryptApi = (nickname: string) => {
   useEffect(() => {
     if (!nickname) return;
 
-    const fetchEloData = async () => {
+    const fetchData = async () => {
       setLoading(true);
       setError(null);
-      
+
       try {
-        console.log(`🚀 OPTIMIZED: Fetching complete ELO data for nickname: ${nickname}`);
-        
-        // Folosește serviciul optimizat pentru un singur apel
-        const result = await lcryptOptimizedService.getCompletePlayerData(nickname);
+        const result = await lcryptOptimizedService.getCompletePlayerData(
+          nickname,
+          playerId,
+          country
+        );
 
         if (!result || result.error === true) {
-          throw new Error('Failed to fetch ELO data');
+          throw new Error('Failed to fetch player data');
         }
 
-        const convertedData: LcryptEloData = {
+        setData({
           elo: result.elo || 0,
           level: result.level || '',
           region: result.region || '',
@@ -67,20 +58,17 @@ export const useLcryptApi = (nickname: string) => {
           report: result.report || '',
           today: result.today,
           detail: result.rawData?.detail,
-          error: false
-        };
-
-        setData(convertedData);
+          error: false,
+        });
       } catch (err) {
-        console.error('Error fetching OPTIMIZED lcrypt data:', err);
         setError(err instanceof Error ? err.message : 'Unknown error');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchEloData();
-  }, [nickname]);
+    fetchData();
+  }, [nickname, playerId]);
 
   return { data, loading, error };
 };

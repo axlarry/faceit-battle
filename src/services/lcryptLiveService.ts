@@ -2,6 +2,8 @@
 import { supabase } from '@/integrations/supabase/client';
 import { invokeEdgeFunction, isDiscordActivity } from '@/lib/discordProxy';
 
+const LCRYPT_BASE = 'https://faceit.lcrypt.eu/';
+
 // Helper to invoke edge functions with Discord proxy support
 const invokeFunction = async (functionName: string, body: Record<string, unknown>) => {
   if (isDiscordActivity()) {
@@ -10,10 +12,45 @@ const invokeFunction = async (functionName: string, body: Record<string, unknown
   return supabase.functions.invoke(functionName, { body });
 };
 
+/**
+ * Fetch lcrypt data directly from the browser.
+ * Avoids 403 Forbidden that Supabase/Deno Deploy IPs get from lcrypt.eu.
+ */
+async function fetchLcryptDirect(nickname: string): Promise<any> {
+  const url = `${LCRYPT_BASE}?n=${encodeURIComponent(nickname)}`;
+  const response = await fetch(url, {
+    headers: {
+      'Accept': 'application/json, text/plain, */*',
+      'Accept-Language': 'en-US,en;q=0.9',
+    },
+  });
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+  }
+  const text = await response.text();
+  return JSON.parse(text);
+}
+
+/**
+ * Get lcrypt data: direct browser fetch first, edge function as fallback.
+ */
+async function fetchLcryptWithFallback(nickname: string): Promise<{ data: any; error: any }> {
+  if (isDiscordActivity()) {
+    return invokeFunction('get-lcrypt-elo', { nickname });
+  }
+  try {
+    const data = await fetchLcryptDirect(nickname);
+    return { data, error: null };
+  } catch (directErr) {
+    console.warn(`[lcrypt] Direct fetch failed for ${nickname}, using edge function`);
+    return invokeFunction('get-lcrypt-elo', { nickname });
+  }
+}
+
 export class LcryptLiveService {
   async checkPlayerLiveFromLcrypt(nickname: string) {
     try {
-      const { data, error } = await invokeFunction('get-lcrypt-elo', { nickname });
+      const { data, error } = await fetchLcryptWithFallback(nickname);
 
       if (error) {
         console.warn(`Lcrypt API error for ${nickname}:`, error);
@@ -139,7 +176,7 @@ export class LcryptLiveService {
 
 export const fetchLcryptData = async (nickname: string) => {
   try {
-    const { data, error } = await invokeFunction('get-lcrypt-elo', { nickname });
+    const { data, error } = await fetchLcryptWithFallback(nickname);
     if (error) throw error;
     if (data?.error === true || (data?.message === 'player not found' && !data?.elo)) return null;
     return data;
