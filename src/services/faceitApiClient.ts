@@ -17,7 +17,6 @@ export class FaceitApiClient {
     
     return apiService.dedupedRequest(requestKey, async () => {
       return apiService.retryRequest(async () => {
-        console.log(`Proxying Faceit API call to: ${endpoint}`);
         
         const { data, error } = await invokeFunction('proxy-faceit', { endpoint, useLeaderboardApi });
         

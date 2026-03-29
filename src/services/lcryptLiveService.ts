@@ -13,9 +13,6 @@ const invokeFunction = async (functionName: string, body: Record<string, unknown
 export class LcryptLiveService {
   async checkPlayerLiveFromLcrypt(nickname: string) {
     try {
-      console.log(`🔍 Checking Lcrypt live status for: ${nickname}`);
-      
-      // Use Supabase function invoke instead of direct fetch
       const { data, error } = await invokeFunction('get-lcrypt-elo', { nickname });
 
       if (error) {
@@ -23,25 +20,16 @@ export class LcryptLiveService {
         return { isLive: false };
       }
 
-      console.log(`📊 Lcrypt data for ${nickname}:`, data);
-
-      // Check if the response indicates player not found
-      if (data?.message === "player not found" && !data?.elo) {
-        console.log(`❌ Player ${nickname} not found in Lcrypt database`);
+      if (data?.message === 'player not found' && !data?.elo) {
         return { isLive: false };
       }
 
-      // Check if player is currently playing using current.present and current.status
       const currentData = data?.current;
-      if (currentData && currentData.present === true && currentData.status === 'LIVE') {
-        console.log(`✅ ${nickname} is LIVE according to Lcrypt`);
-        
-        // Create match ID from current timestamp since Lcrypt doesn't provide one
+      if (currentData?.present === true && currentData?.status === 'LIVE') {
         const matchId = `live-${Date.now()}-${nickname}`;
-        
-        const liveMatchInfo = {
+        return {
           isLive: true,
-          matchId: matchId,
+          matchId,
           competition: currentData.what || 'Live Match',
           status: 'LIVE',
           state: 'ONGOING',
@@ -53,7 +41,7 @@ export class LcryptLiveService {
             round: currentData.round,
             elo_change: currentData.elo,
             result: currentData.result,
-            chance: currentData.chance
+            chance: currentData.chance,
           },
           liveMatch: {
             match_id: matchId,
@@ -62,14 +50,9 @@ export class LcryptLiveService {
             started_at: Date.now() / 1000 - this.parseMinutesToSeconds(currentData.duration || '0'),
             finished_at: null,
             teams: {},
-            voting: {
-              map: {
-                pick: [currentData.map]
-              }
-            },
+            voting: { map: { pick: [currentData.map] } },
             lcryptData: currentData,
             fullLcryptData: data,
-            // Mark as live match for special handling
             isLiveMatch: true,
             liveMatchDetails: {
               map: currentData.map,
@@ -80,26 +63,19 @@ export class LcryptLiveService {
               competition: currentData.what,
               elo_change: currentData.elo,
               result: currentData.result,
-              chance: currentData.chance
-            }
-          }
+              chance: currentData.chance,
+            },
+          },
         };
-
-        return liveMatchInfo;
       }
 
-      // Also check the "playing" field as a backup
+      // Fallback: check "playing" field
       if (data?.playing && data.playing !== 'nothing' && data.playing.includes('Queue')) {
-        console.log(`🎮 ${nickname} might be playing: ${data.playing}`);
-        
-        // Extract info from playing string if available
         const playingInfo = this.parsePlayingString(data.playing);
-        
         const matchId = `live-${Date.now()}-${nickname}`;
-        
-        const liveMatchInfo = {
+        return {
           isLive: true,
-          matchId: matchId,
+          matchId,
           competition: playingInfo.queue || 'Live Match',
           status: 'LIVE',
           state: 'ONGOING',
@@ -107,7 +83,7 @@ export class LcryptLiveService {
             map: playingInfo.map,
             server: playingInfo.server,
             elo_change: playingInfo.elo,
-            competition: playingInfo.queue
+            competition: playingInfo.queue,
           },
           liveMatch: {
             match_id: matchId,
@@ -116,49 +92,38 @@ export class LcryptLiveService {
             started_at: Date.now() / 1000,
             finished_at: null,
             teams: {},
-            voting: {
-              map: {
-                pick: [playingInfo.map]
-              }
-            },
+            voting: { map: { pick: [playingInfo.map] } },
             fullLcryptData: data,
             isLiveMatch: true,
             liveMatchDetails: {
               map: playingInfo.map,
               server: playingInfo.server,
               competition: playingInfo.queue,
-              elo_change: playingInfo.elo
-            }
-          }
+              elo_change: playingInfo.elo,
+            },
+          },
         };
-
-        return liveMatchInfo;
       }
 
-      console.log(`⚪ ${nickname} is not live - current.present: ${currentData?.present}, current.status: ${currentData?.status}, playing: ${data?.playing}`);
       return { isLive: false };
     } catch (error) {
-      console.warn(`⚠️ Error checking Lcrypt live status for ${nickname}:`, error);
+      console.warn(`Error checking Lcrypt live status for ${nickname}:`, error);
       return { isLive: false };
     }
   }
 
   private parseMinutesToSeconds(duration: string): number {
     if (!duration) return 0;
-    const minutes = parseInt(duration.replace("'", "")) || 0;
-    return minutes * 60;
+    return (parseInt(duration.replace("'", '')) || 0) * 60;
   }
 
-  private parsePlayingString(playing: string): { queue?: string, map?: string, server?: string, elo?: string } {
-    // Parse strings like "FaceIt Europe 5v5 Queue, Ancient (Germany), Elo: +25/-25"
+  private parsePlayingString(playing: string): { queue?: string; map?: string; server?: string; elo?: string } {
     const parts = playing.split(', ');
-    const result: { queue?: string, map?: string, server?: string, elo?: string } = {};
-    
-    parts.forEach(part => {
+    const result: { queue?: string; map?: string; server?: string; elo?: string } = {};
+    for (const part of parts) {
       if (part.includes('Queue')) {
         result.queue = part.trim();
       } else if (part.includes('(') && part.includes(')')) {
-        // Extract map and server
         const mapMatch = part.match(/^([^(]+)\s*\(([^)]+)\)$/);
         if (mapMatch) {
           result.map = mapMatch[1].trim();
@@ -167,33 +132,19 @@ export class LcryptLiveService {
       } else if (part.includes('Elo:')) {
         result.elo = part.replace('Elo:', '').trim();
       }
-    });
-    
+    }
     return result;
   }
 }
 
-// Fixed fetchLcryptData function to use nickname properly
 export const fetchLcryptData = async (nickname: string) => {
   try {
-    console.log(`🔍 Fetching Lcrypt data for nickname: ${nickname}`);
-    
     const { data, error } = await invokeFunction('get-lcrypt-elo', { nickname });
-
-    if (error) {
-      console.warn(`Lcrypt API error for player ${nickname}:`, error);
-      throw error;
-    }
-
-    if (data?.message === "player not found" && !data?.elo) {
-      console.log(`❌ Player ${nickname} not found in Lcrypt database`);
-      return null;
-    }
-
-    console.log(`✅ Successfully fetched Lcrypt data for player ${nickname}`);
+    if (error) throw error;
+    if (data?.message === 'player not found' && !data?.elo) return null;
     return data;
   } catch (error) {
-    console.error(`❌ Failed to fetch Lcrypt data for player ${nickname}:`, error);
+    console.error(`Failed to fetch Lcrypt data for ${nickname}:`, error);
     throw error;
   }
 };

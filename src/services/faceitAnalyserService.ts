@@ -1,4 +1,14 @@
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { invokeEdgeFunction, isDiscordActivity } from '@/lib/discordProxy';
+
+// Helper to invoke edge functions with Discord proxy support
+const invokeFunction = async (functionName: string, body: Record<string, unknown>) => {
+  if (isDiscordActivity()) {
+    return invokeEdgeFunction(functionName, body);
+  }
+  return supabase.functions.invoke(functionName, { body });
+};
 
 export interface FaceitAnalyserData {
   playerId: string;
@@ -53,36 +63,22 @@ export interface FaceitAnalyserComplete {
 }
 
 export class FaceitAnalyserService {
-  private supabaseUrl = 'https://rwizxoeyatdtggrpnpmq.supabase.co';
-  private supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ3aXp4b2V5YXRkdGdncnBucG1xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2OTkwOTYsImV4cCI6MjA2NDI3NTA5Nn0.6Rpmb1a2iFqw2VZaHl-k-3otQlQuDpaxUPf28uOlLRU';
-
   private async fetchEndpoint(nickname: string, endpoint: string): Promise<any> {
-    const response = await fetch(`${this.supabaseUrl}/functions/v1/get-faceit-analyser-data`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${this.supabaseKey}`,
-        'apikey': this.supabaseKey,
-      },
-      body: JSON.stringify({ nickname, endpoint }),
-    });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    const { data, error } = await invokeFunction('get-faceit-analyser-data', { nickname, endpoint });
+
+    if (error) {
+      throw new Error((error as any)?.message || 'Failed to fetch analyser data');
     }
-    
-    const data = await response.json();
-    
-    if (data.error) {
-      throw new Error(data.error);
+
+    if ((data as any)?.error) {
+      throw new Error((data as any).error);
     }
-    
+
     return data;
   }
 
   async getPlayerStats(nickname: string): Promise<FaceitAnalyserData | null> {
     try {
-      console.log('Fetching FaceitAnalyser stats for:', nickname);
       return await this.fetchEndpoint(nickname, 'stats');
     } catch (error) {
       console.error('Error fetching FaceitAnalyser stats:', error);
@@ -92,18 +88,12 @@ export class FaceitAnalyserService {
 
   async getCompletePlayerData(nickname: string): Promise<FaceitAnalyserComplete | null> {
     try {
-      console.log('Fetching complete FaceitAnalyser data for:', nickname);
-      
-      const [overview, stats, matches, hubs, maps, names, highlights, playerGraphs] = await Promise.allSettled([
-        this.fetchEndpoint(nickname, 'overview'),
-        this.fetchEndpoint(nickname, 'stats'),
-        this.fetchEndpoint(nickname, 'matches'),
-        this.fetchEndpoint(nickname, 'hubs'),
-        this.fetchEndpoint(nickname, 'maps'),
-        this.fetchEndpoint(nickname, 'names'),
-        this.fetchEndpoint(nickname, 'highlights'),
-        this.fetchEndpoint(nickname, 'playerGraphs'),
-      ]);
+      const endpoints = ['overview', 'stats', 'matches', 'hubs', 'maps', 'names', 'highlights', 'playerGraphs'] as const;
+      const results = await Promise.allSettled(
+        endpoints.map(ep => this.fetchEndpoint(nickname, ep))
+      );
+
+      const [overview, stats, matches, hubs, maps, names, highlights, playerGraphs] = results;
 
       return {
         overview: overview.status === 'fulfilled' ? overview.value : null,

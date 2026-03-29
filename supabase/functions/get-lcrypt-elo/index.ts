@@ -20,6 +20,7 @@ const supabase = createClient(supabaseUrl, supabaseKey)
 class GlobalRequestQueue {
   private queue: Array<{
     nickname: string;
+    fetchFn: () => Promise<any>;
     resolve: (value: any) => void;
     reject: (error: any) => void;
     timestamp: number;
@@ -37,15 +38,14 @@ class GlobalRequestQueue {
 
     // Create promise for this request
     const promise = new Promise((resolve, reject) => {
-      const queueItem = {
+      this.queue.push({
         nickname,
+        fetchFn,
         resolve,
         reject,
         timestamp: Date.now()
-      };
-      
-      this.queue.push(queueItem);
-      console.log(`📥 Added ${nickname} to queue (position: ${this.queue.length}/${this.queue.length})`);
+      });
+      console.log(`📥 Added ${nickname} to queue (position: ${this.queue.length})`);
     });
 
     // Store in-progress promise
@@ -53,13 +53,13 @@ class GlobalRequestQueue {
 
     // Start processing if not already processing
     if (!this.processing) {
-      this.processQueue(fetchFn);
+      this.processQueue();
     }
 
     return promise;
   }
 
-  private async processQueue(fetchFn: () => Promise<any>) {
+  private async processQueue() {
     if (this.processing || this.queue.length === 0) {
       return;
     }
@@ -68,7 +68,7 @@ class GlobalRequestQueue {
 
     while (this.queue.length > 0) {
       const item = this.queue.shift()!;
-      const { nickname, resolve, reject } = item;
+      const { nickname, fetchFn, resolve, reject } = item;
 
       try {
         // Calculate delay to enforce 2 second interval
@@ -82,19 +82,16 @@ class GlobalRequestQueue {
         }
 
         console.log(`🚀 Processing from queue: ${nickname} (remaining in queue: ${this.queue.length})`);
-        
+
         // Update last request time
         this.lastRequestTime = Date.now();
 
-        // Execute the actual fetch
+        // Execute the fetch function specific to this queue item
         const result = await fetchFn();
-        
+
         console.log(`✅ Queue processed: ${nickname} (queue now: ${this.queue.length} items)`);
-        
-        // Resolve the promise
+
         resolve(result);
-        
-        // Remove from in-progress
         this.inProgressNicknames.delete(nickname);
 
       } catch (error) {
