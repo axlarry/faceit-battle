@@ -136,30 +136,11 @@ export class OptimizedApiService {
     }, options);
   }
 
-  // Optimized Lcrypt API calls — tries direct browser fetch first to avoid edge function IP blocks
+  // Lcrypt API calls — always via edge function (requires fossabot User-Agent, can't be set from browser)
   async lcryptApiCall(nickname: string, options: RequestOptions = {}) {
     const requestKey = `lcrypt-${nickname}`;
 
     return this.dedupedRequest(requestKey, async () => {
-      // Try direct fetch first (bypasses 403 from Supabase IPs)
-      if (!isDiscordActivity()) {
-        try {
-          const response = await fetch(`https://faceit.lcrypt.eu/?n=${encodeURIComponent(nickname)}`, {
-            headers: { 'Accept': 'application/json, text/plain, */*' },
-          });
-          if (response.ok) {
-            const data = await response.json();
-            if (data?.error === true || data?.message === 'player not found') {
-              return { isLive: false, error: true };
-            }
-            return data;
-          }
-        } catch {
-          // Fall through to edge function
-        }
-      }
-
-      // Fallback: edge function (Discord Activity or direct fetch failed)
       const { data, error } = await invokeFunction('get-lcrypt-elo', { nickname });
       if (error) {
         console.warn(`Lcrypt API error for ${nickname}:`, error);

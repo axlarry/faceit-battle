@@ -1,7 +1,10 @@
 /**
- * LcryptOptimizedService — was previously backed by faceit.lcrypt.eu (now shut down).
- * Data is now sourced from the FACEIT API directly via playerTodayService.
+ * LcryptOptimizedService — fetches data from faceit.lcrypt.eu via the
+ * get-lcrypt-elo edge function (which presents as fossabot web proxy).
+ * Falls back to FACEIT match history (playerTodayService) on failure.
  */
+import { supabase } from '@/integrations/supabase/client';
+import { invokeEdgeFunction, isDiscordActivity } from '@/lib/discordProxy';
 import { getPlayerTodayData, countryCodeToFlag } from './playerTodayService';
 
 export interface OptimizedLcryptData {
@@ -44,25 +47,110 @@ export interface OptimizedLcryptData {
   error?: boolean;
 }
 
+// Parse the "today.elo" string like "+14" or "-21" into a number
+function parseEloString(s?: string): number {
+  if (!s) return 0;
+  const n = parseInt(s.replace(/\s/g, ''), 10);
+  return isNaN(n) ? 0 : n;
+}
+
 export class LcryptOptimizedService {
-  /**
-   * @param nickname  Player nickname (kept for API compatibility)
-   * @param playerId  FACEIT player ID — required to fetch today stats & live status
-   * @param country   ISO 3166-1 alpha-2 country code from FACEIT player data (e.g. "ro")
-   */
   async getCompletePlayerData(
+    nickname: string,
+    playerId?: string,
+    country?: string
+  ): Promise<OptimizedLcryptData | null> {
+    // Try lcrypt.eu via edge function first
+    try {
+      const invokeFn = isDiscordActivity()
+        ? (fn: string, body: Record<string, unknown>) => invokeEdgeFunction(fn, body)
+        : (fn: string, body: Record<string, unknown>) => supabase.functions.invoke(fn, { body });
+
+      const { data, error } = await invokeFn('get-lcrypt-elo', { nickname });
+
+      if (!error && data && data.error !== true) {
+        return this.mapLcryptResponse(data, playerId);
+      }
+    } catch {
+      // fall through to FACEIT fallback
+    }
+
+    // Fallback: FACEIT match history
+    return this.faceitFallback(nickname, playerId, country);
+  }
+
+  private mapLcryptResponse(data: any, playerId?: string): OptimizedLcryptData {
+    const isLive = data.current?.present === true;
+
+    let liveInfo: OptimizedLcryptData['liveInfo'] | undefined;
+    if (isLive) {
+      liveInfo = {
+        matchId: data.current?.match_id || '',
+        competition: data.current?.what || 'FACEIT Match',
+        status: data.current?.status || 'LIVE',
+        state: 'ONGOING',
+        matchDetails: {
+          map: data.current?.map,
+          server: data.current?.server,
+          score: data.current?.score,
+          result: data.current?.result,
+          elo_change: data.current?.elo,
+        },
+        liveMatch: {
+          match_id: data.current?.match_id || '',
+          competition_name: data.current?.what || 'FACEIT Match',
+          status: data.current?.status || 'LIVE',
+          started_at: Math.floor(Date.now() / 1000),
+          finished_at: null,
+          teams: {},
+          voting: { map: { pick: data.current?.map ? [data.current.map] : [] } },
+          isLiveMatch: true,
+          liveMatchDetails: data.current || {},
+        },
+      };
+    }
+
+    const todayEloStr: string | undefined = data.today?.elo;
+    const todayEloNum = parseEloString(todayEloStr);
+
+    return {
+      elo: data.elo,
+      level: data.level != null ? String(data.level) : undefined,
+      region: data.region,
+      country: data.country,
+      country_flag: data.country_flag,
+      region_ranking: data.region_ranking,
+      country_ranking: data.country_ranking,
+      report: data.report,
+      today: data.today
+        ? {
+            present: data.today.present ?? false,
+            win: data.today.win ?? 0,
+            lose: data.today.lose ?? 0,
+            elo: todayEloNum,
+            elo_win: data.today.elo_win ?? 0,
+            elo_lose: data.today.elo_lose ?? 0,
+            count: data.today.count ?? 0,
+          }
+        : undefined,
+      isLive,
+      liveInfo,
+      rawData: { detail: data.detail },
+      error: false,
+    };
+  }
+
+  private async faceitFallback(
     nickname: string,
     playerId?: string,
     country?: string
   ): Promise<OptimizedLcryptData | null> {
     try {
       if (!playerId) {
-        // Without a player ID we can't fetch FACEIT data
         return { isLive: false, error: false };
       }
 
       const todayResult = await getPlayerTodayData(playerId);
-
       const country_flag = country ? countryCodeToFlag(country) : undefined;
 
       let liveInfo: OptimizedLcryptData['liveInfo'] | undefined;
@@ -89,13 +177,11 @@ export class LcryptOptimizedService {
       }
 
       return {
-        // ELO and level come from FACEIT API in friendDataProcessor (not from here)
         elo: undefined,
         level: undefined,
         region: undefined,
         country,
         country_flag,
-        // Rankings not available without lcrypt
         region_ranking: undefined,
         country_ranking: undefined,
         report: todayResult?.report,
@@ -106,7 +192,7 @@ export class LcryptOptimizedService {
         error: false,
       };
     } catch (error) {
-      console.error(`Failed to fetch today data for ${nickname}:`, error);
+      console.error(`Failed to fetch fallback data for ${nickname}:`, error);
       return { isLive: false, error: true };
     }
   }
