@@ -60,7 +60,9 @@ export class LcryptOptimizedService {
         return { isLive: false, error: true };
       }
 
-      if (data?.message === 'player not found' && !data?.elo) {
+      // Detect error responses from edge function (HTTP 200 with error payload)
+      if (data?.error === true || (data?.message === 'player not found' && !data?.elo)) {
+        console.warn(`Lcrypt returned error for ${nickname}:`, data?.message);
         return { isLive: false, error: true };
       }
 

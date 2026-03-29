@@ -177,23 +177,38 @@ async function processLcryptRequest(nickname: string) {
           console.log(`🚀 Attempt ${attempt} - Fetching from lcrypt.eu for: ${nickname}`)
           
           const controller = new AbortController()
-          const timeoutId = setTimeout(() => controller.abort(), 8000) // 8 second timeout
-          
-          const response = await fetch(`https://faceit.lcrypt.eu/?n=${nickname}`, {
+          const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
+
+          const lcryptUrl = `https://faceit.lcrypt.eu/?n=${encodeURIComponent(nickname)}`
+          console.log(`[lcrypt] Fetching: ${lcryptUrl}`)
+
+          const response = await fetch(lcryptUrl, {
             signal: controller.signal,
             headers: {
-              'User-Agent': 'Faceit-Tool/1.0',
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+              'Accept': 'application/json, text/plain, */*',
+              'Accept-Language': 'en-US,en;q=0.9',
             }
           })
           
           clearTimeout(timeoutId)
           
           if (!response.ok) {
+            const body = await response.text().catch(() => '')
+            console.error(`[lcrypt] HTTP ${response.status} for ${nickname}: ${body.slice(0, 200)}`)
             throw new Error(`HTTP ${response.status}: ${response.statusText}`)
           }
 
-          const data = await response.json()
-          console.log(`✅ Success from lcrypt.eu for ${nickname}`)
+          const rawText = await response.text()
+          let data: any
+          try {
+            data = JSON.parse(rawText)
+          } catch {
+            console.error(`[lcrypt] Invalid JSON for ${nickname}:`, rawText.slice(0, 300))
+            throw new Error('Invalid JSON response from lcrypt.eu')
+          }
+
+          console.log(`[lcrypt] Success for ${nickname} - elo: ${data?.elo}, live: ${data?.current?.present}`)
 
           // 4. Cache the successful response (30 seconds for LIVE detection)
           try {

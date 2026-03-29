@@ -20,7 +20,7 @@ export class LcryptLiveService {
         return { isLive: false };
       }
 
-      if (data?.message === 'player not found' && !data?.elo) {
+      if (data?.error === true || (data?.message === 'player not found' && !data?.elo)) {
         return { isLive: false };
       }
 
@@ -141,7 +141,7 @@ export const fetchLcryptData = async (nickname: string) => {
   try {
     const { data, error } = await invokeFunction('get-lcrypt-elo', { nickname });
     if (error) throw error;
-    if (data?.message === 'player not found' && !data?.elo) return null;
+    if (data?.error === true || (data?.message === 'player not found' && !data?.elo)) return null;
     return data;
   } catch (error) {
     console.error(`Failed to fetch Lcrypt data for ${nickname}:`, error);
