@@ -55,7 +55,7 @@ export const FriendsSection = ({
   const [showMigratePassword, setShowMigratePassword] = React.useState(false);
 
   // Streaming state
-  const { liveStreams } = useLiveStreams({ friends, enabled: true, refreshInterval: 10000 });
+  const { liveStreams } = useLiveStreams({ friends, enabled: true, refreshInterval: 30000 });
   const [selectedStream, setSelectedStream] = React.useState<LiveStream | null>(null);
   const [isPlayerOpen, setIsPlayerOpen] = React.useState(false);
 
