@@ -8,58 +8,66 @@ interface UseIndividualUpdatesProps {
   updateSingleFriend: (friend: Player) => Promise<void>;
 }
 
-export const useIndividualUpdates = ({ 
-  friends, 
-  enabled, 
-  updateSingleFriend 
+// Delay between requests — must exceed lcrypt's 2s global queue minimum
+const INTER_REQUEST_DELAY_MS = 2500;
+// How long to wait after a full cycle before starting the next one
+const CYCLE_RESTART_DELAY_MS = 45000;
+
+export const useIndividualUpdates = ({
+  friends,
+  enabled,
+  updateSingleFriend
 }: UseIndividualUpdatesProps) => {
   const [isIndividualUpdating, setIsIndividualUpdating] = useState(false);
-  
-  const individualUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const individualUpdateIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const currentPlayerIndexRef = useRef(0);
+
+  const stopSignalRef = useRef(false);
+  const runningRef = useRef(false);
 
   const startIndividualUpdates = useCallback(() => {
-    if (!enabled || friends.length === 0) return;
+    if (!enabled || friends.length === 0 || runningRef.current) return;
 
-    console.log(`🚀 Starting individual updates cycle for ${friends.length} friends (1 player every 1.2s)`);
+    stopSignalRef.current = false;
+    runningRef.current = true;
     setIsIndividualUpdating(true);
-    currentPlayerIndexRef.current = 0;
 
-    const updateNextPlayer = () => {
-      if (currentPlayerIndexRef.current >= friends.length) {
-        console.log(`✅ Individual updates cycle completed. Next cycle in 20 seconds.`);
-        currentPlayerIndexRef.current = 0;
+    const runCycle = async () => {
+      while (!stopSignalRef.current) {
+        for (let i = 0; i < friends.length; i++) {
+          if (stopSignalRef.current) break;
+
+          try {
+            await updateSingleFriend(friends[i]);
+          } catch {
+            // continue to next friend on error
+          }
+
+          if (stopSignalRef.current) break;
+
+          // Wait between requests to respect lcrypt's 2s global queue
+          await new Promise<void>(resolve => setTimeout(resolve, INTER_REQUEST_DELAY_MS));
+        }
+
+        if (stopSignalRef.current) break;
+
+        // Pause between full cycles — lets server cache expire so next cycle gets fresh data
         setIsIndividualUpdating(false);
-        
-        individualUpdateTimeoutRef.current = setTimeout(() => {
-          startIndividualUpdates();
-        }, 20000); // 20 seconds for faster LIVE status checks
-        
-        return;
+        await new Promise<void>(resolve => setTimeout(resolve, CYCLE_RESTART_DELAY_MS));
+
+        if (stopSignalRef.current) break;
+        setIsIndividualUpdating(true);
       }
 
-      const currentFriend = friends[currentPlayerIndexRef.current];
-      updateSingleFriend(currentFriend);
-      currentPlayerIndexRef.current++;
-
-      individualUpdateIntervalRef.current = setTimeout(updateNextPlayer, 1200);
+      runningRef.current = false;
+      setIsIndividualUpdating(false);
     };
 
-    updateNextPlayer();
+    runCycle();
   }, [friends, enabled, updateSingleFriend]);
 
   const stopIndividualUpdates = useCallback(() => {
-    if (individualUpdateTimeoutRef.current) {
-      clearTimeout(individualUpdateTimeoutRef.current);
-      individualUpdateTimeoutRef.current = null;
-    }
-    if (individualUpdateIntervalRef.current) {
-      clearTimeout(individualUpdateIntervalRef.current);
-      individualUpdateIntervalRef.current = null;
-    }
+    stopSignalRef.current = true;
+    runningRef.current = false;
     setIsIndividualUpdating(false);
-    console.log('🛑 Individual updates stopped');
   }, []);
 
   return {

@@ -6,11 +6,16 @@ import { useLcryptLoadingState } from '@/hooks/helpers/useLcryptLoadingState';
 import { useIndividualUpdates } from '@/hooks/helpers/useIndividualUpdates';
 import { UseLcryptDataManagerProps, FriendWithLcrypt, LiveMatchInfo } from '@/hooks/types/lcryptDataManagerTypes';
 
+// How long to wait after initial batch load before starting individual update cycle
+const INDIVIDUAL_START_DELAY_MS = 10000;
+// Minimum interval allowed between full batch reloads (guard against re-mount spam)
+const MIN_FULL_RELOAD_INTERVAL_MS = 60000;
+
 export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataManagerProps) => {
   const [friendsWithLcrypt, setFriendsWithLcrypt] = useState<FriendWithLcrypt[]>([]);
   const [liveMatches, setLiveMatches] = useState<Record<string, LiveMatchInfo>>({});
   const [isManualUpdate, setIsManualUpdate] = useState(false);
-  
+
   const {
     isLoading,
     loadingProgress,
@@ -34,13 +39,10 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
 
   const updateSingleFriend = useCallback(async (friend: Player) => {
     if (!enabled) return;
-    
-    console.log(`🔄 Individual update: Updating ${friend.nickname}...`);
     try {
       await updateFriendLcryptData(friend, false);
-      console.log(`✅ Individual update: ${friend.nickname} completed`);
     } catch (error) {
-      console.error(`❌ Individual update failed for ${friend.nickname}:`, error);
+      console.error(`Individual update failed for ${friend.nickname}:`, error);
     }
   }, [enabled, updateFriendLcryptData]);
 
@@ -60,41 +62,34 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
       return;
     }
 
-    if (!isManual && !canUpdate(30000)) {
+    if (!isManual && !canUpdate(MIN_FULL_RELOAD_INTERVAL_MS)) {
       return;
     }
 
     setIsManualUpdate(isManual);
     stopIndividualUpdates();
     startLoading();
-    
+
     const sortedFriends = [...friends].sort((a, b) => (b.elo || 0) - (a.elo || 0));
-    console.log(`🚀 Loading: Starting data fetch for ${sortedFriends.length} friends...`);
-    
-    if (isManual) {
-      setFriendsWithLcrypt(sortedFriends.map(f => ({ ...f, lcryptData: undefined })));
-    } else {
-      setFriendsWithLcrypt(sortedFriends.map(f => ({ ...f, lcryptData: undefined })));
-    }
-    
-    const batchSize = 2;
+    setFriendsWithLcrypt(sortedFriends.map(f => ({ ...f, lcryptData: undefined })));
+
+    const batchSize = 3;
     const updatedFriends: FriendWithLcrypt[] = [];
-    
+
     for (let i = 0; i < sortedFriends.length; i += batchSize) {
       const batch = sortedFriends.slice(i, i + batchSize);
-      
+
       try {
         const validResults = await friendDataProcessor.processFriendsBatch(
           batch,
           (friend) => updateFriendLcryptData(friend, true)
         );
-        
         updatedFriends.push(...validResults);
         updateProgress(i + batch.length, sortedFriends.length, i, batchSize);
       } catch (error) {
         console.error('Error processing batch:', error);
       }
-      
+
       if (i + batchSize < sortedFriends.length) {
         await new Promise(resolve => setTimeout(resolve, 2000));
       }
@@ -103,27 +98,23 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
     finishLoading();
     setIsManualUpdate(false);
 
-    // Final sort by latest ELO after all friends have been updated
     setFriendsWithLcrypt(prev => {
-      const sorted = [...prev].sort((a, b) => {
+      return [...prev].sort((a, b) => {
         const eb = b.elo ?? 0;
         const ea = a.elo ?? 0;
-        if (eb !== ea) return eb - ea; // Higher ELO first
+        if (eb !== ea) return eb - ea;
         const wb = b.wins ?? 0;
         const wa = a.wins ?? 0;
-        if (wb !== wa) return wb - wa; // Then by wins
-        return (a.nickname ?? '').localeCompare(b.nickname ?? ''); // Stable tiebreaker
+        if (wb !== wa) return wb - wa;
+        return (a.nickname ?? '').localeCompare(b.nickname ?? '');
       });
-      return sorted;
     });
 
-    console.log(`✅ Loading completed: Data fetch finished. Friends sorted by ELO.`);
-    
-    // Resume individual updates after a delay
+    // Start individual update cycle after a short settling delay
     setTimeout(() => {
       startIndividualUpdates();
-    }, 30000);
-    
+    }, INDIVIDUAL_START_DELAY_MS);
+
   }, [friends, enabled, updateFriendLcryptData, canUpdate, startLoading, finishLoading, updateProgress, stopIndividualUpdates, startIndividualUpdates]);
 
   useEffect(() => {

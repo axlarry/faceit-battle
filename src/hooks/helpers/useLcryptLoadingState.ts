@@ -18,16 +18,15 @@ export const useLcryptLoadingState = () => {
     setLoadingProgress(100);
   }, []);
 
-  const updateProgress = useCallback((current: number, total: number, batchStart: number, batchSize: number) => {
+  const updateProgress = useCallback((current: number, total: number, _batchStart: number, _batchSize: number) => {
     const progress = Math.min(100, (current / total) * 100);
     setLoadingProgress(progress);
-    console.log(`📊 Progress: ${Math.round(progress)}% (${current}/${total}) - Processing rank ${batchStart + 1}-${Math.min(batchStart + batchSize, total)}`);
   }, []);
 
-  const canUpdate = useCallback((minIntervalMs: number = 120000) => {
+  // Returns true if enough time has passed since the last full batch reload
+  const canUpdate = useCallback((minIntervalMs: number = 90000) => {
     const now = Date.now();
     if (lastUpdateTime > 0 && (now - lastUpdateTime) < minIntervalMs) {
-      console.log(`⏱️ Skipping Lcrypt update, only ${Math.round((now - lastUpdateTime) / 1000)}s since last update. Waiting for 2 minutes between updates.`);
       return false;
     }
     return true;
