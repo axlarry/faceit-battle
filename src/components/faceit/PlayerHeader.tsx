@@ -12,7 +12,7 @@ interface PlayerHeaderProps {
 }
 
 export const PlayerHeader = ({ player, isFriend = false }: PlayerHeaderProps) => {
-  const { data: lcryptData } = useLcryptApi(player.nickname);
+  const { data: lcryptData } = useLcryptApi(player.nickname, player.player_id);
 
   // Proxy images for Discord Activity
   const proxiedCoverImage = useMemo(() => {

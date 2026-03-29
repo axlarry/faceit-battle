@@ -36,10 +36,14 @@ export class FriendDataProcessor {
         // Silent fail for basic data
       }
       
-      // Lcrypt data fetching with LIVE detection
+      // Lcrypt data fetching with LIVE detection — now uses FACEIT API via playerTodayService
       const optimizedData = await performanceMonitor.measureAsyncTime(
         `lcrypt-api-${currentNickname}`,
-        () => lcryptOptimizedService.getCompletePlayerData(currentNickname)
+        () => lcryptOptimizedService.getCompletePlayerData(
+          currentNickname,
+          friend.player_id,
+          basicData?.country
+        )
       );
       
       // Cover image with caching
