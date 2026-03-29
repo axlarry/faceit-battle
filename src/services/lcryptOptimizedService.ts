@@ -2,6 +2,8 @@
 import { supabase } from '@/integrations/supabase/client';
 import { invokeEdgeFunction, isDiscordActivity } from '@/lib/discordProxy';
 
+const LCRYPT_BASE = 'https://faceit.lcrypt.eu/';
+
 // Helper to invoke edge functions with Discord proxy support
 const invokeFunction = async (functionName: string, body: Record<string, unknown>) => {
   if (isDiscordActivity()) {
@@ -9,6 +11,54 @@ const invokeFunction = async (functionName: string, body: Record<string, unknown
   }
   return supabase.functions.invoke(functionName, { body });
 };
+
+/**
+ * Fetch lcrypt data directly from the browser.
+ * This avoids the 403 Forbidden that Supabase/Deno Deploy IPs receive from lcrypt.eu.
+ * Throws on any non-OK status or JSON parse failure.
+ */
+async function fetchLcryptDirect(nickname: string): Promise<any> {
+  const url = `${LCRYPT_BASE}?n=${encodeURIComponent(nickname)}`;
+  const response = await fetch(url, {
+    headers: {
+      'Accept': 'application/json, text/plain, */*',
+      'Accept-Language': 'en-US,en;q=0.9',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+  }
+
+  const text = await response.text();
+  try {
+    return JSON.parse(text);
+  } catch {
+    throw new Error(`Invalid JSON from lcrypt.eu: ${text.slice(0, 100)}`);
+  }
+}
+
+/**
+ * Get lcrypt data with fallback strategy:
+ * 1. Direct browser fetch (bypasses IP blocks on edge function IPs)
+ * 2. Supabase edge function fallback (for Discord Activity or if CORS blocks direct)
+ */
+async function fetchLcryptWithFallback(nickname: string): Promise<{ data: any; error: any }> {
+  // In Discord Activity, always use edge function (browser fetch can't bypass Discord CSP)
+  if (isDiscordActivity()) {
+    return invokeFunction('get-lcrypt-elo', { nickname });
+  }
+
+  // Try direct browser fetch first
+  try {
+    const data = await fetchLcryptDirect(nickname);
+    return { data, error: null };
+  } catch (directErr) {
+    console.warn(`[lcrypt] Direct fetch failed for ${nickname} (${(directErr as Error).message}), falling back to edge function`);
+    // Fall back to edge function (handles caching + queuing)
+    return invokeFunction('get-lcrypt-elo', { nickname });
+  }
+}
 
 export interface OptimizedLcryptData {
   elo?: number;
@@ -53,14 +103,14 @@ export interface OptimizedLcryptData {
 export class LcryptOptimizedService {
   async getCompletePlayerData(nickname: string): Promise<OptimizedLcryptData | null> {
     try {
-      const { data, error } = await invokeFunction('get-lcrypt-elo', { nickname });
+      const { data, error } = await fetchLcryptWithFallback(nickname);
 
       if (error) {
         console.warn(`Lcrypt API error for ${nickname}:`, error);
         return { isLive: false, error: true };
       }
 
-      // Detect error responses from edge function (HTTP 200 with error payload)
+      // Detect error payloads returned with HTTP 200 (edge function error wrapping)
       if (data?.error === true || (data?.message === 'player not found' && !data?.elo)) {
         console.warn(`Lcrypt returned error for ${nickname}:`, data?.message);
         return { isLive: false, error: true };
