@@ -20,6 +20,7 @@ const supabase = createClient(supabaseUrl, supabaseKey)
 class GlobalRequestQueue {
   private queue: Array<{
     nickname: string;
+    fetchFn: () => Promise<any>;
     resolve: (value: any) => void;
     reject: (error: any) => void;
     timestamp: number;
@@ -37,15 +38,14 @@ class GlobalRequestQueue {
 
     // Create promise for this request
     const promise = new Promise((resolve, reject) => {
-      const queueItem = {
+      this.queue.push({
         nickname,
+        fetchFn,
         resolve,
         reject,
         timestamp: Date.now()
-      };
-      
-      this.queue.push(queueItem);
-      console.log(`📥 Added ${nickname} to queue (position: ${this.queue.length}/${this.queue.length})`);
+      });
+      console.log(`📥 Added ${nickname} to queue (position: ${this.queue.length})`);
     });
 
     // Store in-progress promise
@@ -53,13 +53,13 @@ class GlobalRequestQueue {
 
     // Start processing if not already processing
     if (!this.processing) {
-      this.processQueue(fetchFn);
+      this.processQueue();
     }
 
     return promise;
   }
 
-  private async processQueue(fetchFn: () => Promise<any>) {
+  private async processQueue() {
     if (this.processing || this.queue.length === 0) {
       return;
     }
@@ -68,7 +68,7 @@ class GlobalRequestQueue {
 
     while (this.queue.length > 0) {
       const item = this.queue.shift()!;
-      const { nickname, resolve, reject } = item;
+      const { nickname, fetchFn, resolve, reject } = item;
 
       try {
         // Calculate delay to enforce 2 second interval
@@ -82,19 +82,16 @@ class GlobalRequestQueue {
         }
 
         console.log(`🚀 Processing from queue: ${nickname} (remaining in queue: ${this.queue.length})`);
-        
+
         // Update last request time
         this.lastRequestTime = Date.now();
 
-        // Execute the actual fetch
+        // Execute the fetch function specific to this queue item
         const result = await fetchFn();
-        
+
         console.log(`✅ Queue processed: ${nickname} (queue now: ${this.queue.length} items)`);
-        
-        // Resolve the promise
+
         resolve(result);
-        
-        // Remove from in-progress
         this.inProgressNicknames.delete(nickname);
 
       } catch (error) {
@@ -180,23 +177,38 @@ async function processLcryptRequest(nickname: string) {
           console.log(`🚀 Attempt ${attempt} - Fetching from lcrypt.eu for: ${nickname}`)
           
           const controller = new AbortController()
-          const timeoutId = setTimeout(() => controller.abort(), 8000) // 8 second timeout
-          
-          const response = await fetch(`https://faceit.lcrypt.eu/?n=${nickname}`, {
+          const timeoutId = setTimeout(() => controller.abort(), 10000) // 10 second timeout
+
+          const lcryptUrl = `https://faceit.lcrypt.eu/?n=${encodeURIComponent(nickname)}`
+          console.log(`[lcrypt] Fetching: ${lcryptUrl}`)
+
+          const response = await fetch(lcryptUrl, {
             signal: controller.signal,
             headers: {
-              'User-Agent': 'Faceit-Tool/1.0',
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+              'Accept': 'application/json, text/plain, */*',
+              'Accept-Language': 'en-US,en;q=0.9',
             }
           })
           
           clearTimeout(timeoutId)
           
           if (!response.ok) {
+            const body = await response.text().catch(() => '')
+            console.error(`[lcrypt] HTTP ${response.status} for ${nickname}: ${body.slice(0, 200)}`)
             throw new Error(`HTTP ${response.status}: ${response.statusText}`)
           }
 
-          const data = await response.json()
-          console.log(`✅ Success from lcrypt.eu for ${nickname}`)
+          const rawText = await response.text()
+          let data: any
+          try {
+            data = JSON.parse(rawText)
+          } catch {
+            console.error(`[lcrypt] Invalid JSON for ${nickname}:`, rawText.slice(0, 300))
+            throw new Error('Invalid JSON response from lcrypt.eu')
+          }
+
+          console.log(`[lcrypt] Success for ${nickname} - elo: ${data?.elo}, live: ${data?.current?.present}`)
 
           // 4. Cache the successful response (30 seconds for LIVE detection)
           try {

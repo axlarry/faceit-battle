@@ -328,6 +328,9 @@ serve(async (req) => {
 
     // Refresh all friends data from lcrypt API
     if (action === 'refresh_all') {
+      if (!requirePassword(body.password)) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
       // Get all friends from database
       const { data: friends, error: friendsErr } = await supabase
         .from('friends')

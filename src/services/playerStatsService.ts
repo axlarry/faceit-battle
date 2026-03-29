@@ -5,9 +5,7 @@ import { toast } from '@/hooks/use-toast';
 export class PlayerStatsService {
   async getPlayerStats(playerId: string) {
     try {
-      const data = await faceitApiClient.makeApiCall(`/players/${playerId}/stats/cs2`, false);
-      console.log('Player stats response:', data);
-      return data;
+      return await faceitApiClient.makeApiCall(`/players/${playerId}/stats/cs2`, false);
     } catch (error) {
       console.error('Error fetching player stats:', error);
       toast({

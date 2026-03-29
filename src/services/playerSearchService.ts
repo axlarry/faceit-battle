@@ -6,7 +6,7 @@ export class PlayerSearchService {
   async searchPlayer(nickname: string) {
     try {
       const data = await faceitApiClient.makeApiCall(`/search/players?nickname=${encodeURIComponent(nickname)}&game=cs2`, false);
-      return data.items || [];
+      return data?.items || [];
     } catch (error) {
       console.error('Error searching player:', error);
       toast({

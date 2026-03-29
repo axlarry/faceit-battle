@@ -6,7 +6,7 @@ export class LeaderboardService {
   async getLeaderboard(region: string, limit: number = 100) {
     try {
       const data = await faceitApiClient.makeApiCall(`/rankings/games/cs2/regions/${region}?limit=${limit}`, true);
-      return data.items || [];
+      return data?.items || [];
     } catch (error) {
       console.error('Error fetching leaderboard:', error);
       toast({
