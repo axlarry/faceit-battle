@@ -68,6 +68,12 @@ export const useOptimizedFriendsManager = ({
         winRate: friend.winRate || 0,
         hsRate: friend.hsRate || 0,
         kdRatio: friend.kdRatio || 0,
+        cover_image: friend.cover_image ?? undefined,
+        country: friend.country ?? undefined,
+        country_flag: friend.country_flag ?? undefined,
+        region: friend.region ?? undefined,
+        region_ranking: friend.region_ranking ?? undefined,
+        country_ranking: friend.country_ranking ?? undefined,
       }));
 
       updateState({ 

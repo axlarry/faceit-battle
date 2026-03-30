@@ -3,7 +3,12 @@ export interface Player {
   player_id: string;
   nickname: string;
   avatar: string;
-  cover_image?: string; // Added cover image field
+  cover_image?: string;
+  country?: string;
+  country_flag?: string;
+  region?: string;
+  region_ranking?: number;
+  country_ranking?: number;
   position?: number;
   level?: number;
   elo?: number;
