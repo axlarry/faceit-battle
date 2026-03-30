@@ -22,6 +22,8 @@ async function getInvokeFn() {
 export class FriendDataProcessor {
   // In-memory cover cache: keyed by nickname, value is URL or null
   private coverImageCache = new Map<string, string | null>();
+  // Single probe promise — resolved to true if update_cache is supported
+  private persistCacheSupported: Promise<boolean> | null = null;
 
   async updateFriendData(
     friend: Player,
@@ -135,12 +137,41 @@ export class FriendDataProcessor {
     }
   }
 
+  /** One-time probe: returns true if the edge function supports update_cache. */
+  private checkPersistCacheSupport(): Promise<boolean> {
+    if (this.persistCacheSupported !== null) return this.persistCacheSupported;
+
+    this.persistCacheSupported = getInvokeFn().then(async (invoke) => {
+      try {
+        // Probe with a no-op player_id — if the action is unknown, it returns
+        // { error: 'Unknown action' } with status 400; otherwise 400 means
+        // "missing player_id" which still confirms the action exists.
+        const result = await invoke('friends-gateway', {
+          action: 'update_cache',
+          player: { player_id: '__probe__' },
+        });
+        const body = result?.data as any;
+        // "Unknown action" → not deployed yet
+        if (body?.error === 'Unknown action') return false;
+        // Any other response (success or "Missing player_id") → deployed
+        return true;
+      } catch {
+        return false;
+      }
+    });
+
+    return this.persistCacheSupported;
+  }
+
   /** Fire-and-forget: write all display-cache fields to the friends DB row. */
   private async persistCache(
     playerId: string,
     friend: FriendWithLcrypt,
     lcrypt: any
   ): Promise<void> {
+    const supported = await this.checkPersistCacheSupport();
+    if (!supported) return;
+
     const invoke = await getInvokeFn();
     await invoke('friends-gateway', {
       action: 'update_cache',
