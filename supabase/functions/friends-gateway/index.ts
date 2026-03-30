@@ -8,7 +8,6 @@ const corsHeaders = {
   'Access-Control-Max-Age': '86400',
 };
 
-// Simple in-memory rate limiter per IP
 class RateLimiter {
   private hits: Map<string, number[]> = new Map();
   constructor(private limit: number, private windowMs: number) {}
@@ -27,32 +26,43 @@ class RateLimiter {
 function getClientIp(req: Request): string {
   const xf = req.headers.get('x-forwarded-for');
   if (xf) return xf.split(',')[0].trim();
-  return (
-    req.headers.get('cf-connecting-ip') ||
-    req.headers.get('x-real-ip') ||
-    'unknown'
-  );
+  return req.headers.get('cf-connecting-ip') || req.headers.get('x-real-ip') || 'unknown';
 }
 
-// Friends gateway rate limiters
-const friendsListLimiter = new RateLimiter(120, 60_000); // 120 req/min per IP for list
-const friendsMutationLimiter = new RateLimiter(30, 60_000); // 30 mutations/min per IP
+const friendsListLimiter     = new RateLimiter(120, 60_000);  // 120 req/min — read
+const friendsMutationLimiter = new RateLimiter(30,  60_000);  // 30 req/min  — admin mutations
+const cacheUpdateLimiter     = new RateLimiter(200, 60_000);  // 200 req/min — background cache writes
 
-// Single shared owner for password-protected, unauthenticated lists
 const PUBLIC_OWNER_ID = '00000000-0000-0000-0000-000000000000';
 
-type Action = 'list' | 'add' | 'update' | 'remove' | 'migrate_auto' | 'refresh_all' | 'update_nickname' | 'sync_nickname';
+type Action =
+  | 'list'
+  | 'add'
+  | 'update'
+  | 'remove'
+  | 'migrate_auto'
+  | 'refresh_all'
+  | 'update_nickname'
+  | 'sync_nickname'
+  | 'update_cache';
 
 interface FriendPayload {
   player_id: string;
-  nickname: string;
-  avatar: string;
+  nickname?: string;
+  avatar?: string;
   level?: number;
   elo?: number;
   wins?: number;
   win_rate?: number;
   hs_rate?: number;
   kd_ratio?: number;
+  // Persistent display-cache fields
+  cover_image?: string | null;
+  country?: string | null;
+  country_flag?: string | null;
+  region?: string | null;
+  region_ranking?: number | null;
+  country_ranking?: number | null;
 }
 
 interface RequestBody {
@@ -67,9 +77,7 @@ interface RequestBody {
 function getServiceClient() {
   const url = Deno.env.get('SUPABASE_URL');
   const key = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-  if (!url || !key) {
-    throw new Error('Supabase service credentials missing');
-  }
+  if (!url || !key) throw new Error('Supabase service credentials missing');
   return createClient(url, key);
 }
 
@@ -78,159 +86,163 @@ function safeEqual(a?: string, b?: string) {
   let mismatch = a.length === b.length ? 0 : 1;
   const len = Math.max(a.length, b.length);
   for (let i = 0; i < len; i++) {
-    const ca = a.charCodeAt(i) || 0;
-    const cb = b.charCodeAt(i) || 0;
-    mismatch |= ca ^ cb;
+    mismatch |= (a.charCodeAt(i) || 0) ^ (b.charCodeAt(i) || 0);
   }
   return mismatch === 0;
 }
 
 function requirePassword(reqPassword?: string) {
   const expected = Deno.env.get('ACCESS_CODE') || '';
-  // Fail-closed if not configured
   if (!expected) return false;
   return safeEqual(String(reqPassword ?? ''), expected);
 }
 
+function json(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+  });
+}
+
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
+  if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
   try {
     const body = (await req.json()) as RequestBody;
     const { action } = body || {};
+    if (!action) return json({ error: 'Missing action' }, 400);
 
-    if (!action) {
-      return new Response(JSON.stringify({ error: 'Missing action' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-    }
-
-    // Basic rate limiting per IP
     const ip = getClientIp(req);
-    if (action === 'list') {
-      if (!friendsListLimiter.allow(ip)) {
-        return new Response(JSON.stringify({ error: 'Too many requests' }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-      }
-    } else {
-      if (!friendsMutationLimiter.allow(ip)) {
-        return new Response(JSON.stringify({ error: 'Too many requests' }), { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-      }
+
+    // ── update_cache: no password, high-throughput rate limit ────────────────
+    if (action === 'update_cache') {
+      if (!cacheUpdateLimiter.allow(ip)) return json({ error: 'Too many requests' }, 429);
+
+      const p = body.player;
+      if (!p?.player_id) return json({ error: 'Missing player_id' }, 400);
+
+      const supabase = getServiceClient();
+
+      // Build update payload — only include fields that are explicitly provided
+      const patch: Record<string, unknown> = { last_cached_at: new Date().toISOString() };
+      if (p.nickname      !== undefined) patch.nickname       = p.nickname;
+      if (p.avatar        !== undefined) patch.avatar         = p.avatar;
+      if (p.level         !== undefined) patch.level          = p.level;
+      if (p.elo           !== undefined) patch.elo            = p.elo;
+      if (p.wins          !== undefined) patch.wins           = p.wins;
+      if (p.win_rate      !== undefined) patch.win_rate       = p.win_rate;
+      if (p.hs_rate       !== undefined) patch.hs_rate        = p.hs_rate;
+      if (p.kd_ratio      !== undefined) patch.kd_ratio       = p.kd_ratio;
+      if (p.cover_image   !== undefined) patch.cover_image    = p.cover_image;
+      if (p.country       !== undefined) patch.country        = p.country;
+      if (p.country_flag  !== undefined) patch.country_flag   = p.country_flag;
+      if (p.region        !== undefined) patch.region         = p.region;
+      if (p.region_ranking   !== undefined) patch.region_ranking   = p.region_ranking;
+      if (p.country_ranking  !== undefined) patch.country_ranking  = p.country_ranking;
+
+      const { error } = await supabase
+        .from('friends')
+        .update(patch)
+        .eq('owner_id', PUBLIC_OWNER_ID)
+        .eq('player_id', p.player_id);
+
+      if (error) return json({ error: error.message }, 500);
+      return json({ success: true });
     }
 
-    const supabase = getServiceClient();
-
-    // Public list fetch (no password required)
+    // ── list: public, no password ─────────────────────────────────────────────
     if (action === 'list') {
+      if (!friendsListLimiter.allow(ip)) return json({ error: 'Too many requests' }, 429);
+
+      const supabase = getServiceClient();
       const { data, error } = await supabase
         .from('friends')
         .select('*')
         .eq('owner_id', PUBLIC_OWNER_ID)
-        .order('created_at', { ascending: false });
+        .order('elo', { ascending: false });
 
       if (error) throw error;
 
       const items = (data || []).map((f: any) => ({
-        player_id: f.player_id,
-        nickname: f.nickname,
-        avatar: f.avatar,
-        level: f.level || 0,
-        elo: f.elo || 0,
-        wins: f.wins || 0,
-        winRate: f.win_rate || 0,
-        hsRate: f.hs_rate || 0,
-        kdRatio: f.kd_ratio || 0,
+        player_id:      f.player_id,
+        nickname:       f.nickname,
+        avatar:         f.avatar,
+        cover_image:    f.cover_image    ?? null,
+        country:        f.country        ?? null,
+        country_flag:   f.country_flag   ?? null,
+        region:         f.region         ?? null,
+        region_ranking: f.region_ranking ?? 0,
+        country_ranking:f.country_ranking?? 0,
+        level:          f.level          ?? 0,
+        elo:            f.elo            ?? 0,
+        wins:           f.wins           ?? 0,
+        winRate:        f.win_rate       ?? 0,
+        hsRate:         f.hs_rate        ?? 0,
+        kdRatio:        f.kd_ratio       ?? 0,
       }));
 
-      return new Response(JSON.stringify({ items }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      return json({ items });
     }
 
-    // For add/remove (and optionally update) enforce password
-    const needsPassword = action === 'add' || action === 'remove' || action === 'update';
-    if (needsPassword && !requirePassword(body.password)) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-    }
+    // ── mutations: require rate-limit check ───────────────────────────────────
+    if (!friendsMutationLimiter.allow(ip)) return json({ error: 'Too many requests' }, 429);
 
+    const supabase = getServiceClient();
+
+    // ── add / update ──────────────────────────────────────────────────────────
     if (action === 'add' || action === 'update') {
-      const p = body.player;
-      if (!p || !p.player_id || !p.nickname || !p.avatar) {
-        return new Response(JSON.stringify({ error: 'Invalid player payload' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-      }
+      const needsPassword = action === 'add' || action === 'update';
+      if (needsPassword && !requirePassword(body.password)) return json({ error: 'Unauthorized' }, 401);
 
-      // Check existence
+      const p = body.player;
+      if (!p || !p.player_id || !p.nickname || !p.avatar) return json({ error: 'Invalid player payload' }, 400);
+
       const { data: existing, error: selErr } = await supabase
-        .from('friends')
-        .select('id')
-        .eq('owner_id', PUBLIC_OWNER_ID)
-        .eq('player_id', p.player_id)
-        .maybeSingle();
+        .from('friends').select('id')
+        .eq('owner_id', PUBLIC_OWNER_ID).eq('player_id', p.player_id).maybeSingle();
       if (selErr) throw selErr;
 
+      const payload: any = {
+        nickname:  p.nickname,
+        avatar:    p.avatar,
+        level:     p.level    ?? 0,
+        elo:       p.elo      ?? 0,
+        wins:      p.wins     ?? 0,
+        win_rate:  p.win_rate ?? 0,
+        hs_rate:   p.hs_rate  ?? 0,
+        kd_ratio:  p.kd_ratio ?? 0,
+      };
+
       if (existing) {
-        const { error: updErr } = await supabase
-          .from('friends')
-          .update({
-            nickname: p.nickname,
-            avatar: p.avatar,
-            level: p.level ?? 0,
-            elo: p.elo ?? 0,
-            wins: p.wins ?? 0,
-            win_rate: p.win_rate ?? 0,
-            hs_rate: p.hs_rate ?? 0,
-            kd_ratio: p.kd_ratio ?? 0,
-          })
-          .eq('owner_id', PUBLIC_OWNER_ID)
-          .eq('player_id', p.player_id);
+        const { error: updErr } = await supabase.from('friends').update(payload)
+          .eq('owner_id', PUBLIC_OWNER_ID).eq('player_id', p.player_id);
         if (updErr) throw updErr;
       } else {
-        const { error: insErr } = await supabase
-          .from('friends')
-          .insert({
-            owner_id: PUBLIC_OWNER_ID,
-            player_id: p.player_id,
-            nickname: p.nickname,
-            avatar: p.avatar,
-            level: p.level ?? 0,
-            elo: p.elo ?? 0,
-            wins: p.wins ?? 0,
-            win_rate: p.win_rate ?? 0,
-            hs_rate: p.hs_rate ?? 0,
-            kd_ratio: p.kd_ratio ?? 0,
-          } as any);
+        const { error: insErr } = await supabase.from('friends')
+          .insert({ owner_id: PUBLIC_OWNER_ID, player_id: p.player_id, ...payload });
         if (insErr) throw insErr;
       }
-
-      return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      return json({ success: true });
     }
 
+    // ── remove ────────────────────────────────────────────────────────────────
     if (action === 'remove') {
+      if (!requirePassword(body.password)) return json({ error: 'Unauthorized' }, 401);
       const id = body.playerId;
-      if (!id) {
-        return new Response(JSON.stringify({ error: 'Missing playerId' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-      }
-
-      const { error: delErr } = await supabase
-        .from('friends')
-        .delete()
-        .eq('owner_id', PUBLIC_OWNER_ID)
-        .eq('player_id', id);
-      if (delErr) throw delErr;
-
-      return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      if (!id) return json({ error: 'Missing playerId' }, 400);
+      const { error } = await supabase.from('friends').delete()
+        .eq('owner_id', PUBLIC_OWNER_ID).eq('player_id', id);
+      if (error) throw error;
+      return json({ success: true });
     }
 
-    // Auto-migrate: copy the largest old owner list into PUBLIC owner
+    // ── migrate_auto ──────────────────────────────────────────────────────────
     if (action === 'migrate_auto') {
-      // Enforce password
-      if (!requirePassword(body.password)) {
-        return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-      }
+      if (!requirePassword(body.password)) return json({ error: 'Unauthorized' }, 401);
 
-      // Fetch all owner_ids (excluding PUBLIC and null)
       const { data: ownersRaw, error: ownersErr } = await supabase
-        .from('friends')
-        .select('owner_id')
-        .neq('owner_id', PUBLIC_OWNER_ID)
-        .not('owner_id', 'is', null);
+        .from('friends').select('owner_id')
+        .neq('owner_id', PUBLIC_OWNER_ID).not('owner_id', 'is', null);
       if (ownersErr) throw ownersErr;
 
       const counts: Record<string, number> = {};
@@ -239,118 +251,70 @@ serve(async (req) => {
         counts[oid] = (counts[oid] || 0) + 1;
       }
 
-      // Determine source: prefer the non-public owner with the most rows; if none, fall back to rows with NULL owner_id (legacy data)
       const sourceOwnerId = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0] || null;
-
       let sourceRows: any[] = [];
+
       if (sourceOwnerId) {
-        const { data: srcRows, error: srcErr } = await supabase
-          .from('friends')
-          .select('*')
-          .eq('owner_id', sourceOwnerId);
-        if (srcErr) throw srcErr;
-        sourceRows = (srcRows || []) as any[];
+        const { data, error } = await supabase.from('friends').select('*').eq('owner_id', sourceOwnerId);
+        if (error) throw error;
+        sourceRows = data || [];
       } else {
-        // Fallback: migrate legacy rows where owner_id IS NULL
-        const { data: nullOwnerRows, error: nullErr } = await supabase
-          .from('friends')
-          .select('*')
-          .is('owner_id', null);
-        if (nullErr) throw nullErr;
-        if (!nullOwnerRows || nullOwnerRows.length === 0) {
-          return new Response(JSON.stringify({ migratedInserted: 0, migratedUpdated: 0, sourceOwnerId: null }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-        }
-        sourceRows = (nullOwnerRows || []) as any[];
+        const { data, error } = await supabase.from('friends').select('*').is('owner_id', null);
+        if (error) throw error;
+        if (!data?.length) return json({ migratedInserted: 0, migratedUpdated: 0, sourceOwnerId: null });
+        sourceRows = data;
       }
 
-      // Load existing public player_ids
       const { data: existingPublic, error: existErr } = await supabase
-        .from('friends')
-        .select('player_id')
-        .eq('owner_id', PUBLIC_OWNER_ID);
+        .from('friends').select('player_id').eq('owner_id', PUBLIC_OWNER_ID);
       if (existErr) throw existErr;
-
       const existingSet = new Set((existingPublic || []).map((r: any) => r.player_id as string));
 
       const toInsert: any[] = [];
       const toUpdate: any[] = [];
-
-      for (const f of sourceRows || []) {
-        const payload = {
+      for (const f of sourceRows) {
+        const p = {
           owner_id: PUBLIC_OWNER_ID,
-          player_id: (f as any).player_id,
-          nickname: (f as any).nickname,
-          avatar: (f as any).avatar,
-          level: (f as any).level ?? 0,
-          elo: (f as any).elo ?? 0,
-          wins: (f as any).wins ?? 0,
-          win_rate: (f as any).win_rate ?? 0,
-          hs_rate: (f as any).hs_rate ?? 0,
-          kd_ratio: (f as any).kd_ratio ?? 0,
-        } as any;
-        if (!existingSet.has((f as any).player_id)) {
-          toInsert.push(payload);
-        } else {
-          toUpdate.push(payload);
-        }
+          player_id: f.player_id, nickname: f.nickname, avatar: f.avatar,
+          level: f.level ?? 0, elo: f.elo ?? 0, wins: f.wins ?? 0,
+          win_rate: f.win_rate ?? 0, hs_rate: f.hs_rate ?? 0, kd_ratio: f.kd_ratio ?? 0,
+        };
+        existingSet.has(f.player_id) ? toUpdate.push(p) : toInsert.push(p);
       }
 
-      let inserted = 0;
+      let inserted = 0, updated = 0;
       if (toInsert.length > 0) {
-        const { error: insErr } = await supabase.from('friends').insert(toInsert as any);
-        if (insErr) throw insErr;
+        const { error } = await supabase.from('friends').insert(toInsert);
+        if (error) throw error;
         inserted = toInsert.length;
       }
-
-      let updated = 0;
-      // Update records one-by-one to avoid onConflict requirements
       for (const u of toUpdate) {
-        const { error: updErr } = await supabase
-          .from('friends')
-          .update({
-            nickname: u.nickname,
-            avatar: u.avatar,
-            level: u.level,
-            elo: u.elo,
-            wins: u.wins,
-            win_rate: u.win_rate,
-            hs_rate: u.hs_rate,
-            kd_ratio: u.kd_ratio,
-          })
-          .eq('owner_id', PUBLIC_OWNER_ID)
-          .eq('player_id', u.player_id);
-        if (updErr) throw updErr;
-        updated += 1;
+        const { error } = await supabase.from('friends').update({
+          nickname: u.nickname, avatar: u.avatar, level: u.level, elo: u.elo,
+          wins: u.wins, win_rate: u.win_rate, hs_rate: u.hs_rate, kd_ratio: u.kd_ratio,
+        }).eq('owner_id', PUBLIC_OWNER_ID).eq('player_id', u.player_id);
+        if (error) throw error;
+        updated++;
       }
 
-      return new Response(JSON.stringify({ migratedInserted: inserted, migratedUpdated: updated, sourceOwnerId }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      return json({ migratedInserted: inserted, migratedUpdated: updated, sourceOwnerId });
     }
 
-    // Refresh all friends data from lcrypt API
+    // ── refresh_all ───────────────────────────────────────────────────────────
     if (action === 'refresh_all') {
-      if (!requirePassword(body.password)) {
-        return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-      }
-      // Get all friends from database
+      if (!requirePassword(body.password)) return json({ error: 'Unauthorized' }, 401);
+
       const { data: friends, error: friendsErr } = await supabase
-        .from('friends')
-        .select('*')
-        .eq('owner_id', PUBLIC_OWNER_ID);
-      
+        .from('friends').select('*').eq('owner_id', PUBLIC_OWNER_ID);
       if (friendsErr) throw friendsErr;
 
       let updated = 0;
-      const results = [];
-
-      // Process friends in small batches to avoid overwhelming the lcrypt API
       const batchSize = 3;
       for (let i = 0; i < (friends || []).length; i += batchSize) {
         const batch = (friends || []).slice(i, i + batchSize);
-        
         await Promise.all(batch.map(async (friend: any) => {
           try {
-            // Fetch fresh data from lcrypt
-            const lcryptResponse = await fetch(`https://rwizxoeyatdtggrpnpmq.supabase.co/functions/v1/get-lcrypt-elo`, {
+            const res = await fetch(`${Deno.env.get('SUPABASE_URL')}/functions/v1/get-lcrypt-elo`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -358,135 +322,65 @@ serve(async (req) => {
               },
               body: JSON.stringify({ nickname: friend.nickname })
             });
-
-            if (lcryptResponse.ok) {
-              const lcryptData = await lcryptResponse.json();
-              
-              if (lcryptData && !lcryptData.error) {
-                // Only save essential data for speed: ELO and level
-                const newElo = lcryptData.elo || friend.elo || 0;
-                const newLevel = lcryptData.level || friend.level || 0;
-                
-                // Only update if ELO or level changed significantly
-                if (Math.abs(newElo - (friend.elo || 0)) < 1 && newLevel === (friend.level || 0)) {
-                  results.push({ nickname: friend.nickname, status: 'no_change' });
-                  return;
-                }
-
-                // Update friend with only essential data
-                const { error: updateErr } = await supabase
-                  .from('friends')
-                  .update({
-                    level: newLevel,
-                    elo: newElo,
-                  })
-                  .eq('owner_id', PUBLIC_OWNER_ID)
-                  .eq('player_id', friend.player_id);
-
-                if (!updateErr) {
-                  updated++;
-                  results.push({ nickname: friend.nickname, status: 'updated' });
-                } else {
-                  results.push({ nickname: friend.nickname, status: 'update_failed', error: updateErr.message });
-                }
-              } else {
-                results.push({ nickname: friend.nickname, status: 'no_data' });
-              }
-            } else {
-              results.push({ nickname: friend.nickname, status: 'api_error' });
-            }
-          } catch (error) {
-            results.push({ nickname: friend.nickname, status: 'error', error: error.message });
-          }
+            if (!res.ok) return;
+            const d = await res.json();
+            if (!d || d.error) return;
+            const { error: upErr } = await supabase.from('friends').update({
+              level: d.level || friend.level || 0,
+              elo:   d.elo   || friend.elo   || 0,
+            }).eq('owner_id', PUBLIC_OWNER_ID).eq('player_id', friend.player_id);
+            if (!upErr) updated++;
+          } catch { /* ignore */ }
         }));
-
-        // Small delay between batches
         if (i + batchSize < (friends || []).length) {
-          await new Promise(resolve => setTimeout(resolve, 500));
+          await new Promise(r => setTimeout(r, 500));
         }
       }
 
-      return new Response(JSON.stringify({ 
-        updated, 
-        total: (friends || []).length, 
-        results 
-      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      return json({ updated, total: (friends || []).length });
     }
 
-    // Manual nickname update (with password authentication)
+    // ── update_nickname ───────────────────────────────────────────────────────
     if (action === 'update_nickname') {
-      if (!requirePassword(body.password)) {
-        return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-      }
-      
+      if (!requirePassword(body.password)) return json({ error: 'Unauthorized' }, 401);
       const { playerId, newNickname, newAvatar } = body;
-      if (!playerId || !newNickname) {
-        return new Response(JSON.stringify({ error: 'Missing playerId or newNickname' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-      }
-
-      const updateData: any = { nickname: newNickname };
-      if (newAvatar) {
-        updateData.avatar = newAvatar;
-      }
-
-      const { error: updateErr } = await supabase
-        .from('friends')
-        .update(updateData)
-        .eq('owner_id', PUBLIC_OWNER_ID)
-        .eq('player_id', playerId);
-      
-      if (updateErr) throw updateErr;
-
-      return new Response(JSON.stringify({ success: true, updated: updateData }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      if (!playerId || !newNickname) return json({ error: 'Missing playerId or newNickname' }, 400);
+      const patch: any = { nickname: newNickname };
+      if (newAvatar) patch.avatar = newAvatar;
+      const { error } = await supabase.from('friends').update(patch)
+        .eq('owner_id', PUBLIC_OWNER_ID).eq('player_id', playerId);
+      if (error) throw error;
+      return json({ success: true, updated: patch });
     }
 
-    // Nickname sync (password required to prevent unauthorized modifications)
+    // ── sync_nickname ─────────────────────────────────────────────────────────
     if (action === 'sync_nickname') {
-      if (!requirePassword(body.password)) {
-        return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-      }
+      if (!requirePassword(body.password)) return json({ error: 'Unauthorized' }, 401);
       const { playerId, newNickname, newAvatar } = body;
-      if (!playerId || !newNickname) {
-        return new Response(JSON.stringify({ error: 'Missing playerId or newNickname' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-      }
+      if (!playerId || !newNickname) return json({ error: 'Missing playerId or newNickname' }, 400);
 
-      // Check if the friend exists
       const { data: existing, error: checkErr } = await supabase
-        .from('friends')
-        .select('nickname, avatar')
-        .eq('owner_id', PUBLIC_OWNER_ID)
-        .eq('player_id', playerId)
-        .maybeSingle();
-      
+        .from('friends').select('nickname, avatar').eq('owner_id', PUBLIC_OWNER_ID)
+        .eq('player_id', playerId).maybeSingle();
       if (checkErr) throw checkErr;
-      
-      if (!existing) {
-        return new Response(JSON.stringify({ error: 'Friend not found' }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-      }
+      if (!existing) return json({ error: 'Friend not found' }, 404);
 
-      // Only update if nickname actually changed
       if (existing.nickname === newNickname && (!newAvatar || existing.avatar === newAvatar)) {
-        return new Response(JSON.stringify({ success: true, changed: false }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        return json({ success: true, changed: false });
       }
 
-      const updateData: any = { nickname: newNickname };
-      if (newAvatar && newAvatar !== existing.avatar) {
-        updateData.avatar = newAvatar;
-      }
+      const patch: any = { nickname: newNickname };
+      if (newAvatar && newAvatar !== existing.avatar) patch.avatar = newAvatar;
 
-      const { error: updateErr } = await supabase
-        .from('friends')
-        .update(updateData)
-        .eq('owner_id', PUBLIC_OWNER_ID)
-        .eq('player_id', playerId);
-      
-      if (updateErr) throw updateErr;
-
-      return new Response(JSON.stringify({ success: true, changed: true, updated: updateData }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      const { error } = await supabase.from('friends').update(patch)
+        .eq('owner_id', PUBLIC_OWNER_ID).eq('player_id', playerId);
+      if (error) throw error;
+      return json({ success: true, changed: true, updated: patch });
     }
 
-    return new Response(JSON.stringify({ error: 'Unknown action' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    return json({ error: 'Unknown action' }, 400);
+
   } catch (e: any) {
-    return new Response(JSON.stringify({ error: e.message || 'Unknown error' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    return json({ error: e.message || 'Unknown error' }, 500);
   }
 });
