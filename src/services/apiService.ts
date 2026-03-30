@@ -49,16 +49,14 @@ export class ApiService {
         }
         
         if (attempt === maxRetries) {
-          console.warn(`Request failed after ${maxRetries} retries`);
           throw lastError;
         }
-        
+
         const delay = Math.min(
-          baseDelay * Math.pow(1.5, attempt) + Math.random() * 1000, // Reduced exponential backoff
+          baseDelay * Math.pow(1.5, attempt) + Math.random() * 1000,
           maxDelay
         );
-        
-        console.log(`Retry attempt ${attempt + 1}/${maxRetries} after ${delay}ms`);
+
         await new Promise(resolve => setTimeout(resolve, delay));
       }
     }
