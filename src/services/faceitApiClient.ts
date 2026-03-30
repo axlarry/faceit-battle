@@ -1,37 +1,30 @@
 
-import { apiService } from './apiService';
-import { supabase } from '@/integrations/supabase/client';
+import { optimizedApiService } from './optimizedApiService';
 import { invokeEdgeFunction, isDiscordActivity } from '@/lib/discordProxy';
+import { supabase } from '@/integrations/supabase/client';
 
-// Helper to invoke edge functions with Discord proxy support
 const invokeFunction = async (functionName: string, body: Record<string, unknown>) => {
-  if (isDiscordActivity()) {
-    return invokeEdgeFunction(functionName, body);
-  }
+  if (isDiscordActivity()) return invokeEdgeFunction(functionName, body);
   return supabase.functions.invoke(functionName, { body });
 };
 
 export class FaceitApiClient {
-  async makeApiCall(endpoint: string, useLeaderboardApi: boolean = false) {
-    const requestKey = `faceit-${endpoint}-${useLeaderboardApi ? 'leaderboard' : 'friends'}`;
-    
-    return apiService.dedupedRequest(requestKey, async () => {
-      return apiService.retryRequest(async () => {
-        
-        const { data, error } = await invokeFunction('proxy-faceit', { endpoint, useLeaderboardApi });
-        
-        if (error) {
-          // Surface rate limit conditions to the retry handler
-          if ((error as any)?.message?.includes('429') || (error as any)?.message?.includes('Rate limited')) {
-            throw new Error('Rate limited');
-          }
-          console.warn('Faceit proxy error:', error);
-          return null;
+  async makeApiCall(endpoint: string, useLeaderboardApi = false) {
+    const requestKey = `faceit-${endpoint}-${useLeaderboardApi ? 'leaderboard' : 'default'}`;
+
+    return optimizedApiService.dedupedRequest(requestKey, async () => {
+      const { data, error } = await invokeFunction('proxy-faceit', { endpoint, useLeaderboardApi });
+
+      if (error) {
+        if ((error as any)?.message?.includes('429') || (error as any)?.message?.includes('Rate limited')) {
+          throw new Error('Rate limited');
         }
-        
-        return data ?? null;
-      }, { maxRetries: 1, baseDelay: 3000 });
-    });
+        return null;
+      }
+
+      return data ?? null;
+    // 90s cache: covers stats/matches/history requests opened in the modal
+    }, { cacheTime: 90000, maxRetries: 1, baseDelay: 3000 });
   }
 }
 

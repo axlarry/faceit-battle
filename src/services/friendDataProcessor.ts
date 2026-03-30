@@ -18,147 +18,132 @@ export class FriendDataProcessor {
   ): Promise<FriendWithLcrypt> {
     if (!enabled) return friend;
 
-    // Marchează prietenul ca fiind în curs de încărcare
     setLoadingFriends(prev => new Set(prev).add(friend.nickname));
 
     try {
-      // Optimized data fetching
-      let currentNickname = friend.nickname;
-      let basicData: any = null;
-      
-      try {
-        basicData = await performanceMonitor.measureAsyncTime(
+      // Cover image: return cached value synchronously if available, avoiding
+      // a network round-trip that would otherwise serialize with other fetches.
+      const fetchCover = (): Promise<string | null | undefined> => {
+        if (friend.cover_image) return Promise.resolve(friend.cover_image);
+        if (this.coverImageCache.has(friend.nickname)) {
+          return Promise.resolve(this.coverImageCache.get(friend.nickname));
+        }
+        return playerService.getPlayerCoverImage(friend.nickname)
+          .then(img => { this.coverImageCache.set(friend.nickname, img ?? null); return img; })
+          .catch(() => null);
+      };
+
+      // ── All three fetches run in parallel ──────────────────────────────────
+      // FACEIT basic data, lcrypt ELO/live, and cover image have no strict
+      // ordering dependency between them, so launching them concurrently cuts
+      // per-player latency from (A + B + C) down to max(A, B, C).
+      const [basicData, optimizedData, coverImage] = await Promise.all([
+        performanceMonitor.measureAsyncTime(
           `faceit-api-${friend.nickname}`,
           () => optimizedApiService.faceitApiCall(`/players/${friend.player_id}`)
-        );
-        currentNickname = basicData?.nickname || friend.nickname;
-      } catch (e) {
-        // Silent fail for basic data
+        ).catch(() => null),
+
+        performanceMonitor.measureAsyncTime(
+          `lcrypt-api-${friend.nickname}`,
+          () => lcryptOptimizedService.getCompletePlayerData(
+            friend.nickname,
+            friend.player_id
+            // country omitted — lcrypt's primary response already includes it;
+            // the fallback path (FACEIT history) is country-agnostic anyway.
+          )
+        ).catch(() => null),
+
+        fetchCover()
+      ]);
+      // ─────────────────────────────────────────────────────────────────────
+
+      const currentNickname = basicData?.nickname || friend.nickname;
+
+      // Propagate new nickname into cover cache
+      if (currentNickname !== friend.nickname && coverImage !== undefined) {
+        this.coverImageCache.set(currentNickname, coverImage ?? null);
       }
-      
-      // Lcrypt data fetching with LIVE detection — now uses FACEIT API via playerTodayService
-      const optimizedData = await performanceMonitor.measureAsyncTime(
-        `lcrypt-api-${currentNickname}`,
-        () => lcryptOptimizedService.getCompletePlayerData(
-          currentNickname,
-          friend.player_id,
-          basicData?.country
-        )
-      );
-      
-      // Cover image with caching
-      let coverImage = friend.cover_image;
-      if (!coverImage) {
-        if (this.coverImageCache.has(currentNickname)) {
-          coverImage = this.coverImageCache.get(currentNickname);
-        } else {
-          coverImage = await playerService.getPlayerCoverImage(currentNickname);
-          this.coverImageCache.set(currentNickname, coverImage);
-        }
-      }
-      
-      // Construiește obiectul actualizat cu toate datele (identificare prin player_id, nu nickname)
+
       const levelFromApi = basicData?.games?.cs2?.skill_level;
-      const eloFromApi = basicData?.games?.cs2?.faceit_elo;
+      const eloFromApi   = basicData?.games?.cs2?.faceit_elo;
 
       const updatedFriend: FriendWithLcrypt = {
         ...friend,
-        nickname: currentNickname,
-        avatar: basicData?.avatar || friend.avatar,
-        level: levelFromApi ?? friend.level ?? 0,
-        lcryptData: optimizedData?.error ? null : optimizedData,
-        elo: optimizedData?.elo ?? eloFromApi ?? friend.elo ?? 0,
-        isLive: optimizedData?.isLive || false,
+        nickname:        currentNickname,
+        avatar:          basicData?.avatar || friend.avatar,
+        level:           levelFromApi ?? friend.level ?? 0,
+        lcryptData:      optimizedData?.error ? null : optimizedData,
+        elo:             optimizedData?.elo ?? eloFromApi ?? friend.elo ?? 0,
+        isLive:          optimizedData?.isLive || false,
         liveMatchDetails: optimizedData?.liveInfo?.matchDetails,
-        liveCompetition: optimizedData?.liveInfo?.competition,
-        cover_image: coverImage || friend.cover_image
+        liveCompetition:  optimizedData?.liveInfo?.competition,
+        cover_image:     coverImage || friend.cover_image
       };
 
-      // Auto-sync changes (nickname or avatar) to database
+      // Auto-sync nickname / avatar changes to the database
       const nicknameChanged = currentNickname !== friend.nickname;
-      const avatarChanged = basicData?.avatar && basicData.avatar !== friend.avatar;
-      
+      const avatarChanged   = basicData?.avatar && basicData.avatar !== friend.avatar;
+
       if (nicknameChanged || avatarChanged) {
         const storedPassword = localStorage.getItem('faceit_friends_password') || '';
-        
-        // Only sync if password is available to avoid 401 errors
         if (storedPassword) {
-          try {
-            const { invokeEdgeFunction, isDiscordActivity } = await import('@/lib/discordProxy');
-            const { supabase } = await import('@/integrations/supabase/client');
-            
-            const invokeFn = isDiscordActivity() 
-              ? (fn: string, body: Record<string, unknown>) => invokeEdgeFunction(fn, body)
-              : (fn: string, body: Record<string, unknown>) => supabase.functions.invoke(fn, { body });
-            
-            await invokeFn('friends-gateway', {
-              action: 'sync_nickname',
-              password: storedPassword,
-              playerId: friend.player_id,
-              newNickname: currentNickname,
-              newAvatar: basicData?.avatar
-            }).catch(() => {});
-          } catch (error) {
-            // Silent fail for sync
-          }
+          import('@/lib/discordProxy').then(({ invokeEdgeFunction, isDiscordActivity }) => {
+            import('@/integrations/supabase/client').then(({ supabase }) => {
+              const invokeFn = isDiscordActivity()
+                ? (fn: string, body: Record<string, unknown>) => invokeEdgeFunction(fn, body)
+                : (fn: string, body: Record<string, unknown>) => supabase.functions.invoke(fn, { body });
+
+              invokeFn('friends-gateway', {
+                action:      'sync_nickname',
+                password:    storedPassword,
+                playerId:    friend.player_id,
+                newNickname: currentNickname,
+                newAvatar:   basicData?.avatar
+              }).catch(() => {});
+            });
+          }).catch(() => {});
         }
       }
 
-      // Actualizează statusul LIVE în state-ul separat
       const liveMatchInfo: LiveMatchInfo = {
-        isLive: optimizedData?.isLive || false,
-        matchId: optimizedData?.liveInfo?.matchId,
-        competition: optimizedData?.liveInfo?.competition,
-        status: optimizedData?.liveInfo?.status,
-        state: optimizedData?.liveInfo?.state,
+        isLive:       optimizedData?.isLive || false,
+        matchId:      optimizedData?.liveInfo?.matchId,
+        competition:  optimizedData?.liveInfo?.competition,
+        status:       optimizedData?.liveInfo?.status,
+        state:        optimizedData?.liveInfo?.state,
         matchDetails: optimizedData?.liveInfo?.matchDetails,
-        liveMatch: optimizedData?.liveInfo?.liveMatch
+        liveMatch:    optimizedData?.liveInfo?.liveMatch
       };
 
-      setLiveMatches(prev => ({
-        ...prev,
-        [friend.player_id]: liveMatchInfo
-      }));
-      
-      // Actualizează prietenul în lista principală
-      setFriendsWithLcrypt(prevFriends => 
-        prevFriends.map(prevFriend => 
-          prevFriend.player_id === updatedFriend.player_id ? updatedFriend : prevFriend
-        )
+      setLiveMatches(prev => ({ ...prev, [friend.player_id]: liveMatchInfo }));
+
+      setFriendsWithLcrypt(prev =>
+        prev.map(pf => pf.player_id === updatedFriend.player_id ? updatedFriend : pf)
       );
-      
-      // Elimină prietenul din setul de încărcare
+
       setLoadingFriends(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(friend.nickname);
-        return newSet;
+        const s = new Set(prev);
+        s.delete(friend.nickname);
+        return s;
       });
 
       return updatedFriend;
+
     } catch (error) {
-      
-      // Actualizează cu date null în caz de eroare
-      const failedFriend: FriendWithLcrypt = { ...friend, lcryptData: null };
-      setFriendsWithLcrypt(prevFriends => 
-        prevFriends.map(prevFriend => 
-          prevFriend.player_id === failedFriend.player_id ? failedFriend : prevFriend
-        )
+      const failed: FriendWithLcrypt = { ...friend, lcryptData: null };
+
+      setFriendsWithLcrypt(prev =>
+        prev.map(pf => pf.player_id === failed.player_id ? failed : pf)
       );
-      
-      // Actualizează statusul LIVE ca false în caz de eroare
-      setLiveMatches(prev => ({
-        ...prev,
-        [friend.player_id]: { isLive: false }
-      }));
-      
-      // Elimină prietenul din setul de încărcare
+      setLiveMatches(prev => ({ ...prev, [friend.player_id]: { isLive: false } }));
+
       setLoadingFriends(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(friend.nickname);
-        return newSet;
+        const s = new Set(prev);
+        s.delete(friend.nickname);
+        return s;
       });
 
-      return failedFriend;
+      return failed;
     }
   }
 
@@ -166,14 +151,10 @@ export class FriendDataProcessor {
     batch: Player[],
     updateFriendData: (friend: Player) => Promise<FriendWithLcrypt>
   ): Promise<FriendWithLcrypt[]> {
-    const batchPromises = batch.map(friend => updateFriendData(friend));
-    const batchResults = await Promise.allSettled(batchPromises);
-    
-    return batchResults
-      .filter((result): result is PromiseFulfilledResult<FriendWithLcrypt> => 
-        result.status === 'fulfilled' && result.value !== null
-      )
-      .map(result => result.value);
+    const results = await Promise.allSettled(batch.map(f => updateFriendData(f)));
+    return results
+      .filter((r): r is PromiseFulfilledResult<FriendWithLcrypt> => r.status === 'fulfilled' && r.value !== null)
+      .map(r => r.value);
   }
 
   clearCoverImageCache() {
