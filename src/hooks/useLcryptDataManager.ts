@@ -1,15 +1,15 @@
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Player } from '@/types/Player';
 import { friendDataProcessor } from '@/services/friendDataProcessor';
 import { useLcryptLoadingState } from '@/hooks/helpers/useLcryptLoadingState';
 import { useIndividualUpdates } from '@/hooks/helpers/useIndividualUpdates';
 import { UseLcryptDataManagerProps, FriendWithLcrypt, LiveMatchInfo } from '@/hooks/types/lcryptDataManagerTypes';
 
-// How long to wait after initial batch load before starting individual update cycle
+// How long to wait after the initial batch load before starting the update cycle
 const INDIVIDUAL_START_DELAY_MS = 10000;
-// Minimum interval allowed between full batch reloads (guard against re-mount spam)
-const MIN_FULL_RELOAD_INTERVAL_MS = 60000;
+// Minimum interval allowed between full batch reloads
+const MIN_FULL_RELOAD_INTERVAL_MS = 90000;
 
 export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataManagerProps) => {
   const [friendsWithLcrypt, setFriendsWithLcrypt] = useState<FriendWithLcrypt[]>([]);
@@ -74,17 +74,15 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
     setFriendsWithLcrypt(sortedFriends.map(f => ({ ...f, lcryptData: undefined })));
 
     const batchSize = 3;
-    const updatedFriends: FriendWithLcrypt[] = [];
 
     for (let i = 0; i < sortedFriends.length; i += batchSize) {
       const batch = sortedFriends.slice(i, i + batchSize);
 
       try {
-        const validResults = await friendDataProcessor.processFriendsBatch(
+        await friendDataProcessor.processFriendsBatch(
           batch,
           (friend) => updateFriendLcryptData(friend, true)
         );
-        updatedFriends.push(...validResults);
         updateProgress(i + batch.length, sortedFriends.length, i, batchSize);
       } catch (error) {
         console.error('Error processing batch:', error);
@@ -98,40 +96,40 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
     finishLoading();
     setIsManualUpdate(false);
 
-    setFriendsWithLcrypt(prev => {
-      return [...prev].sort((a, b) => {
-        const eb = b.elo ?? 0;
-        const ea = a.elo ?? 0;
-        if (eb !== ea) return eb - ea;
-        const wb = b.wins ?? 0;
-        const wa = a.wins ?? 0;
-        if (wb !== wa) return wb - wa;
+    setFriendsWithLcrypt(prev =>
+      [...prev].sort((a, b) => {
+        const eDiff = (b.elo ?? 0) - (a.elo ?? 0);
+        if (eDiff !== 0) return eDiff;
+        const wDiff = (b.wins ?? 0) - (a.wins ?? 0);
+        if (wDiff !== 0) return wDiff;
         return (a.nickname ?? '').localeCompare(b.nickname ?? '');
-      });
-    });
+      })
+    );
 
-    // Start individual update cycle after a short settling delay
-    setTimeout(() => {
-      startIndividualUpdates();
-    }, INDIVIDUAL_START_DELAY_MS);
+    setTimeout(() => startIndividualUpdates(), INDIVIDUAL_START_DELAY_MS);
 
   }, [friends, enabled, updateFriendLcryptData, canUpdate, startLoading, finishLoading, updateProgress, stopIndividualUpdates, startIndividualUpdates]);
 
+  // Stable string key — changes only when the actual friend list (IDs) changes.
+  // Prevents spurious re-runs caused by parent re-creating the friends array object.
+  const friendsKey = useMemo(
+    () => friends.map(f => f.player_id).join(','),
+    [friends]
+  );
+
+  // Keep latest callbacks in refs so the effect doesn't need them as deps.
+  const loadRef = useRef(loadLcryptDataForAllFriends);
+  loadRef.current = loadLcryptDataForAllFriends;
+  const stopRef = useRef(stopIndividualUpdates);
+  stopRef.current = stopIndividualUpdates;
+
   useEffect(() => {
-    if (!enabled || friends.length === 0) return;
-
-    loadLcryptDataForAllFriends(false);
-
-    return () => {
-      stopIndividualUpdates();
-    };
-  }, [friends, enabled, loadLcryptDataForAllFriends, stopIndividualUpdates]);
-
-  useEffect(() => {
-    return () => {
-      stopIndividualUpdates();
-    };
-  }, [stopIndividualUpdates]);
+    if (!enabled || !friendsKey) return;
+    loadRef.current(false);
+    return () => stopRef.current();
+  // Re-run only when the actual set of friend IDs changes or enabled toggles.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [friendsKey, enabled]);
 
   return {
     friendsWithLcrypt,

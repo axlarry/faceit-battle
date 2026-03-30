@@ -8,10 +8,15 @@ interface UseIndividualUpdatesProps {
   updateSingleFriend: (friend: Player) => Promise<void>;
 }
 
-// Delay between requests — must exceed lcrypt's 2s global queue minimum
-const INTER_REQUEST_DELAY_MS = 2500;
-// How long to wait after a full cycle before starting the next one
-const CYCLE_RESTART_DELAY_MS = 45000;
+// Process 3 friends concurrently — respects lcrypt's 2s global queue since each
+// batch of 3 triggers 3 parallel edge-function calls which the server queue
+// serialises at 2s apart. The 2s inter-batch gap lets the queue drain fully
+// before the next batch starts.
+const BATCH_SIZE = 3;
+const INTER_BATCH_DELAY_MS = 2000;
+// How long to rest between full cycles. With a 120s server cache the next
+// cycle will be entirely (or mostly) served from cache and finish in ~24s.
+const CYCLE_RESTART_DELAY_MS = 30000;
 
 export const useIndividualUpdates = ({
   friends,
@@ -32,27 +37,31 @@ export const useIndividualUpdates = ({
 
     const runCycle = async () => {
       while (!stopSignalRef.current) {
-        for (let i = 0; i < friends.length; i++) {
+        // ── Active phase: process all friends in batches of BATCH_SIZE ──
+        for (let i = 0; i < friends.length; i += BATCH_SIZE) {
           if (stopSignalRef.current) break;
 
-          try {
-            await updateSingleFriend(friends[i]);
-          } catch {
-            // continue to next friend on error
+          const batch = friends.slice(i, i + BATCH_SIZE);
+
+          // Run the batch concurrently; errors per-friend are swallowed so one
+          // failed request doesn't abort the whole batch.
+          await Promise.all(
+            batch.map(f => updateSingleFriend(f).catch(() => {}))
+          );
+
+          if (stopSignalRef.current) break;
+
+          // Gap between batches (not after the last one)
+          if (i + BATCH_SIZE < friends.length) {
+            await new Promise<void>(r => setTimeout(r, INTER_BATCH_DELAY_MS));
           }
-
-          if (stopSignalRef.current) break;
-
-          // Wait between requests to respect lcrypt's 2s global queue
-          await new Promise<void>(resolve => setTimeout(resolve, INTER_REQUEST_DELAY_MS));
         }
 
         if (stopSignalRef.current) break;
 
-        // Pause between full cycles — lets server cache expire so next cycle gets fresh data
+        // ── Rest phase: wait for server cache to age before next cycle ──
         setIsIndividualUpdating(false);
-        await new Promise<void>(resolve => setTimeout(resolve, CYCLE_RESTART_DELAY_MS));
-
+        await new Promise<void>(r => setTimeout(r, CYCLE_RESTART_DELAY_MS));
         if (stopSignalRef.current) break;
         setIsIndividualUpdating(true);
       }

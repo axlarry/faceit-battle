@@ -10,7 +10,7 @@ const corsHeaders = {
 
 const NICK_RE = /^[A-Za-z0-9 _.\-]{1,32}$/;
 const MIN_REQUEST_INTERVAL = 2000; // 2 seconds between requests to lcrypt.eu
-const CACHE_TTL_MS = 45000;        // 45 seconds server-side cache
+const CACHE_TTL_MS = 120000;       // 120 seconds server-side cache
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
 const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!

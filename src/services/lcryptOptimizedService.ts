@@ -2,9 +2,11 @@
  * LcryptOptimizedService — fetches data from faceit.lcrypt.eu via the
  * get-lcrypt-elo edge function (which presents as fossabot web proxy).
  * Falls back to FACEIT match history (playerTodayService) on failure.
+ *
+ * Uses optimizedApiService.lcryptApiCall so all requests share the
+ * 90s client-side memory cache and in-flight deduplication layer.
  */
-import { supabase } from '@/integrations/supabase/client';
-import { invokeEdgeFunction, isDiscordActivity } from '@/lib/discordProxy';
+import { optimizedApiService } from './optimizedApiService';
 import { getPlayerTodayData, countryCodeToFlag } from './playerTodayService';
 
 export interface OptimizedLcryptData {
@@ -60,15 +62,11 @@ export class LcryptOptimizedService {
     playerId?: string,
     country?: string
   ): Promise<OptimizedLcryptData | null> {
-    // Try lcrypt.eu via edge function first
+    // Use optimizedApiService so requests share the 90s client cache and
+    // in-flight deduplication (no duplicate edge-function calls per player).
     try {
-      const invokeFn = isDiscordActivity()
-        ? (fn: string, body: Record<string, unknown>) => invokeEdgeFunction(fn, body)
-        : (fn: string, body: Record<string, unknown>) => supabase.functions.invoke(fn, { body });
-
-      const { data, error } = await invokeFn('get-lcrypt-elo', { nickname });
-
-      if (!error && data && data.error !== true) {
+      const data = await optimizedApiService.lcryptApiCall(nickname);
+      if (data && data.error !== true) {
         return this.mapLcryptResponse(data, playerId);
       }
     } catch {
