@@ -41,15 +41,11 @@ export class OptimizedApiService {
     // Check cache first
     if (!forceRefresh) {
       const cached = this.getCached<T>(key);
-      if (cached) {
-        console.log(`📦 Cache hit for ${key}`);
-        return cached;
-      }
+      if (cached) return cached;
     }
 
-    // Check for pending request
+    // Return in-flight request for same key (deduplication)
     if (this.pendingRequests.has(key)) {
-      console.log(`⏳ Deduplicating request for ${key}`);
       return this.pendingRequests.get(key)!;
     }
 
@@ -120,20 +116,16 @@ export class OptimizedApiService {
     const requestKey = `faceit-${endpoint}-${useLeaderboardApi ? 'leaderboard' : 'friends'}`;
     
     return this.dedupedRequest(requestKey, async () => {
-      console.log(`🌐 Faceit API: ${endpoint}`);
-      
       const { data, error } = await invokeFunction('proxy-faceit', { endpoint, useLeaderboardApi });
-      
+
       if (error) {
-        if (this.isRateLimitError(error)) {
-          throw new Error('Rate limited');
-        }
-        console.warn('Faceit proxy error:', error);
+        if (this.isRateLimitError(error)) throw new Error('Rate limited');
         return null;
       }
-      
+
       return data ?? null;
-    }, options);
+    // Player data changes rarely; 120s cache avoids redundant API calls
+    }, { cacheTime: 120000, ...options });
   }
 
   // Lcrypt API calls — always via edge function (requires fossabot User-Agent, can't be set from browser)
@@ -150,7 +142,7 @@ export class OptimizedApiService {
         return { isLive: false, error: true };
       }
       return data;
-    }, { cacheTime: 45000, ...options });
+    }, { cacheTime: 90000, ...options });
   }
 
   // Batch API processing with intelligent scheduling
@@ -262,7 +254,6 @@ export class OptimizedApiService {
   // Cache management
   clearCache(): void {
     this.cache.clear();
-    console.log('🧹 API cache cleared');
   }
 
   getCacheSize(): number {
