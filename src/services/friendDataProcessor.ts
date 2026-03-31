@@ -19,10 +19,45 @@ async function getInvokeFn() {
   return _invokeEdgeFunction;
 }
 
+/**
+ * Limits concurrent lcrypt requests to 1.
+ *
+ * When 3+ requests hit lcrypt.eu simultaneously, each Supabase edge function
+ * invocation creates its own in-memory queue (not shared). All requests fire
+ * to lcrypt.eu at the same time → rate-limit → each times out at 10s.
+ *
+ * With maxConcurrent=1, each lcrypt call starts only after the previous one
+ * finishes. The server-side 2s gap is respected and each completes in ~2s
+ * instead of timing out at 10s. 35 players × ~2s = ~70s total lcrypt time,
+ * but players appear immediately with FACEIT data after ~500ms.
+ */
+class LcryptQueue {
+  private running = 0;
+  private readonly maxConcurrent: number;
+  private queue: Array<() => void> = [];
+
+  constructor(maxConcurrent = 1) {
+    this.maxConcurrent = maxConcurrent;
+  }
+
+  async run<T>(fn: () => Promise<T>): Promise<T> {
+    while (this.running >= this.maxConcurrent) {
+      await new Promise<void>(resolve => this.queue.push(resolve));
+    }
+    this.running++;
+    try {
+      return await fn();
+    } finally {
+      this.running--;
+      this.queue.shift()?.();
+    }
+  }
+}
+
+const lcryptQueue = new LcryptQueue(1);
+
 export class FriendDataProcessor {
-  // In-memory cover cache: keyed by nickname, value is URL or null
   private coverImageCache = new Map<string, string | null>();
-  // Single probe promise — resolved to true if update_cache is supported
   private persistCacheSupported: Promise<boolean> | null = null;
 
   async updateFriendData(
@@ -37,34 +72,19 @@ export class FriendDataProcessor {
     setLoadingFriends(prev => new Set(prev).add(friend.nickname));
 
     try {
-      // ── Parallel fetch: FACEIT basic data + lcrypt ELO/live ──────────────
-      // Cover image is included in the FACEIT /players/{id} response
-      // (cover_image field), so we no longer need a separate API call for it.
-      const [basicData, optimizedData] = await Promise.all([
-        performanceMonitor.measureAsyncTime(
-          `faceit-api-${friend.nickname}`,
-          () => optimizedApiService.faceitApiCall(`/players/${friend.player_id}`)
-        ).catch(() => null),
-
-        performanceMonitor.measureAsyncTime(
-          `lcrypt-api-${friend.nickname}`,
-          () => lcryptOptimizedService.getCompletePlayerData(
-            friend.nickname,
-            friend.player_id
-          )
-        ).catch(() => null),
-      ]);
-      // ─────────────────────────────────────────────────────────────────────
+      // ── Phase 1: FACEIT data only (fast, ~300-600ms) ─────────────────────
+      const basicData = await performanceMonitor.measureAsyncTime(
+        `faceit-api-${friend.nickname}`,
+        () => optimizedApiService.faceitApiCall(`/players/${friend.player_id}`)
+      ).catch(() => null);
 
       const currentNickname = basicData?.nickname || friend.nickname;
 
-      // Cover image: prefer fresh value from FACEIT, then memory cache, then
-      // whatever was already stored on the friend object (came from DB).
-      const freshCover = basicData?.cover_image ?? null;
+      // Cover image: prefer fresh API value, then memory cache, then DB value
+      const freshCover  = basicData?.cover_image ?? null;
       const cachedCover = this.coverImageCache.get(currentNickname) ?? null;
       const coverImage  = freshCover ?? cachedCover ?? friend.cover_image ?? null;
 
-      // Keep memory cache up to date for this session
       if (coverImage !== null) {
         this.coverImageCache.set(currentNickname, coverImage);
         if (currentNickname !== friend.nickname) {
@@ -75,20 +95,37 @@ export class FriendDataProcessor {
       const levelFromApi = basicData?.games?.cs2?.skill_level;
       const eloFromApi   = basicData?.games?.cs2?.faceit_elo;
 
-      const updatedFriend: FriendWithLcrypt = {
+      // Preserve lcrypt data from previous cycle so nothing disappears while
+      // the phase-2 background fetch is in progress.
+      const prevLcrypt       = (friend as FriendWithLcrypt).lcryptData;
+      const prevIsLive       = (friend as FriendWithLcrypt).isLive || false;
+      const prevMatchDetails = (friend as FriendWithLcrypt).liveMatchDetails;
+      const prevCompetition  = (friend as FriendWithLcrypt).liveCompetition;
+
+      const phase1Friend: FriendWithLcrypt = {
         ...friend,
         nickname:         currentNickname,
-        avatar:           basicData?.avatar   || friend.avatar,
-        level:            levelFromApi        ?? friend.level ?? 0,
-        lcryptData:       optimizedData?.error ? null : optimizedData,
-        elo:              optimizedData?.elo   ?? eloFromApi ?? friend.elo ?? 0,
-        isLive:           optimizedData?.isLive || false,
-        liveMatchDetails: optimizedData?.liveInfo?.matchDetails,
-        liveCompetition:  optimizedData?.liveInfo?.competition,
-        cover_image:      coverImage || undefined,
+        avatar:           basicData?.avatar    || friend.avatar,
+        level:            levelFromApi         ?? friend.level ?? 0,
+        elo:              eloFromApi           ?? friend.elo   ?? 0,
+        cover_image:      coverImage           || undefined,
+        lcryptData:       prevLcrypt           ?? null,
+        isLive:           prevIsLive,
+        liveMatchDetails: prevMatchDetails,
+        liveCompetition:  prevCompetition,
       };
 
-      // Auto-sync nickname / avatar changes to DB (password-gated)
+      // Show player immediately with FACEIT data, clear loading spinner
+      setFriendsWithLcrypt(prev =>
+        prev.map(pf => pf.player_id === phase1Friend.player_id ? phase1Friend : pf)
+      );
+      setLoadingFriends(prev => {
+        const s = new Set(prev);
+        s.delete(friend.nickname);
+        return s;
+      });
+
+      // Auto-sync nickname / avatar changes to DB
       const nicknameChanged = currentNickname !== friend.nickname;
       const avatarChanged   = basicData?.avatar && basicData.avatar !== friend.avatar;
       if (nicknameChanged || avatarChanged) {
@@ -104,29 +141,48 @@ export class FriendDataProcessor {
         }
       }
 
-      // ── Background: persist display cache to DB ───────────────────────────
-      // This fires asynchronously after each player update so the next page
-      // load can render cover images, country flags, ELO etc. immediately.
-      this.persistCache(friend.player_id, updatedFriend, optimizedData).catch(() => {});
+      // ── Phase 2: lcrypt data (slow, ~2s serialized) — background ─────────
+      // Uses LcryptQueue(1) so only one lcrypt request is in flight at a time.
+      // This prevents concurrent requests from timing out on lcrypt.eu.
+      lcryptQueue.run(() =>
+        performanceMonitor.measureAsyncTime(
+          `lcrypt-api-${friend.nickname}`,
+          () => lcryptOptimizedService.getCompletePlayerData(
+            friend.nickname,
+            friend.player_id
+          )
+        ).catch(() => null)
+      ).then(optimizedData => {
+        if (!optimizedData) return;
+
+        const phase2Friend: FriendWithLcrypt = {
+          ...phase1Friend,
+          lcryptData:       optimizedData?.error ? null : optimizedData,
+          elo:              optimizedData?.elo   ?? eloFromApi ?? friend.elo ?? 0,
+          isLive:           optimizedData?.isLive || false,
+          liveMatchDetails: optimizedData?.liveInfo?.matchDetails,
+          liveCompetition:  optimizedData?.liveInfo?.competition,
+        };
+
+        const liveMatchInfo: LiveMatchInfo = {
+          isLive:       optimizedData?.isLive || false,
+          matchId:      optimizedData?.liveInfo?.matchId,
+          competition:  optimizedData?.liveInfo?.competition,
+          status:       optimizedData?.liveInfo?.status,
+          state:        optimizedData?.liveInfo?.state,
+          matchDetails: optimizedData?.liveInfo?.matchDetails,
+          liveMatch:    optimizedData?.liveInfo?.liveMatch,
+        };
+
+        setFriendsWithLcrypt(prev =>
+          prev.map(pf => pf.player_id === phase2Friend.player_id ? phase2Friend : pf)
+        );
+        setLiveMatches(prev => ({ ...prev, [friend.player_id]: liveMatchInfo }));
+        this.persistCache(friend.player_id, phase2Friend, optimizedData).catch(() => {});
+      }).catch(() => {});
       // ─────────────────────────────────────────────────────────────────────
 
-      const liveMatchInfo: LiveMatchInfo = {
-        isLive:       optimizedData?.isLive || false,
-        matchId:      optimizedData?.liveInfo?.matchId,
-        competition:  optimizedData?.liveInfo?.competition,
-        status:       optimizedData?.liveInfo?.status,
-        state:        optimizedData?.liveInfo?.state,
-        matchDetails: optimizedData?.liveInfo?.matchDetails,
-        liveMatch:    optimizedData?.liveInfo?.liveMatch,
-      };
-
-      setLiveMatches(prev => ({ ...prev, [friend.player_id]: liveMatchInfo }));
-      setFriendsWithLcrypt(prev =>
-        prev.map(pf => pf.player_id === updatedFriend.player_id ? updatedFriend : pf)
-      );
-      setLoadingFriends(prev => { const s = new Set(prev); s.delete(friend.nickname); return s; });
-
-      return updatedFriend;
+      return phase1Friend;
 
     } catch (error) {
       const failed: FriendWithLcrypt = { ...friend, lcryptData: null };
@@ -148,7 +204,6 @@ export class FriendDataProcessor {
           player: { player_id: '__probe__' },
         });
         // supabase.functions.invoke puts HTTP errors in result.error (not result.data)
-        // Any error means the endpoint isn't ready (not deployed or columns missing)
         if (result?.error) return false;
         return true;
       } catch {
@@ -159,7 +214,7 @@ export class FriendDataProcessor {
     return this.persistCacheSupported;
   }
 
-  /** Fire-and-forget: write all display-cache fields to the friends DB row. */
+  /** Fire-and-forget: write display-cache fields to the friends DB row. */
   private async persistCache(
     playerId: string,
     friend: FriendWithLcrypt,

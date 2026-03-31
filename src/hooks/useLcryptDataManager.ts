@@ -89,7 +89,9 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
       }
 
       if (i + batchSize < sortedFriends.length) {
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        // Minimal delay — lcrypt is now decoupled (runs in background via LcryptQueue)
+        // so we no longer need to wait for the queue to drain between batches.
+        await new Promise(resolve => setTimeout(resolve, 50));
       }
     }
 
