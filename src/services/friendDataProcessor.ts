@@ -143,17 +143,13 @@ export class FriendDataProcessor {
 
     this.persistCacheSupported = getInvokeFn().then(async (invoke) => {
       try {
-        // Probe with a no-op player_id — if the action is unknown, it returns
-        // { error: 'Unknown action' } with status 400; otherwise 400 means
-        // "missing player_id" which still confirms the action exists.
         const result = await invoke('friends-gateway', {
           action: 'update_cache',
           player: { player_id: '__probe__' },
         });
-        const body = result?.data as any;
-        // "Unknown action" → not deployed yet
-        if (body?.error === 'Unknown action') return false;
-        // Any other response (success or "Missing player_id") → deployed
+        // supabase.functions.invoke puts HTTP errors in result.error (not result.data)
+        // Any error means the endpoint isn't ready (not deployed or columns missing)
+        if (result?.error) return false;
         return true;
       } catch {
         return false;
