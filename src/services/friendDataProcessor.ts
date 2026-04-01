@@ -224,22 +224,26 @@ export class FriendDataProcessor {
     if (!supported) return;
 
     const invoke = await getInvokeFn();
-    await invoke('friends-gateway', {
+    const payload = {
       action: 'update_cache',
       player: {
         player_id:       playerId,
         nickname:        friend.nickname,
         avatar:          friend.avatar,
-        level:           friend.level    ?? 0,
-        elo:             friend.elo      ?? 0,
+        level:           typeof friend.level === 'number' ? Math.round(friend.level) : 0,
+        elo:             typeof friend.elo   === 'number' ? Math.round(friend.elo)   : 0,
         cover_image:     friend.cover_image   ?? null,
         country:         lcrypt?.country       ?? null,
         country_flag:    lcrypt?.country_flag  ?? null,
         region:          lcrypt?.region        ?? null,
-        region_ranking:  lcrypt?.region_ranking  ?? null,
-        country_ranking: lcrypt?.country_ranking ?? null,
+        region_ranking:  lcrypt?.region_ranking  != null ? Number(lcrypt.region_ranking)  : null,
+        country_ranking: lcrypt?.country_ranking != null ? Number(lcrypt.country_ranking) : null,
       },
-    });
+    };
+    const result = await invoke('friends-gateway', payload);
+    if (result?.error) {
+      console.warn('[persistCache] 500 error for', friend.nickname, '— msg:', result.error?.message ?? result.error, '— data:', result.data);
+    }
   }
 
   async processFriendsBatch(
