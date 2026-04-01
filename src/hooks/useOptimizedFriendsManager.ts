@@ -81,13 +81,6 @@ export const useOptimizedFriendsManager = ({
         friendsWithLcrypt: friendsData.map(f => ({ ...f, lcryptData: undefined }))
       });
 
-      // Background refresh if requested
-      if (refreshData) {
-        invokeFunction('friends-gateway', { action: 'refresh_all' }).then(() => {
-          // Reload after background update
-          loadFriends(false);
-        }).catch(console.warn);
-      }
     } catch (error) {
       console.error('Error loading friends:', error);
       toast({

@@ -48,15 +48,6 @@ export const useFriends = () => {
         kdRatio: friend.kdRatio || 0,
       }));
       setFriends(friendsData);
-
-      // Refresh friends data in the background if requested
-      if (refreshData) {
-        invokeFunction('friends-gateway', { action: 'refresh_all' }).then(({ error: refreshError }) => {
-          if (!refreshError) {
-            loadFriendsFromDatabase(false);
-          }
-        }).catch(() => {});
-      }
     } catch (error) {
       console.error('Error loading friends from gateway:', error);
       toast({
