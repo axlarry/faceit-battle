@@ -1,5 +1,5 @@
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { Player } from '@/types/Player';
 
 interface UseIndividualUpdatesProps {
@@ -32,8 +32,16 @@ export const useIndividualUpdates = ({
   const stopSignalRef = useRef(false);
   const runningRef    = useRef(false);
 
+  // Always keep a ref to the latest friends list (which may be FriendWithLcrypt[]).
+  // The runCycle loop reads this ref so it always processes the most up-to-date
+  // enriched objects — preventing Phase 1 from overwriting existing lcryptData.
+  const friendsRef = useRef<Player[]>(friends);
+  useEffect(() => {
+    friendsRef.current = friends;
+  });
+
   const startIndividualUpdates = useCallback(() => {
-    if (!enabled || friends.length === 0 || runningRef.current) return;
+    if (!enabled || friendsRef.current.length === 0 || runningRef.current) return;
 
     stopSignalRef.current = false;
     runningRef.current    = true;
@@ -41,18 +49,21 @@ export const useIndividualUpdates = ({
 
     const runCycle = async () => {
       while (!stopSignalRef.current) {
+        // Snapshot latest friends at the start of each active phase
+        const currentFriends = friendsRef.current;
+
         // ── Active phase ────────────────────────────────────────────────────
-        for (let i = 0; i < friends.length; i += BATCH_SIZE) {
+        for (let i = 0; i < currentFriends.length; i += BATCH_SIZE) {
           if (stopSignalRef.current) break;
 
-          const batch = friends.slice(i, i + BATCH_SIZE);
+          const batch = currentFriends.slice(i, i + BATCH_SIZE);
           const t0 = Date.now();
 
           await Promise.all(batch.map(f => updateSingleFriend(f).catch(() => {})));
 
           if (stopSignalRef.current) break;
 
-          if (i + BATCH_SIZE < friends.length) {
+          if (i + BATCH_SIZE < currentFriends.length) {
             // Adaptive delay: fast completion means all data came from cache →
             // skip the long queue-drain pause.
             const batchMs = Date.now() - t0;
@@ -78,7 +89,8 @@ export const useIndividualUpdates = ({
     };
 
     runCycle();
-  }, [friends, enabled, updateSingleFriend]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [enabled, updateSingleFriend]);
 
   const stopIndividualUpdates = useCallback(() => {
     stopSignalRef.current = true;

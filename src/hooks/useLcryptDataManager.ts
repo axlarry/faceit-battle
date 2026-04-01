@@ -51,7 +51,11 @@ export const useLcryptDataManager = ({ friends, enabled = true }: UseLcryptDataM
     startIndividualUpdates,
     stopIndividualUpdates
   } = useIndividualUpdates({
-    friends,
+    // Pass the enriched list so each friend carries its lcryptData.
+    // useIndividualUpdates keeps this in a ref (always latest value) so
+    // Phase 1 of updateFriendData can preserve existing lcrypt data instead
+    // of overwriting it with null — fixing the "lcrypt data flickers" bug.
+    friends: friendsWithLcrypt,
     enabled,
     updateSingleFriend
   });
