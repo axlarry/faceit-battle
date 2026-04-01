@@ -123,22 +123,35 @@ serve(async (req) => {
 
       const supabase = getServiceClient();
 
-      // Build update payload — only include fields that are explicitly provided
+      // Build update payload — only include fields that are explicitly provided.
+      // Use safe coercions: integers parsed with parseInt to handle string values
+      // that lcrypt.eu may return (e.g. "1234" or "1,234").
+      const safeInt = (v: unknown): number | null => {
+        if (v == null) return null;
+        const n = parseInt(String(v).replace(/[^0-9\-]/g, ''), 10);
+        return isNaN(n) ? null : n;
+      };
+      const safeFloat = (v: unknown): number | null => {
+        if (v == null) return null;
+        const n = parseFloat(String(v).replace(/[^0-9.\-]/g, ''));
+        return isNaN(n) ? null : n;
+      };
+
       const patch: Record<string, unknown> = { last_cached_at: new Date().toISOString() };
-      if (p.nickname      !== undefined) patch.nickname       = p.nickname;
-      if (p.avatar        !== undefined) patch.avatar         = p.avatar;
-      if (p.level         !== undefined) patch.level          = p.level;
-      if (p.elo           !== undefined) patch.elo            = p.elo;
-      if (p.wins          !== undefined) patch.wins           = p.wins;
-      if (p.win_rate      !== undefined) patch.win_rate       = p.win_rate;
-      if (p.hs_rate       !== undefined) patch.hs_rate        = p.hs_rate;
-      if (p.kd_ratio      !== undefined) patch.kd_ratio       = p.kd_ratio;
-      if (p.cover_image   !== undefined) patch.cover_image    = p.cover_image;
-      if (p.country       !== undefined) patch.country        = p.country;
-      if (p.country_flag  !== undefined) patch.country_flag   = p.country_flag;
-      if (p.region        !== undefined) patch.region         = p.region;
-      if (p.region_ranking   !== undefined) patch.region_ranking   = p.region_ranking;
-      if (p.country_ranking  !== undefined) patch.country_ranking  = p.country_ranking;
+      if (p.nickname      !== undefined) patch.nickname       = p.nickname      ?? null;
+      if (p.avatar        !== undefined) patch.avatar         = p.avatar        ?? null;
+      if (p.level         !== undefined) patch.level          = safeInt(p.level)   ?? 0;
+      if (p.elo           !== undefined) patch.elo            = safeInt(p.elo)     ?? 0;
+      if (p.wins          !== undefined) patch.wins           = safeInt(p.wins)    ?? 0;
+      if (p.win_rate      !== undefined) patch.win_rate       = safeFloat(p.win_rate) ?? 0;
+      if (p.hs_rate       !== undefined) patch.hs_rate        = safeFloat(p.hs_rate)  ?? 0;
+      if (p.kd_ratio      !== undefined) patch.kd_ratio       = safeFloat(p.kd_ratio) ?? 0;
+      if (p.cover_image   !== undefined) patch.cover_image    = p.cover_image    ?? null;
+      if (p.country       !== undefined) patch.country        = p.country        ?? null;
+      if (p.country_flag  !== undefined) patch.country_flag   = p.country_flag   ?? null;
+      if (p.region        !== undefined) patch.region         = p.region         ?? null;
+      if (p.region_ranking  !== undefined) patch.region_ranking  = safeInt(p.region_ranking);
+      if (p.country_ranking !== undefined) patch.country_ranking = safeInt(p.country_ranking);
 
       const { error } = await supabase
         .from('friends')
@@ -146,7 +159,10 @@ serve(async (req) => {
         .eq('owner_id', PUBLIC_OWNER_ID)
         .eq('player_id', p.player_id);
 
-      if (error) return json({ error: error.message }, 500);
+      if (error) {
+        console.error(`[update_cache] DB error for ${p.player_id}:`, error.message, '| patch:', JSON.stringify(patch));
+        return json({ error: error.message }, 500);
+      }
       return json({ success: true });
     }
 
