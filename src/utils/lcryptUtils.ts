@@ -8,13 +8,14 @@ export interface LcryptMatchData {
 
 export const parseLcryptReport = (report: string): LcryptMatchData[] => {
   if (!report) return [];
-  
+
   // Split by comma and parse each match
   const matches = report.split(', ');
-  
+
   return matches.map(match => {
     // Parse format: "WIN 13:10 Mirage (+30)" or "LOSE 13:3 Dust II (-14)"
-    const regex = /(WIN|LOSE)\s+(\d+:\d+)\s+(.+?)\s+\(([+-]\d+)\)/;
+    // Also supports new format without parentheses: "WIN 13:10 Mirage +30"
+    const regex = /(WIN|LOSE)\s+(\d+:\d+)\s+(.+?)\s+\(?([+-]\d+)\)?/;
     const matchResult = match.match(regex);
     
     if (matchResult) {
