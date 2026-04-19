@@ -49,9 +49,13 @@ export interface OptimizedLcryptData {
   error?: boolean;
 }
 
-// Parse the "today.elo" string like "+14" or "-21" into a number
-function parseEloString(s?: string): number {
-  if (!s) return 0;
+// Parse the "today.elo" value which can be:
+// - A string like "+14" or "-21" when player has played
+// - A number 0 when player hasn't played
+function parseEloString(s?: string | number): number {
+  if (s == null) return 0;
+  // If already a number, return it directly
+  if (typeof s === 'number') return s;
   const n = parseInt(s.replace(/\s/g, ''), 10);
   return isNaN(n) ? 0 : n;
 }
