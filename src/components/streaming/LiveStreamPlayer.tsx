@@ -341,6 +341,9 @@ export const LiveStreamPlayer = memo(({ stream, isOpen, onClose }: LiveStreamPla
     if (videoRef.current) {
       const newTime = Math.max(0, Math.min(videoRef.current.currentTime + seconds, bufferEnd));
       videoRef.current.currentTime = newTime;
+      // Trigger timeupdate to refresh DVR state
+      const event = new Event('timeupdate');
+      videoRef.current.dispatchEvent(event);
     }
   };
 

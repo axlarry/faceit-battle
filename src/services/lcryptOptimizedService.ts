@@ -126,8 +126,8 @@ export class LcryptOptimizedService {
             win: data.today.win ?? 0,
             lose: data.today.lose ?? 0,
             elo: todayEloNum,
-            elo_win: data.today.elo_win ?? 0,
-            elo_lose: data.today.elo_lose ?? 0,
+            elo_win: typeof data.today.elo_win === 'number' ? data.today.elo_win : parseEloString(data.today.elo_win),
+            elo_lose: typeof data.today.elo_lose === 'number' ? data.today.elo_lose : parseEloString(data.today.elo_lose),
             count: data.today.count ?? 0,
           }
         : undefined,
