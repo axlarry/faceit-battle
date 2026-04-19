@@ -12,15 +12,123 @@ const NICK_RE = /^[A-Za-z0-9 _.\-]{1,32}$/;
 const MIN_REQUEST_INTERVAL = 2000; // 2 seconds between requests to lcrypt.eu
 const CACHE_TTL_MS = 120000;       // 120 seconds server-side cache
 // 8s timeout — 2s buffer before Supabase free plan kills the function at 10s.
-// With LcryptQueue(1) on the client (only 1 concurrent request), lcrypt.eu
-// should respond in ~1-2s so this limit is rarely hit.
 const FETCH_TIMEOUT_MS = 8000;
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
 const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const supabase = createClient(supabaseUrl, supabaseKey)
 
-// Global FIFO queue — serialises all lcrypt.eu requests and enforces 2s gap
+// ---------------------------------------------------------------------------
+// Report-based ELO computation
+// ---------------------------------------------------------------------------
+
+interface ReportMatch {
+  result: 'WIN' | 'LOSE';
+  score: string;
+  map: string;
+  eloChange: number;
+}
+
+function parseLcryptReport(report: string): ReportMatch[] {
+  if (!report) return [];
+  const out: ReportMatch[] = [];
+  // Handles both "(+30)" (old) and "+30" (new, no parens) formats
+  const re = /(WIN|LOSE)\s+(\d+:\d+)\s+(.+?)\s+\(?([+-]\d+)\)?(?:,|$)/g;
+  let m: RegExpExecArray | null;
+  // Also try splitting by ", " as a fallback
+  const parts = report.split(', ');
+  for (const part of parts) {
+    const r = part.match(/(WIN|LOSE)\s+(\d+:\d+)\s+(.+?)\s+\(?([+-]\d+)\)?/);
+    if (r) {
+      out.push({
+        result: r[1] as 'WIN' | 'LOSE',
+        score: r[2],
+        map: r[3],
+        eloChange: parseInt(r[4], 10),
+      });
+    }
+  }
+  return out;
+}
+
+function parseEloValue(raw: unknown): number {
+  if (raw == null) return 0;
+  if (typeof raw === 'number') return raw;
+  if (typeof raw === 'string') {
+    const n = parseInt(raw.replace(/\s/g, ''), 10);
+    return isNaN(n) ? 0 : n;
+  }
+  return 0;
+}
+
+/**
+ * If the lcrypt API returns today.elo = 0 but the player played today,
+ * compute the ELO from the report string (which always carries per-match ELO).
+ * This fixes a regression where lcrypt.eu stopped populating today.elo.
+ */
+function fixTodayElo(data: any, nickname: string): any {
+  if (!data || data.error) return data;
+
+  const today = data.today;
+  if (!today?.present || !today.count || today.count === 0) return data;
+
+  const eloNum = parseEloValue(today.elo);
+
+  // Log raw today object to help diagnose future issues
+  console.log(`[lcrypt][${nickname}] today raw:`, JSON.stringify({
+    present: today.present,
+    count: today.count,
+    win: today.win,
+    lose: today.lose,
+    elo: today.elo,
+    elo_win: today.elo_win,
+    elo_lose: today.elo_lose,
+    report_snippet: data.report?.slice(0, 120),
+  }));
+
+  if (eloNum !== 0) return data; // already correct, nothing to fix
+
+  // today.elo is 0 but player played — compute from report
+  if (!data.report) {
+    console.warn(`[lcrypt][${nickname}] today.elo=0 and no report field; cannot compute ELO`);
+    return data;
+  }
+
+  const reportMatches = parseLcryptReport(data.report);
+  const todaySlice = reportMatches.slice(0, today.count as number);
+
+  if (todaySlice.length === 0) {
+    console.warn(`[lcrypt][${nickname}] today.elo=0 but parseLcryptReport returned 0 matches from: ${data.report?.slice(0, 120)}`);
+    return data;
+  }
+
+  const computedElo = todaySlice.reduce((s, m) => s + m.eloChange, 0);
+  const computedEloWin = todaySlice
+    .filter(m => m.result === 'WIN')
+    .reduce((s, m) => s + m.eloChange, 0);
+  const computedEloLose = Math.abs(
+    todaySlice
+      .filter(m => m.result === 'LOSE')
+      .reduce((s, m) => s + m.eloChange, 0)
+  );
+
+  console.log(`[lcrypt][${nickname}] computed today.elo=${computedElo} from report (${todaySlice.length} matches)`);
+
+  return {
+    ...data,
+    today: {
+      ...today,
+      elo: computedElo,
+      elo_win: parseEloValue(today.elo_win) || computedEloWin,
+      elo_lose: parseEloValue(today.elo_lose) || computedEloLose,
+    },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Global FIFO queue — serialises all lcrypt.eu requests, enforces 2s gap
+// ---------------------------------------------------------------------------
+
 class GlobalRequestQueue {
   private queue: Array<{
     nickname: string;
@@ -80,19 +188,24 @@ class GlobalRequestQueue {
 
 const globalQueue = new GlobalRequestQueue();
 
+// ---------------------------------------------------------------------------
+// HTTP handler
+// ---------------------------------------------------------------------------
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
   }
 
   try {
-    const { nickname } = await req.json()
+    const body = await req.json()
+    const { nickname, force_refresh } = body
 
     if (!nickname || !NICK_RE.test(nickname)) {
       throw new Error('Invalid nickname')
     }
 
-    const result = await processLcryptRequest(nickname)
+    const result = await processLcryptRequest(nickname, !!force_refresh)
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     })
@@ -106,24 +219,24 @@ serve(async (req) => {
   }
 })
 
-async function processLcryptRequest(nickname: string) {
+async function processLcryptRequest(nickname: string, forceRefresh = false) {
   try {
-    // 1. Check server cache first
-    const { data: cached } = await supabase
-      .from('lcrypt_cache')
-      .select('data, expires_at')
-      .eq('nickname', nickname)
-      .single()
+    // 1. Check server cache first (skip when force_refresh=true)
+    if (!forceRefresh) {
+      const { data: cached } = await supabase
+        .from('lcrypt_cache')
+        .select('data, expires_at')
+        .eq('nickname', nickname)
+        .single()
 
-    if (cached && new Date(cached.expires_at) > new Date()) {
-      return cached.data
+      if (cached && new Date(cached.expires_at) > new Date()) {
+        // Apply ELO fix on cached data too — handles stale entries created
+        // before the today.elo computation was added.
+        return fixTodayElo(cached.data, nickname)
+      }
     }
 
-    // 2. Enqueue for rate-limited fetch (single attempt — no retries)
-    // Retries are avoided because: a) Supabase free plan kills the function at
-    // 10s, leaving no time for retries; b) with LcryptQueue(1) on the client
-    // only one request is in flight at a time, so a quick retry would just
-    // repeat the same slow condition.
+    // 2. Enqueue for rate-limited fetch
     return await globalQueue.enqueue(nickname, async () => {
       const controller = new AbortController()
       const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS)
@@ -154,11 +267,14 @@ async function processLcryptRequest(nickname: string) {
         try {
           data = JSON.parse(rawText)
         } catch {
-          console.error(`[lcrypt] Invalid JSON for ${nickname}`)
+          console.error(`[lcrypt] Invalid JSON for ${nickname}: ${rawText.slice(0, 200)}`)
           return { error: true, isLive: false, message: 'Invalid JSON' }
         }
 
-        // 3. Cache the successful response
+        // Fix today.elo before caching so stored data is always correct
+        data = fixTodayElo(data, nickname)
+
+        // 3. Cache the fixed response
         try {
           await supabase.from('lcrypt_cache').delete().eq('nickname', nickname)
           await supabase.from('lcrypt_cache').insert({

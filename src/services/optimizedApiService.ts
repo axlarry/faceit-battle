@@ -129,11 +129,11 @@ export class OptimizedApiService {
   }
 
   // Lcrypt API calls — always via edge function (requires fossabot User-Agent, can't be set from browser)
-  async lcryptApiCall(nickname: string, options: RequestOptions = {}) {
+  async lcryptApiCall(nickname: string, options: RequestOptions = {}, forceRefresh = false) {
     const requestKey = `lcrypt-${nickname}`;
 
     return this.dedupedRequest(requestKey, async () => {
-      const { data, error } = await invokeFunction('get-lcrypt-elo', { nickname });
+      const { data, error } = await invokeFunction('get-lcrypt-elo', { nickname, force_refresh: forceRefresh });
       if (error) {
         console.warn(`Lcrypt API error for ${nickname}:`, error);
         return { isLive: false, error: true };
@@ -142,7 +142,7 @@ export class OptimizedApiService {
         return { isLive: false, error: true };
       }
       return data;
-    }, { cacheTime: 90000, ...options });
+    }, { cacheTime: 90000, forceRefresh, ...options });
   }
 
   // Batch API processing with intelligent scheduling
