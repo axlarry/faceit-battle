@@ -7,28 +7,45 @@ export interface LcryptMatchData {
 }
 
 export const parseLcryptReport = (report: string): LcryptMatchData[] => {
-  if (!report) return [];
+  if (!report || typeof report !== 'string') return [];
 
-  // Split by comma and parse each match
-  const matches = report.split(', ');
+  const parts = report.split(', ');
+  const result: LcryptMatchData[] = [];
 
-  return matches.map(match => {
-    // Parse format: "WIN 13:10 Mirage (+30)" or "LOSE 13:3 Dust II (-14)"
-    // Also supports new format without parentheses: "WIN 13:10 Mirage +30"
-    const regex = /(WIN|LOSE)\s+(\d+:\d+)\s+(.+?)\s+\(?([+-]\d+)\)?/;
-    const matchResult = match.match(regex);
-    
-    if (matchResult) {
-      return {
-        result: matchResult[1] as 'WIN' | 'LOSE',
-        score: matchResult[2],
-        map: matchResult[3],
-        eloChange: parseInt(matchResult[4])
-      };
+  for (const part of parts) {
+    const trimmed = part.trim();
+    if (!trimmed) continue;
+
+    // Try full format with score: "WIN 13:10 Mirage (+30)" or "WIN 13:10 Mirage +30" or "WIN 13:10 Mirage 30"
+    const fullMatch = trimmed.match(/^(WIN|LOSE)\s+(\d+[:\-]\d+)\s+(.+?)\s+\(?([+-]?\d+)\)?$/);
+    if (fullMatch) {
+      let eloChange = parseInt(fullMatch[4], 10);
+      // Infer negative for LOSE when no explicit sign
+      if (fullMatch[1] === 'LOSE' && eloChange > 0) eloChange = -eloChange;
+      result.push({
+        result: fullMatch[1] as 'WIN' | 'LOSE',
+        score: fullMatch[2],
+        map: fullMatch[3].trim(),
+        eloChange,
+      });
+      continue;
     }
-    
-    return null;
-  }).filter(Boolean) as LcryptMatchData[];
+
+    // Fallback: no score, just "WIN MapName +30" or "WIN MapName 30"
+    const noScoreMatch = trimmed.match(/^(WIN|LOSE)\s+(.+?)\s+\(?([+-]?\d+)\)?$/);
+    if (noScoreMatch) {
+      let eloChange = parseInt(noScoreMatch[3], 10);
+      if (noScoreMatch[1] === 'LOSE' && eloChange > 0) eloChange = -eloChange;
+      result.push({
+        result: noScoreMatch[1] as 'WIN' | 'LOSE',
+        score: '',
+        map: noScoreMatch[2].trim(),
+        eloChange,
+      });
+    }
+  }
+
+  return result;
 };
 
 export const findMatchEloChange = (
@@ -41,13 +58,13 @@ export const findMatchEloChange = (
   if (lcryptMatches[matchIndex]) {
     return lcryptMatches[matchIndex].eloChange;
   }
-  
+
   // Fallback: try to match by result type using proper match result logic
   if (match.teams && match.results && player) {
     // Find which team the player is on
     let playerTeamId = '';
     const teamIds = Object.keys(match.teams);
-    
+
     for (const teamId of teamIds) {
       const team = match.teams[teamId];
       if (team.players?.some((p: any) => p.player_id === player.player_id)) {
@@ -55,21 +72,21 @@ export const findMatchEloChange = (
         break;
       }
     }
-    
+
     if (playerTeamId) {
       const winnerTeamId = match.results.winner;
       const isWin = playerTeamId === winnerTeamId;
       const resultType = isWin ? 'WIN' : 'LOSE';
-      
-      const matchingLcryptMatch = lcryptMatches.find(lcryptMatch => 
+
+      const matchingLcryptMatch = lcryptMatches.find(lcryptMatch =>
         lcryptMatch.result === resultType
       );
-      
+
       if (matchingLcryptMatch) {
         return matchingLcryptMatch.eloChange;
       }
     }
   }
-  
+
   return null;
 };

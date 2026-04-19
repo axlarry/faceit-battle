@@ -150,7 +150,7 @@ export class LcryptOptimizedService {
       country_flag: data.country_flag,
       region_ranking: data.region_ranking,
       country_ranking: data.country_ranking,
-      report: data.report,
+      report: typeof data.report === 'string' ? data.report : '',
       today: data.today
         ? {
             present: data.today.present ?? false,

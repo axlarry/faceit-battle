@@ -30,22 +30,28 @@ interface ReportMatch {
 }
 
 function parseLcryptReport(report: string): ReportMatch[] {
-  if (!report) return [];
+  if (!report || typeof report !== 'string') return [];
   const out: ReportMatch[] = [];
-  // Handles both "(+30)" (old) and "+30" (new, no parens) formats
-  const re = /(WIN|LOSE)\s+(\d+:\d+)\s+(.+?)\s+\(?([+-]\d+)\)?(?:,|$)/g;
-  let m: RegExpExecArray | null;
-  // Also try splitting by ", " as a fallback
   const parts = report.split(', ');
   for (const part of parts) {
-    const r = part.match(/(WIN|LOSE)\s+(\d+:\d+)\s+(.+?)\s+\(?([+-]\d+)\)?/);
-    if (r) {
-      out.push({
-        result: r[1] as 'WIN' | 'LOSE',
-        score: r[2],
-        map: r[3],
-        eloChange: parseInt(r[4], 10),
-      });
+    const trimmed = part.trim();
+    if (!trimmed) continue;
+
+    // Full format with score: "WIN 13:10 Mirage (+30)" / "+30" / "30" (sign optional)
+    const full = trimmed.match(/^(WIN|LOSE)\s+(\d+[:\-]\d+)\s+(.+?)\s+\(?([+-]?\d+)\)?$/);
+    if (full) {
+      let eloChange = parseInt(full[4], 10);
+      if (full[1] === 'LOSE' && eloChange > 0) eloChange = -eloChange;
+      out.push({ result: full[1] as 'WIN' | 'LOSE', score: full[2], map: full[3].trim(), eloChange });
+      continue;
+    }
+
+    // No score: "WIN Mirage +30" / "WIN Mirage 30"
+    const noScore = trimmed.match(/^(WIN|LOSE)\s+(.+?)\s+\(?([+-]?\d+)\)?$/);
+    if (noScore) {
+      let eloChange = parseInt(noScore[3], 10);
+      if (noScore[1] === 'LOSE' && eloChange > 0) eloChange = -eloChange;
+      out.push({ result: noScore[1] as 'WIN' | 'LOSE', score: '', map: noScore[2].trim(), eloChange });
     }
   }
   return out;
