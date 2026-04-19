@@ -101,29 +101,29 @@ export const useOptimizedFriendsManager = ({
     updateState({ isLoading: true, lastUpdate: now });
 
     try {
+      // Define callbacks at the top level
+      const setLoadingFriends = (updater: (prev: Set<string>) => Set<string>) =>
+        updateState(prev => ({ ...prev, loadingFriends: updater(prev.loadingFriends) }));
+      const setFriendsWithLcrypt = (updater: (prev: FriendWithLcrypt[]) => FriendWithLcrypt[]) =>
+        updateState(prev => ({ ...prev, friendsWithLcrypt: updater(prev.friendsWithLcrypt) }));
+      const setLiveMatches = (updater: (prev: Record<string, LiveMatchInfo>) => Record<string, LiveMatchInfo>) =>
+        updateState(prev => ({ ...prev, liveMatches: updater(prev.liveMatches) }));
+
       for (let i = 0; i < friends.length; i += batchSize) {
         const batch = friends.slice(i, i + batchSize);
-        
+
         // Process batch concurrently
         await Promise.allSettled(
           batch.map(async (friend) => {
-            updateState(prev => ({
-              loadingFriends: new Set(prev.loadingFriends).add(friend.nickname)
-            }));
+            setLoadingFriends(prev => new Set(prev).add(friend.nickname));
 
             try {
               const updatedFriend = await friendDataProcessor.updateFriendData(
                 friend,
                 enabled,
-                (updater) => updateState(prev => ({ 
-                  loadingFriends: updater(prev.loadingFriends) 
-                })),
-                (updater) => updateState(prev => ({ 
-                  friendsWithLcrypt: updater(prev.friendsWithLcrypt) 
-                })),
-                (updater) => updateState(prev => ({ 
-                  liveMatches: updater(prev.liveMatches) 
-                }))
+                setLoadingFriends,
+                setFriendsWithLcrypt,
+                setLiveMatches
               );
               
               return updatedFriend;
