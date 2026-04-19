@@ -8,6 +8,7 @@
  */
 import { optimizedApiService } from './optimizedApiService';
 import { getPlayerTodayData, countryCodeToFlag } from './playerTodayService';
+import { parseLcryptReport } from '@/utils/lcryptUtils';
 
 export interface OptimizedLcryptData {
   elo?: number;
@@ -113,7 +114,33 @@ export class LcryptOptimizedService {
     }
 
     const todayEloStr: string | undefined = data.today?.elo;
-    const todayEloNum = parseEloString(todayEloStr);
+    let todayEloNum = parseEloString(todayEloStr);
+    let todayEloWin = typeof data.today?.elo_win === 'number' ? data.today.elo_win : parseEloString(data.today?.elo_win);
+    let todayEloLose = typeof data.today?.elo_lose === 'number' ? data.today.elo_lose : parseEloString(data.today?.elo_lose);
+
+    // Fallback: if today.elo is 0 but the player played today, compute from
+    // the report string. The lcrypt API sometimes omits or zeros today.elo
+    // while still including per-match ELO in the report field.
+    if (todayEloNum === 0 && data.today?.present && (data.today?.count ?? 0) > 0 && data.report) {
+      const reportMatches = parseLcryptReport(data.report);
+      const todayCount = data.today.count as number;
+      const todayMatchSlice = reportMatches.slice(0, todayCount);
+      if (todayMatchSlice.length > 0) {
+        todayEloNum = todayMatchSlice.reduce((sum, m) => sum + m.eloChange, 0);
+        if (todayEloWin === 0) {
+          todayEloWin = todayMatchSlice
+            .filter(m => m.result === 'WIN')
+            .reduce((sum, m) => sum + m.eloChange, 0);
+        }
+        if (todayEloLose === 0) {
+          todayEloLose = Math.abs(
+            todayMatchSlice
+              .filter(m => m.result === 'LOSE')
+              .reduce((sum, m) => sum + m.eloChange, 0)
+          );
+        }
+      }
+    }
 
     return {
       elo: data.elo,
@@ -130,8 +157,8 @@ export class LcryptOptimizedService {
             win: data.today.win ?? 0,
             lose: data.today.lose ?? 0,
             elo: todayEloNum,
-            elo_win: typeof data.today.elo_win === 'number' ? data.today.elo_win : parseEloString(data.today.elo_win),
-            elo_lose: typeof data.today.elo_lose === 'number' ? data.today.elo_lose : parseEloString(data.today.elo_lose),
+            elo_win: todayEloWin,
+            elo_lose: todayEloLose,
             count: data.today.count ?? 0,
           }
         : undefined,
