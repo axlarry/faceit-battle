@@ -67,18 +67,27 @@ export class LcryptOptimizedService {
     playerId?: string,
     country?: string
   ): Promise<OptimizedLcryptData | null> {
-    // Use optimizedApiService so requests share the 90s client cache and
-    // in-flight deduplication (no duplicate edge-function calls per player).
     try {
       const data = await optimizedApiService.lcryptApiCall(nickname);
+
+      // Log raw response so we can see the actual API format in browser console
+      console.log(`[lcrypt][${nickname}] raw response keys:`, data ? Object.keys(data) : null);
+      console.log(`[lcrypt][${nickname}] raw:`, {
+        elo: data?.elo,
+        today: data?.today,
+        report: data?.report,
+        error: data?.error,
+      });
+
       if (data && data.error !== true) {
         return this.mapLcryptResponse(data, playerId);
       }
-    } catch {
-      // fall through to FACEIT fallback
+    } catch (e) {
+      console.warn(`[lcrypt][${nickname}] exception:`, e);
     }
 
     // Fallback: FACEIT match history
+    console.warn(`[lcrypt][${nickname}] using FACEIT fallback`);
     return this.faceitFallback(nickname, playerId, country);
   }
 
@@ -117,6 +126,8 @@ export class LcryptOptimizedService {
     let todayEloNum = parseEloString(todayEloStr);
     let todayEloWin = typeof data.today?.elo_win === 'number' ? data.today.elo_win : parseEloString(data.today?.elo_win);
     let todayEloLose = typeof data.today?.elo_lose === 'number' ? data.today.elo_lose : parseEloString(data.today?.elo_lose);
+
+    console.log(`[lcrypt] mapResponse: elo=${data.elo} today.elo=${data.today?.elo} report="${data.report?.slice?.(0,100)}" parsedReport:`, parseLcryptReport(data.report || ''));
 
     // Fallback: if today.elo is 0 but the player played today, compute from
     // the report string. The lcrypt API sometimes omits or zeros today.elo
