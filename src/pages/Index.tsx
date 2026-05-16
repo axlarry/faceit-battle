@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Header } from "@/components/faceit/Header";
 import { RegionTabs } from "@/components/faceit/RegionTabs";
@@ -12,9 +11,16 @@ import { useFriends } from "@/hooks/useFriends";
 import { usePlayerModal } from "@/hooks/usePlayerModal";
 
 const Index = () => {
-  const [currentRegion, setCurrentRegion] = useState('FRIENDS');
-  const { friends, addFriend, updateFriend, removeFriend, loadFriendsFromDatabase } = useFriends();
-  const { selectedPlayer, showModal, showPlayerDetails, closeModal } = usePlayerModal();
+  const [currentRegion, setCurrentRegion] = useState("FRIENDS");
+  const {
+    friends,
+    addFriend,
+    updateFriend,
+    removeFriend,
+    loadFriendsFromDatabase,
+  } = useFriends();
+  const { selectedPlayer, showModal, showPlayerDetails, closeModal } =
+    usePlayerModal();
 
   return (
     <div className="min-h-screen relative bg-background">
@@ -25,15 +31,17 @@ const Index = () => {
 
       <div className="relative z-10">
         <Header />
-        <h1 className="sr-only">Faceit Friend Tracker – ELO, Prieteni și Leaderboard CS2</h1>
-        
+        <h1 className="sr-only">
+          Faceit Friend Tracker – ELO, Prieteni și Leaderboard CS2
+        </h1>
+
         <div className="container mx-auto px-2 sm:px-3 md:px-4 py-3 sm:py-4 md:py-6 lg:py-8 space-y-3 sm:space-y-4 md:space-y-6 lg:space-y-8 max-w-7xl">
-          <RegionTabs 
+          <RegionTabs
             currentRegion={currentRegion}
             onRegionChange={setCurrentRegion}
           />
 
-          {currentRegion === 'FRIENDS' ? (
+          {currentRegion === "FRIENDS" ? (
             <FriendsSection
               friends={friends}
               onAddFriend={addFriend}
@@ -42,11 +50,11 @@ const Index = () => {
               onShowPlayerDetails={showPlayerDetails}
               onReloadFriends={loadFriendsFromDatabase}
             />
-          ) : currentRegion === 'LIVE_STREAMS' ? (
+          ) : currentRegion === "LIVE_STREAMS" ? (
             <LiveStreamsTab friends={friends} />
-          ) : currentRegion === 'TEAM_BALANCER' ? (
+          ) : currentRegion === "TEAM_BALANCER" ? (
             <TeamBalancer friends={friends} />
-          ) : currentRegion === 'FACEIT_TOOL' ? (
+          ) : currentRegion === "FACEIT_TOOL" ? (
             <FaceitTool
               onShowPlayerDetails={showPlayerDetails}
               onAddFriend={addFriend}
@@ -66,7 +74,11 @@ const Index = () => {
           onClose={closeModal}
           onAddFriend={addFriend}
           onRemoveFriend={removeFriend}
-          isFriend={selectedPlayer ? friends.some(f => f.player_id === selectedPlayer.player_id) : false}
+          isFriend={
+            selectedPlayer
+              ? friends.some((f) => f.player_id === selectedPlayer.player_id)
+              : false
+          }
         />
       </div>
     </div>

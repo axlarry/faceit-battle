@@ -1,5 +1,4 @@
-
-import { Player } from '@/types/Player';
+import { Player } from "@/types/Player";
 
 export interface UseLcryptDataManagerProps {
   friends: Player[];

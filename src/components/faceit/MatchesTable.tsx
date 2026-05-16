@@ -1,4 +1,3 @@
-
 import {
   Table,
   TableBody,
@@ -15,11 +14,16 @@ import { useState } from "react";
 interface MatchesTableProps {
   player: Player;
   matches: Match[];
-  matchesStats: {[key: string]: any};
+  matchesStats: { [key: string]: any };
   loadingMatches: boolean;
 }
 
-export const MatchesTable = ({ player, matches, matchesStats, loadingMatches }: MatchesTableProps) => {
+export const MatchesTable = ({
+  player,
+  matches,
+  matchesStats,
+  loadingMatches,
+}: MatchesTableProps) => {
   const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
   const [showMatchDetails, setShowMatchDetails] = useState(false);
 
@@ -37,10 +41,14 @@ export const MatchesTable = ({ player, matches, matchesStats, loadingMatches }: 
     <div className="space-y-4">
       <div className="flex items-center gap-2">
         <Trophy className="w-5 h-5 text-orange-400" />
-        <h3 className="text-lg font-bold text-white">Meciurile Recente (Ultimele 10)</h3>
-        <span className="text-sm text-gray-400 ml-2">Click pe un meci pentru detalii</span>
+        <h3 className="text-lg font-bold text-white">
+          Meciurile Recente (Ultimele 10)
+        </h3>
+        <span className="text-sm text-gray-400 ml-2">
+          Click pe un meci pentru detalii
+        </span>
       </div>
-      
+
       {loadingMatches ? (
         <div className="text-center py-8">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-400 mx-auto"></div>
@@ -55,17 +63,39 @@ export const MatchesTable = ({ player, matches, matchesStats, loadingMatches }: 
           <Table>
             <TableHeader>
               <TableRow className="border-white/10 hover:bg-white/5">
-                <TableHead className="text-gray-300 font-semibold">Rezultat</TableHead>
-                <TableHead className="text-gray-300 font-semibold">Hartă</TableHead>
-                <TableHead className="text-gray-300 font-semibold">Scor</TableHead>
-                <TableHead className="text-gray-300 font-semibold">K/D/A</TableHead>
-                <TableHead className="text-gray-300 font-semibold">K/D</TableHead>
-                <TableHead className="text-gray-300 font-semibold">HS%</TableHead>
-                <TableHead className="text-gray-300 font-semibold">ADR</TableHead>
-                <TableHead className="text-gray-300 font-semibold">ELO</TableHead>
-                <TableHead className="text-gray-300 font-semibold">Data</TableHead>
-                <TableHead className="text-gray-300 font-semibold">Demo</TableHead>
-                <TableHead className="text-gray-300 font-semibold">Durată</TableHead>
+                <TableHead className="text-gray-300 font-semibold">
+                  Rezultat
+                </TableHead>
+                <TableHead className="text-gray-300 font-semibold">
+                  Hartă
+                </TableHead>
+                <TableHead className="text-gray-300 font-semibold">
+                  Scor
+                </TableHead>
+                <TableHead className="text-gray-300 font-semibold">
+                  K/D/A
+                </TableHead>
+                <TableHead className="text-gray-300 font-semibold">
+                  K/D
+                </TableHead>
+                <TableHead className="text-gray-300 font-semibold">
+                  HS%
+                </TableHead>
+                <TableHead className="text-gray-300 font-semibold">
+                  ADR
+                </TableHead>
+                <TableHead className="text-gray-300 font-semibold">
+                  ELO
+                </TableHead>
+                <TableHead className="text-gray-300 font-semibold">
+                  Data
+                </TableHead>
+                <TableHead className="text-gray-300 font-semibold">
+                  Demo
+                </TableHead>
+                <TableHead className="text-gray-300 font-semibold">
+                  Durată
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

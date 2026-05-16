@@ -1,7 +1,13 @@
-import React, { useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { type FriendWithLcrypt } from '@/hooks/types/lcryptDataManagerTypes';
+import React, { useMemo } from "react";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import { type FriendWithLcrypt } from "@/hooks/types/lcryptDataManagerTypes";
 
 interface EloTodaySummaryProps {
   friends: FriendWithLcrypt[];
@@ -10,8 +16,8 @@ interface EloTodaySummaryProps {
 
 const parseTodayElo = (elo: unknown): number | null => {
   if (elo === null || elo === undefined) return null;
-  if (typeof elo === 'number' && !Number.isNaN(elo)) return elo;
-  if (typeof elo === 'string') {
+  if (typeof elo === "number" && !Number.isNaN(elo)) return elo;
+  if (typeof elo === "string") {
     const parsed = parseInt(elo);
     return Number.isNaN(parsed) ? null : parsed;
   }
@@ -26,35 +32,35 @@ const thresholds = {
 };
 
 const getState = (avg: number) => {
-  if (avg >= thresholds.veryGood) return 'veryGood' as const;
-  if (avg >= thresholds.good) return 'good' as const;
-  if (avg >= thresholds.neutralLow) return 'neutral' as const;
-  if (avg >= thresholds.bad) return 'bad' as const;
-  return 'veryBad' as const;
+  if (avg >= thresholds.veryGood) return "veryGood" as const;
+  if (avg >= thresholds.good) return "good" as const;
+  if (avg >= thresholds.neutralLow) return "neutral" as const;
+  if (avg >= thresholds.bad) return "bad" as const;
+  return "veryBad" as const;
 };
 
 const stateLabels: Record<ReturnType<typeof getState>, string> = {
-  veryGood: 'Very good day',
-  good: 'Good day',
-  neutral: 'Neutral day',
-  bad: 'Bad day',
-  veryBad: 'Very bad day',
+  veryGood: "Very good day",
+  good: "Good day",
+  neutral: "Neutral day",
+  bad: "Bad day",
+  veryBad: "Very bad day",
 };
 
 const stateClasses: Record<ReturnType<typeof getState>, string> = {
   veryGood:
-    'bg-gradient-to-r from-primary/20 to-primary/10 ring-1 ring-primary/40 animate-elo-positive-strong',
-  good:
-    'bg-gradient-to-r from-primary/10 to-primary/5 ring-1 ring-primary/30 animate-elo-positive',
-  neutral:
-    'bg-muted ring-1 ring-border animate-elo-neutral',
-  bad:
-    'bg-gradient-to-r from-destructive/10 to-destructive/5 ring-1 ring-destructive/30 animate-elo-negative',
+    "bg-gradient-to-r from-primary/20 to-primary/10 ring-1 ring-primary/40 animate-elo-positive-strong",
+  good: "bg-gradient-to-r from-primary/10 to-primary/5 ring-1 ring-primary/30 animate-elo-positive",
+  neutral: "bg-muted ring-1 ring-border animate-elo-neutral",
+  bad: "bg-gradient-to-r from-destructive/10 to-destructive/5 ring-1 ring-destructive/30 animate-elo-negative",
   veryBad:
-    'bg-gradient-to-r from-destructive/20 to-destructive/10 ring-1 ring-destructive/40 animate-elo-negative-strong',
+    "bg-gradient-to-r from-destructive/20 to-destructive/10 ring-1 ring-destructive/40 animate-elo-negative-strong",
 };
 
-export const EloTodaySummary: React.FC<EloTodaySummaryProps> = ({ friends, isLoading }) => {
+export const EloTodaySummary: React.FC<EloTodaySummaryProps> = ({
+  friends,
+  isLoading,
+}) => {
   const { avg, count } = useMemo(() => {
     const todays = (friends || [])
       .map((f) => {
@@ -100,8 +106,12 @@ export const EloTodaySummary: React.FC<EloTodaySummaryProps> = ({ friends, isLoa
         <CardContent className="pt-0">
           <div className="flex items-center justify-between">
             <div className="flex items-baseline gap-3">
-              <span className="text-2xl font-semibold tracking-tight">{sign}</span>
-              <span className="text-sm text-muted-foreground">average change</span>
+              <span className="text-2xl font-semibold tracking-tight">
+                {sign}
+              </span>
+              <span className="text-sm text-muted-foreground">
+                average change
+              </span>
             </div>
             <div className="text-sm font-medium">{stateLabels[state]}</div>
           </div>

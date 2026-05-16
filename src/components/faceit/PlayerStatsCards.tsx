@@ -1,4 +1,3 @@
-
 import { Player } from "@/types/Player";
 import { useLcryptApi } from "@/hooks/useLcryptApi";
 
@@ -7,7 +6,9 @@ interface PlayerStatsCardsProps {
 }
 
 export const PlayerStatsCards = ({ player }: PlayerStatsCardsProps) => {
-  const { data: lcryptData, loading: lcryptLoading } = useLcryptApi(player.nickname);
+  const { data: lcryptData, loading: lcryptLoading } = useLcryptApi(
+    player.nickname,
+  );
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -15,23 +16,23 @@ export const PlayerStatsCards = ({ player }: PlayerStatsCardsProps) => {
         <div className="text-lg font-bold text-green-400">{player.wins}</div>
         <div className="text-gray-400 text-xs">Victorii</div>
       </div>
-      
+
       <div className="bg-gradient-to-r from-blue-500/20 to-blue-600/20 rounded-lg p-2 text-center border border-blue-500/30">
         <div className="text-lg font-bold text-blue-400">{player.winRate}%</div>
         <div className="text-gray-400 text-xs">Win Rate</div>
       </div>
-      
+
       <div className="bg-gradient-to-r from-red-500/20 to-red-600/20 rounded-lg p-2 text-center border border-red-500/30">
         <div className="text-lg font-bold text-red-400">{player.hsRate}%</div>
         <div className="text-gray-400 text-xs">Headshot %</div>
       </div>
-      
+
       <div className="bg-gradient-to-r from-purple-500/20 to-purple-600/20 rounded-lg p-2 text-center border border-purple-500/30">
         <div className="text-lg font-bold text-purple-400">
-          {lcryptLoading ? '...' : lcryptData ? lcryptData.elo : player.kdRatio}
+          {lcryptLoading ? "..." : lcryptData ? lcryptData.elo : player.kdRatio}
         </div>
         <div className="text-gray-400 text-xs">
-          {lcryptData ? 'ELO Actual' : 'K/D Ratio'}
+          {lcryptData ? "ELO Actual" : "K/D Ratio"}
         </div>
       </div>
     </div>

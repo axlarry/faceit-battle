@@ -17,12 +17,12 @@ interface PasswordDialogProps {
   description: string;
 }
 
-export const PasswordDialog = ({ 
-  isOpen, 
-  onClose, 
-  onConfirm, 
-  title, 
-  description 
+export const PasswordDialog = ({
+  isOpen,
+  onClose,
+  onConfirm,
+  title,
+  description,
 }: PasswordDialogProps) => {
   const [password, setPassword] = useState("");
 
@@ -42,9 +42,11 @@ export const PasswordDialog = ({
           <DialogTitle className="text-lg md:text-xl font-bold bg-gradient-to-r from-orange-400 to-orange-600 bg-clip-text text-transparent">
             {title}
           </DialogTitle>
-          <DialogDescription className="sr-only">{description}</DialogDescription>
+          <DialogDescription className="sr-only">
+            {description}
+          </DialogDescription>
         </DialogHeader>
-        
+
         <div className="space-y-6 p-4">
           <p className="text-gray-300 text-center text-sm md:text-base leading-relaxed">
             {description}
@@ -57,12 +59,12 @@ export const PasswordDialog = ({
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') handleConfirm();
+                if (e.key === "Enter") handleConfirm();
               }}
               className="bg-white/10 border-orange-400/30 text-white placeholder:text-gray-400"
             />
           </div>
-          
+
           <div className="flex gap-3 pt-2">
             <Button
               variant="outline"

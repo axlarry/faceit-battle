@@ -1,6 +1,6 @@
-import { useEffect, useState, useCallback, useRef } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { RealtimeChannel } from '@supabase/supabase-js';
+import { useEffect, useState, useCallback, useRef } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { RealtimeChannel } from "@supabase/supabase-js";
 
 interface ViewerState {
   viewerId: string;
@@ -9,15 +9,18 @@ interface ViewerState {
 
 // Generate a unique viewer ID for this session
 const getViewerId = (): string => {
-  let viewerId = sessionStorage.getItem('stream_viewer_id');
+  let viewerId = sessionStorage.getItem("stream_viewer_id");
   if (!viewerId) {
     viewerId = `viewer_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    sessionStorage.setItem('stream_viewer_id', viewerId);
+    sessionStorage.setItem("stream_viewer_id", viewerId);
   }
   return viewerId;
 };
 
-export const useStreamViewerTracking = (streamName: string | null, isWatching: boolean = false) => {
+export const useStreamViewerTracking = (
+  streamName: string | null,
+  isWatching: boolean = false,
+) => {
   const channelRef = useRef<RealtimeChannel | null>(null);
   const viewerId = useRef(getViewerId());
 
@@ -32,7 +35,7 @@ export const useStreamViewerTracking = (streamName: string | null, isWatching: b
     }
 
     const channelName = `stream_viewers:${streamName.toLowerCase()}`;
-    
+
     // Create presence channel for this stream
     const channel = supabase.channel(channelName, {
       config: {
@@ -43,7 +46,7 @@ export const useStreamViewerTracking = (streamName: string | null, isWatching: b
     });
 
     channel.subscribe(async (status) => {
-      if (status === 'SUBSCRIBED') {
+      if (status === "SUBSCRIBED") {
         // Track this viewer's presence
         await channel.track({
           viewerId: viewerId.current,
@@ -72,20 +75,20 @@ export const useStreamViewerCount = (streamName: string | null) => {
     }
 
     const channelName = `stream_viewers:${streamName.toLowerCase()}`;
-    
+
     const channel = supabase.channel(channelName);
 
     channel
-      .on('presence', { event: 'sync' }, () => {
+      .on("presence", { event: "sync" }, () => {
         const state = channel.presenceState();
         const count = Object.keys(state).length;
         setViewerCount(count);
       })
-      .on('presence', { event: 'join' }, () => {
+      .on("presence", { event: "join" }, () => {
         const state = channel.presenceState();
         setViewerCount(Object.keys(state).length);
       })
-      .on('presence', { event: 'leave' }, () => {
+      .on("presence", { event: "leave" }, () => {
         const state = channel.presenceState();
         setViewerCount(Object.keys(state).length);
       })
@@ -109,8 +112,8 @@ export const useMultipleStreamViewerCounts = (streamNames: string[]) => {
 
   useEffect(() => {
     // Clean up old channels that are no longer needed
-    const currentNames = new Set(streamNames.map(n => n.toLowerCase()));
-    
+    const currentNames = new Set(streamNames.map((n) => n.toLowerCase()));
+
     channelsRef.current.forEach((channel, name) => {
       if (!currentNames.has(name)) {
         channel.unsubscribe();
@@ -121,7 +124,7 @@ export const useMultipleStreamViewerCounts = (streamNames: string[]) => {
     // Subscribe to new streams
     streamNames.forEach((streamName) => {
       const normalizedName = streamName.toLowerCase();
-      
+
       if (channelsRef.current.has(normalizedName)) {
         return; // Already subscribed
       }
@@ -132,13 +135,13 @@ export const useMultipleStreamViewerCounts = (streamNames: string[]) => {
       const updateCount = () => {
         const state = channel.presenceState();
         const count = Object.keys(state).length;
-        setViewerCounts(prev => ({ ...prev, [normalizedName]: count }));
+        setViewerCounts((prev) => ({ ...prev, [normalizedName]: count }));
       };
 
       channel
-        .on('presence', { event: 'sync' }, updateCount)
-        .on('presence', { event: 'join' }, updateCount)
-        .on('presence', { event: 'leave' }, updateCount)
+        .on("presence", { event: "sync" }, updateCount)
+        .on("presence", { event: "join" }, updateCount)
+        .on("presence", { event: "leave" }, updateCount)
         .subscribe();
 
       channelsRef.current.set(normalizedName, channel);
@@ -150,7 +153,7 @@ export const useMultipleStreamViewerCounts = (streamNames: string[]) => {
       });
       channelsRef.current.clear();
     };
-  }, [streamNames.join(',')]);
+  }, [streamNames.join(",")]);
 
   return viewerCounts;
 };

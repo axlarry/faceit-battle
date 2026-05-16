@@ -1,8 +1,7 @@
-
-import { lcryptLiveService } from './lcryptLiveService';
-import { playerStatsService } from './playerStatsService';
-import { playerMatchesService } from './playerMatchesService';
-import { playerSearchService } from './playerSearchService';
+import { enrichedPlayerService } from "./enrichedPlayerService";
+import { playerStatsService } from "./playerStatsService";
+import { playerMatchesService } from "./playerMatchesService";
+import { playerSearchService } from "./playerSearchService";
 
 export class PlayerService {
   async checkPlayerLiveMatch(playerId: string) {
@@ -11,9 +10,18 @@ export class PlayerService {
       const nickname = playerData?.nickname;
 
       if (nickname) {
-        const lcryptLiveInfo = await lcryptLiveService.checkPlayerLiveFromLcrypt(nickname);
-        if (lcryptLiveInfo.isLive) {
-          return lcryptLiveInfo;
+        const enriched =
+          await enrichedPlayerService.getEnrichedPlayerData(nickname);
+        if (enriched?.isLive) {
+          return {
+            isLive: true,
+            matchId: enriched.liveInfo?.matchId || "",
+            competition: enriched.liveInfo?.competition || "FACEIT Match",
+            status: enriched.liveInfo?.status || "LIVE",
+            state: enriched.liveInfo?.state || "ONGOING",
+            matchDetails: enriched.liveInfo?.matchDetails,
+            liveMatch: enriched.liveInfo?.liveMatch,
+          };
         }
       }
 
@@ -26,7 +34,7 @@ export class PlayerService {
 
   private async getPlayerBasicData(playerId: string) {
     try {
-      const { faceitApiClient } = await import('./faceitApiClient');
+      const { faceitApiClient } = await import("./faceitApiClient");
       return await faceitApiClient.makeApiCall(`/players/${playerId}`, false);
     } catch (error) {
       console.warn(`Error fetching basic player data for ${playerId}:`, error);
@@ -36,8 +44,11 @@ export class PlayerService {
 
   async getPlayerCoverImage(nickname: string) {
     try {
-      const { faceitApiClient } = await import('./faceitApiClient');
-      const playerData = await faceitApiClient.makeApiCall(`/players?nickname=${nickname}`, false);
+      const { faceitApiClient } = await import("./faceitApiClient");
+      const playerData = await faceitApiClient.makeApiCall(
+        `/players?nickname=${nickname}`,
+        false,
+      );
       return playerData?.cover_image ?? null;
     } catch (error) {
       console.warn(`Error fetching cover image for ${nickname}:`, error);

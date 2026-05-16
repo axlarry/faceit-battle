@@ -1,7 +1,7 @@
-import React from 'react';
-import { FriendListItem } from './FriendListItem';
+import React from "react";
+import { FriendListItem } from "./FriendListItem";
 import { Player } from "@/types/Player";
-import { Users, Zap } from 'lucide-react';
+import { Users, Zap } from "lucide-react";
 
 interface FriendWithLcrypt extends Player {
   lcryptData?: any;
@@ -23,16 +23,16 @@ interface LiveMatchGroupProps {
   onPlayerClick: (player: Player) => void;
 }
 
-export const LiveMatchGroup = ({ 
-  matchId, 
-  players, 
-  liveMatches, 
-  flashingPlayer, 
-  loadingFriends, 
-  onPlayerClick 
+export const LiveMatchGroup = ({
+  matchId,
+  players,
+  liveMatches,
+  flashingPlayer,
+  loadingFriends,
+  onPlayerClick,
 }: LiveMatchGroupProps) => {
   const matchInfo = liveMatches[players[0]?.player_id];
-  const competition = matchInfo?.competition || 'Unknown Match';
+  const competition = matchInfo?.competition || "Unknown Match";
 
   return (
     <div className="space-y-3 mb-6">
@@ -48,7 +48,9 @@ export const LiveMatchGroup = ({
         </div>
         <div className="ml-auto flex items-center gap-1 bg-emerald-500/30 px-2 py-1 rounded-full">
           <Users size={12} className="text-emerald-300" />
-          <span className="text-emerald-300 text-xs font-medium">{players.length}</span>
+          <span className="text-emerald-300 text-xs font-medium">
+            {players.length}
+          </span>
         </div>
       </div>
 
@@ -58,7 +60,7 @@ export const LiveMatchGroup = ({
           const liveInfo = liveMatches[friend.player_id];
           // Calculez indexul global pentru stilizare
           const globalIndex = players.length > 1 ? -1 : localIndex; // -1 pentru a nu aplica stiluri de top players
-          
+
           return (
             <FriendListItem
               key={friend.player_id}

@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Player } from "@/types/Player";
@@ -16,31 +15,37 @@ interface LeaderboardTableProps {
   onAddFriend: (player: Player, password: string) => void;
 }
 
-export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: LeaderboardTableProps) => {
+export const LeaderboardTable = ({
+  region,
+  onShowPlayerDetails,
+  onAddFriend,
+}: LeaderboardTableProps) => {
   const [players, setPlayers] = useState<Player[]>([]);
   const [loading, setLoading] = useState(false);
   const [offset, setOffset] = useState(0);
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [pendingPlayer, setPendingPlayer] = useState<Player | null>(null);
   const limit = 20;
-  const previousRegionRef = useRef<string>('');
+  const previousRegionRef = useRef<string>("");
   const loadingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  
+
   const { getLeaderboard, makeApiCall } = useFaceitApi();
 
   useEffect(() => {
-    console.log(`Region changed from ${previousRegionRef.current} to: ${region}`);
-    
+    console.log(
+      `Region changed from ${previousRegionRef.current} to: ${region}`,
+    );
+
     if (loadingTimeoutRef.current) {
       clearTimeout(loadingTimeoutRef.current);
     }
-    
+
     setPlayers([]);
     setOffset(0);
     setLoading(false);
-    
+
     previousRegionRef.current = region;
-    
+
     loadingTimeoutRef.current = setTimeout(() => {
       console.log(`Starting to load data for region: ${region}`);
       loadPlayers(0, true);
@@ -58,29 +63,39 @@ export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: L
     const map = new Map<string, any>();
     for (const p of [...prev, ...next]) {
       const existing = map.get(p.player_id);
-      if (!existing || (p.position ?? Infinity) < (existing.position ?? Infinity)) {
+      if (
+        !existing ||
+        (p.position ?? Infinity) < (existing.position ?? Infinity)
+      ) {
         map.set(p.player_id, p);
       }
     }
-    return Array.from(map.values()).sort((a, b) => (a.position ?? Infinity) - (b.position ?? Infinity));
+    return Array.from(map.values()).sort(
+      (a, b) => (a.position ?? Infinity) - (b.position ?? Infinity),
+    );
   };
 
   const loadPlayers = async (currentOffset: number, reset = false) => {
-    console.log(`Loading players for region: ${region}, offset: ${currentOffset}, reset: ${reset}`);
-    
+    console.log(
+      `Loading players for region: ${region}, offset: ${currentOffset}, reset: ${reset}`,
+    );
+
     if (loading) {
-      console.log('Already loading, skipping request');
+      console.log("Already loading, skipping request");
       return;
     }
-    
+
     setLoading(true);
-    
+
     try {
       // Folosim noua metodă getLeaderboard care folosește API-ul pentru clasament
-      const data = await makeApiCall(`/rankings/games/cs2/regions/${region}?offset=${currentOffset}&limit=${limit}`, true);
-      
+      const data = await makeApiCall(
+        `/rankings/games/cs2/regions/${region}?offset=${currentOffset}&limit=${limit}`,
+        true,
+      );
+
       if (!data || !data.items || data.items.length === 0) {
-        console.log('No data or empty items array received');
+        console.log("No data or empty items array received");
         if (currentOffset === 0) {
           toast({
             title: "Nu există jucători",
@@ -99,30 +114,46 @@ export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: L
 
       const playersWithDetails = await Promise.all(
         data.items.map(async (item: any, idx: number) => {
-          const position = (typeof item.position === 'number' ? item.position : ((idx + 1) + currentOffset));
-           try {
+          const position =
+            typeof item.position === "number"
+              ? item.position
+              : idx + 1 + currentOffset;
+          try {
             // Pentru detaliile jucătorului folosim API-ul pentru prieteni/tool
-            const playerData = await makeApiCall(`/players/${item.player_id}`, false);
-            const statsData = await makeApiCall(`/players/${item.player_id}/stats/cs2`, false);
+            const playerData = await makeApiCall(
+              `/players/${item.player_id}`,
+              false,
+            );
+            const statsData = await makeApiCall(
+              `/players/${item.player_id}/stats/cs2`,
+              false,
+            );
 
             return {
               player_id: item.player_id,
               nickname: item.nickname,
-              avatar: playerData.avatar || '/placeholder.svg',
+              avatar: playerData.avatar || "/placeholder.svg",
               position: position,
               level: playerData.games?.cs2?.skill_level || 0,
               elo: playerData.games?.cs2?.faceit_elo || 0,
               wins: parseInt(statsData.lifetime?.Wins) || 0,
-              winRate: Math.round((parseInt(statsData.lifetime?.Wins) / parseInt(statsData.lifetime?.Matches)) * 100) || 0,
-              hsRate: parseFloat(statsData.lifetime?.['Average Headshots %']) || 0,
-              kdRatio: parseFloat(statsData.lifetime?.['Average K/D Ratio']) || 0,
+              winRate:
+                Math.round(
+                  (parseInt(statsData.lifetime?.Wins) /
+                    parseInt(statsData.lifetime?.Matches)) *
+                    100,
+                ) || 0,
+              hsRate:
+                parseFloat(statsData.lifetime?.["Average Headshots %"]) || 0,
+              kdRatio:
+                parseFloat(statsData.lifetime?.["Average K/D Ratio"]) || 0,
             };
           } catch (error) {
             console.error(`Error loading player ${item.player_id}:`, error);
             return {
               player_id: item.player_id,
               nickname: item.nickname,
-              avatar: '/placeholder.svg',
+              avatar: "/placeholder.svg",
               position: position,
               level: 0,
               elo: 0,
@@ -132,24 +163,31 @@ export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: L
               kdRatio: 0,
             };
           }
-        })
+        }),
       );
 
       // Sortează jucătorii după poziția din clasament
-      playersWithDetails.sort((a, b) => (a.position ?? Infinity) - (b.position ?? Infinity));
+      playersWithDetails.sort(
+        (a, b) => (a.position ?? Infinity) - (b.position ?? Infinity),
+      );
 
       if (reset) {
-        console.log(`Setting ${playersWithDetails.length} players (reset) for region ${region}`);
+        console.log(
+          `Setting ${playersWithDetails.length} players (reset) for region ${region}`,
+        );
         setPlayers(mergeAndSortPlayers([], playersWithDetails as any[]));
       } else {
-        console.log(`Adding ${playersWithDetails.length} players to existing ${players.length} for region ${region}`);
-        setPlayers(prev => mergeAndSortPlayers(prev as any[], playersWithDetails as any[]));
+        console.log(
+          `Adding ${playersWithDetails.length} players to existing ${players.length} for region ${region}`,
+        );
+        setPlayers((prev) =>
+          mergeAndSortPlayers(prev as any[], playersWithDetails as any[]),
+        );
       }
-      
-      setOffset(currentOffset + limit);
 
+      setOffset(currentOffset + limit);
     } catch (error) {
-      console.error('Error loading leaderboard:', error);
+      console.error("Error loading leaderboard:", error);
       toast({
         title: "Eroare la încărcare",
         description: "Nu s-au putut încărca datele clasamentului.",
@@ -177,7 +215,7 @@ export const LeaderboardTable = ({ region, onShowPlayerDetails, onAddFriend }: L
       <Card className="glass-card border">
         <div className="p-3 sm:p-4 md:p-6">
           <LeaderboardHeader region={region} />
-          
+
           {loading && players.length === 0 ? (
             <EmptyLeaderboardState loading={loading} />
           ) : (

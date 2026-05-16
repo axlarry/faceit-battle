@@ -1,5 +1,4 @@
-
-import { useState, useCallback } from 'react';
+import { useState, useCallback } from "react";
 
 export const useLcryptLoadingState = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -18,19 +17,30 @@ export const useLcryptLoadingState = () => {
     setLoadingProgress(100);
   }, []);
 
-  const updateProgress = useCallback((current: number, total: number, _batchStart: number, _batchSize: number) => {
-    const progress = Math.min(100, (current / total) * 100);
-    setLoadingProgress(progress);
-  }, []);
+  const updateProgress = useCallback(
+    (
+      current: number,
+      total: number,
+      _batchStart: number,
+      _batchSize: number,
+    ) => {
+      const progress = Math.min(100, (current / total) * 100);
+      setLoadingProgress(progress);
+    },
+    [],
+  );
 
   // Returns true if enough time has passed since the last full batch reload
-  const canUpdate = useCallback((minIntervalMs: number = 90000) => {
-    const now = Date.now();
-    if (lastUpdateTime > 0 && (now - lastUpdateTime) < minIntervalMs) {
-      return false;
-    }
-    return true;
-  }, [lastUpdateTime]);
+  const canUpdate = useCallback(
+    (minIntervalMs: number = 90000) => {
+      const now = Date.now();
+      if (lastUpdateTime > 0 && now - lastUpdateTime < minIntervalMs) {
+        return false;
+      }
+      return true;
+    },
+    [lastUpdateTime],
+  );
 
   return {
     isLoading,
@@ -41,6 +51,6 @@ export const useLcryptLoadingState = () => {
     startLoading,
     finishLoading,
     updateProgress,
-    canUpdate
+    canUpdate,
   };
 };

@@ -2,13 +2,36 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Player, Match } from "@/types/Player";
-import { Trophy, Calendar, Clock, Target, TrendingUp, TrendingDown, Minus, Zap, Crosshair, Radio, Download, Map, ExternalLink } from "lucide-react";
-import { formatDate, formatMatchDuration, getMatchResult, getMatchScore, getMapInfo } from "@/utils/matchUtils";
+import {
+  Trophy,
+  Calendar,
+  Clock,
+  Target,
+  TrendingUp,
+  TrendingDown,
+  Minus,
+  Zap,
+  Crosshair,
+  Radio,
+  Download,
+  Map,
+  ExternalLink,
+} from "lucide-react";
+import {
+  formatDate,
+  formatMatchDuration,
+  getMatchResult,
+  getMatchScore,
+  getMapInfo,
+} from "@/utils/matchUtils";
 import { getEloChange } from "@/utils/eloUtils";
 import { getPlayerStatsFromMatch, getKDA } from "@/utils/playerDataUtils";
 import { getKDRatio, getHeadshotPercentage, getADR } from "@/utils/statsUtils";
 import { useLcryptApi } from "@/hooks/useLcryptApi";
-import { parseLcryptReport, findMatchEloChange } from "@/utils/lcryptUtils";
+import {
+  parseMatchReport,
+  findMatchEloChangeFromReport,
+} from "@/utils/matchReportParser";
 import { useState, useEffect } from "react";
 
 interface MatchRowProps {
@@ -29,7 +52,7 @@ export const MatchRow = ({
   player,
   matchesStats,
   onMatchClick,
-  matchIndex
+  matchIndex,
 }: MatchRowProps) => {
   const isWin = getMatchResult(match, player);
   const playerStats = getPlayerStatsFromMatch(match, player, matchesStats);
@@ -37,33 +60,47 @@ export const MatchRow = ({
   const mapName = getMapInfo(match, matchesStats);
   const matchScore = getMatchScore(match, matchesStats, player);
   const kda = getKDA(playerStats);
-  const {
-    data: lcryptData
-  } = useLcryptApi(player.nickname, player.player_id);
-  const [imageLoadErrors, setImageLoadErrors] = useState<Set<string>>(new Set());
+  const { data: lcryptData } = useLcryptApi(player.nickname, player.player_id);
+  const [imageLoadErrors, setImageLoadErrors] = useState<Set<string>>(
+    new Set(),
+  );
   const [liveMatchUrl, setLiveMatchUrl] = useState<string | null>(null);
 
-  // Parse lcrypt report and find ELO change for this match
-  const lcryptMatches = lcryptData?.report ? parseLcryptReport(lcryptData.report) : [];
-  const lcryptEloChange = findMatchEloChange(match, lcryptMatches, matchIndex, player);
+  // Parse match report and find ELO change for this match
+  const matchReports = lcryptData?.report
+    ? parseMatchReport(lcryptData.report)
+    : [];
+  const matchEloChange = findMatchEloChangeFromReport(
+    match,
+    matchReports,
+    matchIndex,
+    player,
+  );
 
   // Check for live match URL when it's a live match
   useEffect(() => {
     if (match.isLiveMatch && player.player_id) {
       const checkLiveMatch = async () => {
         try {
-          const { liveMatchService } = await import('@/services/liveMatchService');
-          const liveInfo = await liveMatchService.getPlayerLiveMatch(player.player_id);
+          const { liveMatchService } =
+            await import("@/services/liveMatchService");
+          const liveInfo = await liveMatchService.getPlayerLiveMatch(
+            player.player_id,
+          );
           if (liveInfo && liveInfo.matchRoomUrl) {
             setLiveMatchUrl(liveInfo.matchRoomUrl);
           } else {
             // Fallback to constructing URL from match ID
-            setLiveMatchUrl(`https://www.faceit.com/en/cs2/room/${match.match_id}`);
+            setLiveMatchUrl(
+              `https://www.faceit.com/en/cs2/room/${match.match_id}`,
+            );
           }
         } catch (error) {
-          console.error('Error getting live match URL:', error);
+          console.error("Error getting live match URL:", error);
           // Fallback to constructing URL from match ID
-          setLiveMatchUrl(`https://www.faceit.com/en/cs2/room/${match.match_id}`);
+          setLiveMatchUrl(
+            `https://www.faceit.com/en/cs2/room/${match.match_id}`,
+          );
         }
       };
       checkLiveMatch();
@@ -72,7 +109,7 @@ export const MatchRow = ({
 
   // Function to get map icon URL from local assets
   const getMapIconUrl = (mapName: string) => {
-    if (!mapName || mapName === 'Unknown') return null;
+    if (!mapName || mapName === "Unknown") return null;
 
     // Clean and normalize the map name
     const cleanMapName = mapName.toLowerCase().trim();
@@ -81,35 +118,35 @@ export const MatchRow = ({
     const mapMappings: {
       [key: string]: string;
     } = {
-      'de_dust2': 'icon_de_dust2.png',
-      'dust2': 'icon_de_dust2.png',
-      'de_mirage': 'icon_de_mirage.png',
-      'mirage': 'icon_de_mirage.png',
-      'de_inferno': 'icon_de_inferno.png',
-      'inferno': 'icon_de_inferno.png',
-      'de_cache': 'icon_de_cache.png',
-      'cache': 'icon_de_cache.png',
-      'de_overpass': 'icon_de_overpass.png',
-      'overpass': 'icon_de_overpass.png',
-      'de_cobblestone': 'icon_de_cbble.png',
-      'cobblestone': 'icon_de_cbble.png',
-      'de_cbble': 'icon_de_cbble.png',
-      'de_train': 'icon_de_train.png',
-      'train': 'icon_de_train.png',
-      'de_nuke': 'icon_de_nuke.png',
-      'nuke': 'icon_de_nuke.png',
-      'de_vertigo': 'icon_de_vertigo.png',
-      'vertigo': 'icon_de_vertigo.png',
-      'de_ancient': 'icon_de_ancient.png',
-      'ancient': 'icon_de_ancient.png',
-      'de_anubis': 'icon_de_anubis.png',
-      'anubis': 'icon_de_anubis.png',
-      'cs_office': 'icon_cs_office.png',
-      'office': 'icon_cs_office.png',
-      'cs_agency': 'icon_cs_agency.png',
-      'agency': 'icon_cs_agency.png',
-      'cs_italy': 'icon_cs_italy.png',
-      'italy': 'icon_cs_italy.png'
+      de_dust2: "icon_de_dust2.png",
+      dust2: "icon_de_dust2.png",
+      de_mirage: "icon_de_mirage.png",
+      mirage: "icon_de_mirage.png",
+      de_inferno: "icon_de_inferno.png",
+      inferno: "icon_de_inferno.png",
+      de_cache: "icon_de_cache.png",
+      cache: "icon_de_cache.png",
+      de_overpass: "icon_de_overpass.png",
+      overpass: "icon_de_overpass.png",
+      de_cobblestone: "icon_de_cbble.png",
+      cobblestone: "icon_de_cbble.png",
+      de_cbble: "icon_de_cbble.png",
+      de_train: "icon_de_train.png",
+      train: "icon_de_train.png",
+      de_nuke: "icon_de_nuke.png",
+      nuke: "icon_de_nuke.png",
+      de_vertigo: "icon_de_vertigo.png",
+      vertigo: "icon_de_vertigo.png",
+      de_ancient: "icon_de_ancient.png",
+      ancient: "icon_de_ancient.png",
+      de_anubis: "icon_de_anubis.png",
+      anubis: "icon_de_anubis.png",
+      cs_office: "icon_cs_office.png",
+      office: "icon_cs_office.png",
+      cs_agency: "icon_cs_agency.png",
+      agency: "icon_cs_agency.png",
+      cs_italy: "icon_cs_italy.png",
+      italy: "icon_cs_italy.png",
     };
     const iconFileName = mapMappings[cleanMapName];
     if (iconFileName) {
@@ -119,17 +156,31 @@ export const MatchRow = ({
   };
   const handleImageError = (mapName: string) => {
     console.log(`Failed to load icon for map: ${mapName}`);
-    setImageLoadErrors(prev => new Set([...prev, mapName]));
+    setImageLoadErrors((prev) => new Set([...prev, mapName]));
   };
   const renderMapDisplay = (mapName: string) => {
     const iconUrl = getMapIconUrl(mapName);
     const hasError = imageLoadErrors.has(mapName);
-    return <div className="flex items-center gap-2">
+    return (
+      <div className="flex items-center gap-2">
         <div className="w-10 h-7 rounded overflow-hidden bg-gray-800 flex items-center justify-center border border-gray-700">
-          {iconUrl && !hasError ? <img src={iconUrl} alt={mapName} onError={() => handleImageError(mapName)} onLoad={() => console.log(`Successfully loaded icon for: ${mapName}`)} className="w-full h-full object-scale-down" /> : <Map className="w-4 h-4 text-orange-400" />}
+          {iconUrl && !hasError ? (
+            <img
+              src={iconUrl}
+              alt={mapName}
+              onError={() => handleImageError(mapName)}
+              onLoad={() =>
+                console.log(`Successfully loaded icon for: ${mapName}`)
+              }
+              className="w-full h-full object-scale-down"
+            />
+          ) : (
+            <Map className="w-4 h-4 text-orange-400" />
+          )}
         </div>
         <span className="text-white font-medium">{mapName}</span>
-      </div>;
+      </div>
+    );
   };
   const handleDownloadDemo = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent row click
@@ -138,7 +189,7 @@ export const MatchRow = ({
     const demoUrl = `https://www.faceit.com/en/cs2/room/${match.match_id}`;
 
     // Open in new tab
-    window.open(demoUrl, '_blank');
+    window.open(demoUrl, "_blank");
   };
 
   const handleMatchRoomClick = (e: React.MouseEvent) => {
@@ -146,17 +197,22 @@ export const MatchRow = ({
 
     // Open player's Faceit profile in new tab
     const profileUrl = `https://www.faceit.com/en/players/${encodeURIComponent(player.nickname)}`;
-    window.open(profileUrl, '_blank');
+    window.open(profileUrl, "_blank");
   };
 
   // Handle live match differently
   if (match.isLiveMatch) {
-    const liveScore = match.liveMatchDetails?.score || 'În Desfășurare';
-    const liveElo = match.liveMatchDetails?.elo || match.liveMatchDetails?.elo_change;
-    const liveMapName = match.liveMatchDetails?.voting?.map?.pick?.[0] || mapName || 'TBD';
-    
+    const liveScore = match.liveMatchDetails?.score || "În Desfășurare";
+    const liveElo =
+      match.liveMatchDetails?.elo || match.liveMatchDetails?.elo_change;
+    const liveMapName =
+      match.liveMatchDetails?.voting?.map?.pick?.[0] || mapName || "TBD";
+
     return (
-      <TableRow key={match.match_id} className="border-white/10 bg-green-500/10 hover:bg-green-500/20 transition-colors">
+      <TableRow
+        key={match.match_id}
+        className="border-white/10 bg-green-500/10 hover:bg-green-500/20 transition-colors"
+      >
         {/* Result - Live indicator */}
         <TableCell>
           <Badge className="bg-green-500/20 text-green-400 border-green-500/30 border font-semibold">
@@ -166,15 +222,11 @@ export const MatchRow = ({
         </TableCell>
 
         {/* Map */}
-        <TableCell>
-          {renderMapDisplay(liveMapName)}
-        </TableCell>
+        <TableCell>{renderMapDisplay(liveMapName)}</TableCell>
 
         {/* Score - Show live score if available */}
         <TableCell>
-          <span className="text-green-400 font-bold">
-            {liveScore}
-          </span>
+          <span className="text-green-400 font-bold">{liveScore}</span>
         </TableCell>
 
         {/* K/D/A - Not available for live matches */}
@@ -200,9 +252,7 @@ export const MatchRow = ({
         {/* ELO Change - Show live ELO if available */}
         <TableCell>
           {liveElo ? (
-            <span className="text-yellow-400 font-bold">
-              {liveElo}
-            </span>
+            <span className="text-yellow-400 font-bold">{liveElo}</span>
           ) : (
             <span className="text-gray-400">Pending</span>
           )}
@@ -212,9 +262,7 @@ export const MatchRow = ({
         <TableCell>
           <div className="flex items-center gap-1">
             <Calendar className="w-3 h-3 text-green-400" />
-            <span className="text-green-300 text-sm font-medium">
-              Acum
-            </span>
+            <span className="text-green-300 text-sm font-medium">Acum</span>
           </div>
         </TableCell>
 
@@ -235,9 +283,7 @@ export const MatchRow = ({
         <TableCell>
           <div className="flex items-center gap-1">
             <Clock className="w-3 h-3 text-green-400" />
-            <span className="text-green-300 text-sm font-medium">
-              Live
-            </span>
+            <span className="text-green-300 text-sm font-medium">Live</span>
           </div>
         </TableCell>
       </TableRow>
@@ -245,24 +291,31 @@ export const MatchRow = ({
   }
 
   // Regular match row
-  return <TableRow key={match.match_id} className={`border-white/10 hover:bg-white/10 transition-colors cursor-pointer ${isWin === true ? 'bg-green-500/5' : isWin === false ? 'bg-red-500/5' : ''}`} onClick={() => onMatchClick(match)}>
+  return (
+    <TableRow
+      key={match.match_id}
+      className={`border-white/10 hover:bg-white/10 transition-colors cursor-pointer ${isWin === true ? "bg-green-500/5" : isWin === false ? "bg-red-500/5" : ""}`}
+      onClick={() => onMatchClick(match)}
+    >
       {/* Result */}
       <TableCell>
-        {isWin !== null ? <Badge className={`${isWin ? 'bg-green-500/20 text-green-400 border-green-500/30' : 'bg-red-500/20 text-red-400 border-red-500/30'} border font-semibold`}>
-            {isWin ? 'W' : 'L'}
-          </Badge> : <span className="text-gray-400">-</span>}
+        {isWin !== null ? (
+          <Badge
+            className={`${isWin ? "bg-green-500/20 text-green-400 border-green-500/30" : "bg-red-500/20 text-red-400 border-red-500/30"} border font-semibold`}
+          >
+            {isWin ? "W" : "L"}
+          </Badge>
+        ) : (
+          <span className="text-gray-400">-</span>
+        )}
       </TableCell>
 
       {/* Map */}
-      <TableCell>
-        {renderMapDisplay(mapName)}
-      </TableCell>
+      <TableCell>{renderMapDisplay(mapName)}</TableCell>
 
       {/* Score */}
       <TableCell>
-        <span className="text-white font-bold">
-          {matchScore}
-        </span>
+        <span className="text-white font-bold">{matchScore}</span>
       </TableCell>
 
       {/* K/D/A */}
@@ -306,19 +359,43 @@ export const MatchRow = ({
         </div>
       </TableCell>
 
-      {/* ELO Change - now showing from lcrypt report */}
+      {/* ELO Change - now showing from match report */}
       <TableCell>
-        {lcryptEloChange !== null ? <div className="flex items-center gap-1">
-            {lcryptEloChange > 0 ? <TrendingUp className="w-4 h-4 text-green-400" /> : lcryptEloChange < 0 ? <TrendingDown className="w-4 h-4 text-red-400" /> : <Minus className="w-4 h-4 text-gray-400" />}
-            <span className={`font-bold ${lcryptEloChange > 0 ? 'text-green-400' : lcryptEloChange < 0 ? 'text-red-400' : 'text-gray-400'}`}>
-              {lcryptEloChange > 0 ? '+' : ''}{lcryptEloChange}
+        {matchEloChange !== null ? (
+          <div className="flex items-center gap-1">
+            {matchEloChange > 0 ? (
+              <TrendingUp className="w-4 h-4 text-green-400" />
+            ) : matchEloChange < 0 ? (
+              <TrendingDown className="w-4 h-4 text-red-400" />
+            ) : (
+              <Minus className="w-4 h-4 text-gray-400" />
+            )}
+            <span
+              className={`font-bold ${matchEloChange > 0 ? "text-green-400" : matchEloChange < 0 ? "text-red-400" : "text-gray-400"}`}
+            >
+              {matchEloChange > 0 ? "+" : ""}
+              {matchEloChange}
             </span>
-          </div> : eloChange && typeof eloChange.elo_change === 'number' ? <div className="flex items-center gap-1">
-            {eloChange.elo_change > 0 ? <TrendingUp className="w-4 h-4 text-green-400" /> : eloChange.elo_change < 0 ? <TrendingDown className="w-4 h-4 text-red-400" /> : <Minus className="w-4 h-4 text-gray-400" />}
-            <span className={`font-bold ${eloChange.elo_change > 0 ? 'text-green-400' : eloChange.elo_change < 0 ? 'text-red-400' : 'text-gray-400'}`}>
-              {eloChange.elo_change > 0 ? '+' : ''}{eloChange.elo_change}
+          </div>
+        ) : eloChange && typeof eloChange.elo_change === "number" ? (
+          <div className="flex items-center gap-1">
+            {eloChange.elo_change > 0 ? (
+              <TrendingUp className="w-4 h-4 text-green-400" />
+            ) : eloChange.elo_change < 0 ? (
+              <TrendingDown className="w-4 h-4 text-red-400" />
+            ) : (
+              <Minus className="w-4 h-4 text-gray-400" />
+            )}
+            <span
+              className={`font-bold ${eloChange.elo_change > 0 ? "text-green-400" : eloChange.elo_change < 0 ? "text-red-400" : "text-gray-400"}`}
+            >
+              {eloChange.elo_change > 0 ? "+" : ""}
+              {eloChange.elo_change}
             </span>
-          </div> : <span className="text-gray-400">-</span>}
+          </div>
+        ) : (
+          <span className="text-gray-400">-</span>
+        )}
       </TableCell>
 
       {/* Date */}
@@ -333,7 +410,12 @@ export const MatchRow = ({
 
       {/* Demo Download Button */}
       <TableCell>
-        <Button onClick={handleDownloadDemo} size="sm" variant="outline" className="bg-orange-500/10 border-orange-500/30 text-orange-400 hover:bg-orange-500/20 hover:text-orange-300 transition-colors">
+        <Button
+          onClick={handleDownloadDemo}
+          size="sm"
+          variant="outline"
+          className="bg-orange-500/10 border-orange-500/30 text-orange-400 hover:bg-orange-500/20 hover:text-orange-300 transition-colors"
+        >
           <Download className="w-3 h-3 mr-1" />
           Demo
         </Button>
@@ -348,5 +430,6 @@ export const MatchRow = ({
           </span>
         </div>
       </TableCell>
-    </TableRow>;
+    </TableRow>
+  );
 };

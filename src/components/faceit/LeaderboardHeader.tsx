@@ -1,4 +1,3 @@
-
 import { Trophy, Globe } from "lucide-react";
 
 interface LeaderboardHeaderProps {
@@ -14,7 +13,7 @@ export const LeaderboardHeader = ({ region }: LeaderboardHeaderProps) => {
           <Trophy size={20} className="text-white" />
         </div>
       </div>
-      
+
       <div className="flex flex-col">
         <h2 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-red-500">
           Clasament {region}

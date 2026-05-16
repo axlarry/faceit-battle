@@ -1,4 +1,10 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Player, Match } from "@/types/Player";
 import { useState, useEffect } from "react";
 import { PasswordDialog } from "./PasswordDialog";
@@ -26,10 +32,12 @@ export const PlayerModal = ({
   onAddFriend,
   onRemoveFriend,
   isFriend,
-  liveMatchInfo
+  liveMatchInfo,
 }: PlayerModalProps) => {
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
-  const [pendingAction, setPendingAction] = useState<'add' | 'remove' | null>(null);
+  const [pendingAction, setPendingAction] = useState<"add" | "remove" | null>(
+    null,
+  );
   const [matches, setMatches] = useState<Match[]>([]);
   const [loadingMatches, setLoadingMatches] = useState(false);
   const [enhancedPlayer, setEnhancedPlayer] = useState<Player | null>(null);
@@ -40,7 +48,7 @@ export const PlayerModal = ({
     getPlayerMatches,
     getMatchDetails,
     getMatchStats,
-    checkPlayerLiveMatch
+    checkPlayerLiveMatch,
   } = useFaceitApi();
 
   // Load matches when player changes and modal is open
@@ -55,12 +63,17 @@ export const PlayerModal = ({
     if (!player) return;
     setLoadingMatches(true);
     try {
-      console.log('Loading matches and cover image for player:', player.player_id);
+      console.log(
+        "Loading matches and cover image for player:",
+        player.player_id,
+      );
 
       // Fetch cover image if not already present
       let playerWithCover = { ...player };
       if (!player.cover_image) {
-        const coverImage = await playerService.getPlayerCoverImage(player.nickname);
+        const coverImage = await playerService.getPlayerCoverImage(
+          player.nickname,
+        );
         if (coverImage) {
           playerWithCover = { ...player, cover_image: coverImage };
         }
@@ -73,21 +86,25 @@ export const PlayerModal = ({
 
       // If player is live, add the live match at the beginning
       if (liveInfo.isLive && liveInfo.liveMatch) {
-        console.log('Adding live match to matches list:', liveInfo.liveMatch);
+        console.log("Adding live match to matches list:", liveInfo.liveMatch);
         allMatches.push({
           ...liveInfo.liveMatch,
           isLiveMatch: true,
           // Mark as live match
-          liveMatchDetails: liveInfo.matchDetails
+          liveMatchDetails: liveInfo.matchDetails,
         });
       }
 
       // Load regular match history
       const matchesData = await getPlayerMatches(player.player_id, 10);
-      console.log('Matches data received:', matchesData);
+      console.log("Matches data received:", matchesData);
 
       // Filter out the live match if it's already in history to avoid duplicates
-      const filteredMatches = liveInfo.isLive ? matchesData.filter((match: Match) => match.match_id !== liveInfo.matchId) : matchesData;
+      const filteredMatches = liveInfo.isLive
+        ? matchesData.filter(
+            (match: Match) => match.match_id !== liveInfo.matchId,
+          )
+        : matchesData;
 
       // Combine live match with history
       allMatches = [...allMatches, ...filteredMatches];
@@ -95,51 +112,56 @@ export const PlayerModal = ({
 
       // Load detailed stats for each match (skip live match for stats)
       if (allMatches.length > 0) {
-        const statsPromises = allMatches.map(async (match: Match, index: number) => {
-          // Skip loading stats for live match as it doesn't have complete stats yet
-          if (match.isLiveMatch) {
-            return {
-              [match.match_id]: {
-                isLive: true,
-                ...match.liveMatchDetails
+        const statsPromises = allMatches.map(
+          async (match: Match, index: number) => {
+            // Skip loading stats for live match as it doesn't have complete stats yet
+            if (match.isLiveMatch) {
+              return {
+                [match.match_id]: {
+                  isLive: true,
+                  ...match.liveMatchDetails,
+                },
+              };
+            }
+            try {
+              console.log("Loading stats for match:", match.match_id);
+
+              // Try to get match stats first
+              const matchStats = await getMatchStats(match.match_id);
+              if (matchStats) {
+                console.log("Match stats response:", matchStats);
+                return {
+                  [match.match_id]: matchStats,
+                };
               }
-            };
-          }
-          try {
-            console.log('Loading stats for match:', match.match_id);
 
-            // Try to get match stats first
-            const matchStats = await getMatchStats(match.match_id);
-            if (matchStats) {
-              console.log('Match stats response:', matchStats);
-              return {
-                [match.match_id]: matchStats
-              };
+              // Fallback to match details
+              const matchDetail = await getMatchDetails(match.match_id);
+              if (matchDetail) {
+                console.log("Match detail response:", matchDetail);
+                return {
+                  [match.match_id]: matchDetail,
+                };
+              }
+            } catch (error) {
+              console.error("Error loading match data:", error);
             }
-
-            // Fallback to match details
-            const matchDetail = await getMatchDetails(match.match_id);
-            if (matchDetail) {
-              console.log('Match detail response:', matchDetail);
-              return {
-                [match.match_id]: matchDetail
-              };
-            }
-          } catch (error) {
-            console.error('Error loading match data:', error);
-          }
-          return {};
-        });
+            return {};
+          },
+        );
         const statsResults = await Promise.all(statsPromises);
-        const combinedStats = statsResults.reduce((acc, curr) => ({
-          ...acc,
-          ...curr
-        }), {});
-        console.log('Combined match stats:', combinedStats);
+        const combinedStats = statsResults.reduce(
+          (acc, curr) => ({
+            ...acc,
+            ...curr,
+          }),
+          {},
+        );
+        console.log("Combined match stats:", combinedStats);
         setMatchesStats(combinedStats);
       }
     } catch (error) {
-      console.error('Error loading matches:', error);
+      console.error("Error loading matches:", error);
     } finally {
       setLoadingMatches(false);
     }
@@ -147,49 +169,64 @@ export const PlayerModal = ({
   if (!player) return null;
   const handleFriendAction = () => {
     if (isFriend) {
-      setPendingAction('remove');
+      setPendingAction("remove");
     } else {
-      setPendingAction('add');
+      setPendingAction("add");
     }
     setShowPasswordDialog(true);
   };
   const confirmAction = (password: string) => {
-    if (pendingAction === 'add') {
+    if (pendingAction === "add") {
       onAddFriend(player, password);
-    } else if (pendingAction === 'remove') {
+    } else if (pendingAction === "remove") {
       onRemoveFriend(player.player_id, password);
     }
     setPendingAction(null);
     onClose();
   };
-  return <>
+  return (
+    <>
       <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 border-2 border-orange-500/30 text-white w-[95vw] max-w-7xl h-[90vh] flex flex-col p-0 overflow-hidden shadow-2xl shadow-orange-500/20 rounded-2xl">
           <DialogHeader className="sr-only">
             <DialogTitle>Profil jucător</DialogTitle>
-            <DialogDescription>Detalii despre jucător și meciuri recente</DialogDescription>
+            <DialogDescription>
+              Detalii despre jucător și meciuri recente
+            </DialogDescription>
           </DialogHeader>
-          
-          
+
           <div className="flex-1 overflow-y-auto px-3 sm:px-4 md:px-6 pb-6 scrollbar-hide">
             <div className="space-y-4 sm:space-y-6 py-4">
-              <PlayerHeader player={enhancedPlayer || player} isFriend={isFriend} />
+              <PlayerHeader
+                player={enhancedPlayer || player}
+                isFriend={isFriend}
+              />
               <PlayerStatsCards player={player} />
-              <MatchesTable player={player} matches={matches} matchesStats={matchesStats} loadingMatches={loadingMatches} />
-              
-              
+              <MatchesTable
+                player={player}
+                matches={matches}
+                matchesStats={matchesStats}
+                loadingMatches={loadingMatches}
+              />
+
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row justify-center gap-3 pt-4">
-                
                 {/* Friend Action Button */}
-                <Button onClick={handleFriendAction} className={`px-4 sm:px-6 py-3 font-medium text-sm sm:text-base w-full sm:w-auto ${isFriend ? 'bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700' : 'bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600'} text-white border-0 rounded-xl shadow-lg transition-all duration-200 transform hover:scale-105`}>
-                  {isFriend ? <>
+                <Button
+                  onClick={handleFriendAction}
+                  className={`px-4 sm:px-6 py-3 font-medium text-sm sm:text-base w-full sm:w-auto ${isFriend ? "bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700" : "bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"} text-white border-0 rounded-xl shadow-lg transition-all duration-200 transform hover:scale-105`}
+                >
+                  {isFriend ? (
+                    <>
                       <UserMinus size={16} className="mr-2" />
                       Șterge din Prieteni
-                    </> : <>
+                    </>
+                  ) : (
+                    <>
                       <UserPlus size={16} className="mr-2" />
                       Adaugă la Prieteni
-                    </>}
+                    </>
+                  )}
                 </Button>
               </div>
             </div>
@@ -197,9 +234,20 @@ export const PlayerModal = ({
         </DialogContent>
       </Dialog>
 
-      <PasswordDialog isOpen={showPasswordDialog} onClose={() => {
-      setShowPasswordDialog(false);
-      setPendingAction(null);
-    }} onConfirm={confirmAction} title={pendingAction === 'add' ? 'Adaugă Prieten' : 'Șterge Prieten'} description={pendingAction === 'add' ? `Introdu parola pentru a adăuga ${player.nickname} în lista de prieteni.` : `Introdu parola pentru a șterge ${player.nickname} din lista de prieteni.`} />
-    </>;
+      <PasswordDialog
+        isOpen={showPasswordDialog}
+        onClose={() => {
+          setShowPasswordDialog(false);
+          setPendingAction(null);
+        }}
+        onConfirm={confirmAction}
+        title={pendingAction === "add" ? "Adaugă Prieten" : "Șterge Prieten"}
+        description={
+          pendingAction === "add"
+            ? `Introdu parola pentru a adăuga ${player.nickname} în lista de prieteni.`
+            : `Introdu parola pentru a șterge ${player.nickname} din lista de prieteni.`
+        }
+      />
+    </>
+  );
 };

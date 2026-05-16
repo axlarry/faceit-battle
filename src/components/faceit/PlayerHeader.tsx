@@ -1,4 +1,3 @@
-
 import { useMemo } from "react";
 import { Player } from "@/types/Player";
 import { useLcryptApi } from "@/hooks/useLcryptApi";
@@ -11,7 +10,10 @@ interface PlayerHeaderProps {
   isFriend?: boolean;
 }
 
-export const PlayerHeader = ({ player, isFriend = false }: PlayerHeaderProps) => {
+export const PlayerHeader = ({
+  player,
+  isFriend = false,
+}: PlayerHeaderProps) => {
   const { data: lcryptData } = useLcryptApi(player.nickname, player.player_id);
 
   // Proxy images for Discord Activity
@@ -28,7 +30,7 @@ export const PlayerHeader = ({ player, isFriend = false }: PlayerHeaderProps) =>
       {/* Background Cover Image */}
       {proxiedCoverImage && (
         <>
-          <div 
+          <div
             className="absolute inset-0 bg-cover bg-center bg-no-repeat"
             style={{
               backgroundImage: `url(${proxiedCoverImage})`,
@@ -38,7 +40,7 @@ export const PlayerHeader = ({ player, isFriend = false }: PlayerHeaderProps) =>
           <div className="absolute inset-0 bg-black/75" />
         </>
       )}
-      
+
       {/* Content - positioned above background */}
       <div className="relative z-10 p-6">
         <img
@@ -50,10 +52,12 @@ export const PlayerHeader = ({ player, isFriend = false }: PlayerHeaderProps) =>
         <div>
           <h2 className="text-3xl font-bold text-white">{player.nickname}</h2>
           {player.position && (
-            <p className="text-orange-400 font-medium text-lg">#{player.position} în clasament</p>
+            <p className="text-orange-400 font-medium text-lg">
+              #{player.position} în clasament
+            </p>
           )}
         </div>
-        
+
         {/* Modern Enhanced Cards */}
         {isFriend ? (
           <div className="grid grid-cols-2 gap-6">
@@ -64,13 +68,17 @@ export const PlayerHeader = ({ player, isFriend = false }: PlayerHeaderProps) =>
           <div className="grid grid-cols-2 gap-4">
             {/* Basic Level Card for non-friends */}
             <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 text-center border border-white/20">
-              <div className="text-3xl font-bold text-orange-400 mb-2">{player.level}</div>
+              <div className="text-3xl font-bold text-orange-400 mb-2">
+                {player.level}
+              </div>
               <div className="text-gray-400 text-base">Skill Level</div>
             </div>
-            
+
             {/* Basic ELO Card for non-friends */}
             <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 text-center border border-white/20">
-              <div className="text-3xl font-bold text-blue-400 mb-2">{player.elo}</div>
+              <div className="text-3xl font-bold text-blue-400 mb-2">
+                {player.elo}
+              </div>
               <div className="text-gray-400 text-base">ELO Points</div>
             </div>
           </div>

@@ -1,20 +1,19 @@
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect } from "react";
 import { useFaceitApi } from "@/hooks/useFaceitApi";
 
 // Convert Steam ID to Steam ID64
 const convertSteamIdToSteamId64 = (steamId: string): string => {
   const steamIdMatch = steamId.match(/^STEAM_[0-5]:([01]):(\d+)$/);
-  
+
   if (!steamIdMatch) {
     return steamId;
   }
-  
+
   const y = parseInt(steamIdMatch[1]);
   const z = parseInt(steamIdMatch[2]);
-  
+
   const steamId64 = 76561197960265728n + BigInt(z * 2) + BigInt(y);
-  
+
   return steamId64.toString();
 };
 
@@ -34,7 +33,7 @@ export const useSteamIdConverter = (playerId: string) => {
           setSteamId64(steamId64Converted);
         }
       } catch (error) {
-        console.error('Error fetching Steam ID:', error);
+        console.error("Error fetching Steam ID:", error);
       }
     };
 

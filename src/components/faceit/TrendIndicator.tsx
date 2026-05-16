@@ -1,4 +1,4 @@
-import React from 'react';
+import React from "react";
 
 interface TrendIndicatorProps {
   trend?: string;
@@ -6,50 +6,52 @@ interface TrendIndicatorProps {
 }
 
 const getTrendFromReport = (report?: string): string => {
-  if (!report) return '';
-  
+  if (!report) return "";
+
   // Parse raportul lcrypt pentru a extrage rezultatele
-  const matches = report.split(', ');
+  const matches = report.split(", ");
   const results: string[] = [];
-  
-  matches.forEach(match => {
+
+  matches.forEach((match) => {
     // Parse format: "WIN 13:10 Mirage (+30)" or "LOSE 13:3 Dust II (-14)"
     const regex = /(WIN|LOSE)\s+/;
     const matchResult = match.match(regex);
-    
+
     if (matchResult) {
       const result = matchResult[1];
-      results.push(result === 'WIN' ? 'W' : 'L');
+      results.push(result === "WIN" ? "W" : "L");
     }
   });
-  
+
   // Returnează ultimele 5 rezultate (sau toate dacă sunt mai puține)
-  return results.slice(-5).join('');
+  return results.slice(-5).join("");
 };
 
-export const TrendIndicator = React.memo(({ trend, report }: TrendIndicatorProps) => {
-  // Folosește trendul din datele reale dacă este disponibil raportul
-  const actualTrend = report ? getTrendFromReport(report) : trend;
-  
-  if (!actualTrend) return null;
+export const TrendIndicator = React.memo(
+  ({ trend, report }: TrendIndicatorProps) => {
+    // Folosește trendul din datele reale dacă este disponibil raportul
+    const actualTrend = report ? getTrendFromReport(report) : trend;
 
-  // Inversează ordinea pentru a afișa de la cel mai vechi la cel mai recent
-  const reversedTrend = actualTrend.split('').reverse().join('');
+    if (!actualTrend) return null;
 
-  return (
-    <div className="flex items-center gap-0.5">
-      {reversedTrend.split('').map((letter, index) => (
-        <span
-          key={index}
-          className={`font-bold text-xs ${
-            letter.toLowerCase() === 'w' ? 'text-green-400' : 'text-red-400'
-          }`}
-        >
-          {letter}
-        </span>
-      ))}
-    </div>
-  );
-});
+    // Inversează ordinea pentru a afișa de la cel mai vechi la cel mai recent
+    const reversedTrend = actualTrend.split("").reverse().join("");
 
-TrendIndicator.displayName = 'TrendIndicator';
+    return (
+      <div className="flex items-center gap-0.5">
+        {reversedTrend.split("").map((letter, index) => (
+          <span
+            key={index}
+            className={`font-bold text-xs ${
+              letter.toLowerCase() === "w" ? "text-green-400" : "text-red-400"
+            }`}
+          >
+            {letter}
+          </span>
+        ))}
+      </div>
+    );
+  },
+);
+
+TrendIndicator.displayName = "TrendIndicator";

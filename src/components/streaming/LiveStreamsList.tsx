@@ -1,9 +1,8 @@
-
-import React from 'react';
-import { Radio, WifiOff } from 'lucide-react';
-import { LiveStreamCard } from './LiveStreamCard';
-import { LiveStream } from '@/types/streaming';
-import { Player } from '@/types/Player';
+import React from "react";
+import { Radio, WifiOff } from "lucide-react";
+import { LiveStreamCard } from "./LiveStreamCard";
+import { LiveStream } from "@/types/streaming";
+import { Player } from "@/types/Player";
 
 interface LiveStreamsListProps {
   liveStreams: LiveStream[];
@@ -12,14 +11,14 @@ interface LiveStreamsListProps {
   onWatch: (stream: LiveStream) => void;
 }
 
-export const LiveStreamsList = ({ 
-  liveStreams, 
-  offlineStreams, 
+export const LiveStreamsList = ({
+  liveStreams,
+  offlineStreams,
   friends,
-  onWatch 
+  onWatch,
 }: LiveStreamsListProps) => {
-  const getFriend = (nickname: string) => 
-    friends.find(f => f.nickname.toLowerCase() === nickname.toLowerCase());
+  const getFriend = (nickname: string) =>
+    friends.find((f) => f.nickname.toLowerCase() === nickname.toLowerCase());
 
   return (
     <div className="space-y-6">
@@ -27,9 +26,7 @@ export const LiveStreamsList = ({
       <div>
         <div className="flex items-center gap-2 mb-4">
           <Radio className="text-red-500" size={20} />
-          <h2 className="text-lg font-bold text-foreground">
-            Live Now
-          </h2>
+          <h2 className="text-lg font-bold text-foreground">Live Now</h2>
           {liveStreams.length > 0 && (
             <span className="px-2 py-0.5 bg-red-500/20 text-red-400 text-sm font-bold rounded-full">
               {liveStreams.length}
@@ -53,7 +50,9 @@ export const LiveStreamsList = ({
             <div className="w-16 h-16 rounded-full bg-muted/30 flex items-center justify-center mb-4">
               <Radio className="text-muted-foreground" size={32} />
             </div>
-            <p className="text-muted-foreground text-lg">No friends are streaming right now</p>
+            <p className="text-muted-foreground text-lg">
+              No friends are streaming right now
+            </p>
             <p className="text-muted-foreground/60 text-sm mt-1">
               When a friend starts streaming, they'll appear here
             </p>

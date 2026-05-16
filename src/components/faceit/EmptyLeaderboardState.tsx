@@ -1,9 +1,10 @@
-
 interface EmptyLeaderboardStateProps {
   loading: boolean;
 }
 
-export const EmptyLeaderboardState = ({ loading }: EmptyLeaderboardStateProps) => {
+export const EmptyLeaderboardState = ({
+  loading,
+}: EmptyLeaderboardStateProps) => {
   if (loading) {
     return (
       <div className="text-center py-8">
@@ -14,7 +15,9 @@ export const EmptyLeaderboardState = ({ loading }: EmptyLeaderboardStateProps) =
 
   return (
     <div className="text-center py-8">
-      <div className="text-gray-400">Nu s-au găsit jucători pentru această regiune.</div>
+      <div className="text-gray-400">
+        Nu s-au găsit jucători pentru această regiune.
+      </div>
     </div>
   );
 };

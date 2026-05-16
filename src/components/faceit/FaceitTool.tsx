@@ -4,7 +4,14 @@ import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Player } from "@/types/Player";
-import { Search, User, Trophy, Sword, Crosshair, BarChart2 } from "lucide-react";
+import {
+  Search,
+  User,
+  Trophy,
+  Sword,
+  Crosshair,
+  BarChart2,
+} from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { PasswordDialog } from "./PasswordDialog";
 import { useFaceitApi } from "@/hooks/useFaceitApi";
@@ -14,20 +21,23 @@ interface FaceitToolProps {
   onAddFriend: (player: Player, password: string) => void;
 }
 
-const PROXY_SERVER = 'https://lacurte.ro:3000';
+const PROXY_SERVER = "https://lacurte.ro:3000";
 
 interface StatsData {
   lifetime?: {
     Wins?: string;
     Matches?: string;
-    'Average Headshots %'?: string;
-    'Average K/D Ratio'?: string;
+    "Average Headshots %"?: string;
+    "Average K/D Ratio"?: string;
   };
 }
 
-export const FaceitTool = ({ onShowPlayerDetails, onAddFriend }: FaceitToolProps) => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [searchType, setSearchType] = useState<'steam' | 'nickname'>('steam');
+export const FaceitTool = ({
+  onShowPlayerDetails,
+  onAddFriend,
+}: FaceitToolProps) => {
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchType, setSearchType] = useState<"steam" | "nickname">("steam");
   const [loading, setLoading] = useState(false);
   const [playerData, setPlayerData] = useState<Player | null>(null);
   const [apiError, setApiError] = useState<string | null>(null);
@@ -44,7 +54,7 @@ export const FaceitTool = ({ onShowPlayerDetails, onAddFriend }: FaceitToolProps
     input = input.trim();
 
     // Dacă este URL de tip steamcommunity.com/profiles/STEAMID64
-    if (input.includes('steamcommunity.com/profiles/')) {
+    if (input.includes("steamcommunity.com/profiles/")) {
       const match = input.match(/steamcommunity\.com\/profiles\/(\d+)/);
       if (match && match[1]) {
         return match[1]; // Returnăm direct SteamID64
@@ -52,7 +62,7 @@ export const FaceitTool = ({ onShowPlayerDetails, onAddFriend }: FaceitToolProps
     }
 
     // Dacă este URL de tip steamcommunity.com/id/username
-    if (input.includes('steamcommunity.com/id/')) {
+    if (input.includes("steamcommunity.com/id/")) {
       const match = input.match(/steamcommunity\.com\/id\/([^\/]+)/);
       return match ? match[1] : input;
     }
@@ -79,12 +89,14 @@ export const FaceitTool = ({ onShowPlayerDetails, onAddFriend }: FaceitToolProps
 
       // Altfel facem request către proxy pentru a obține SteamID64
       const response = await fetch(
-        `${PROXY_SERVER}/api/steamid?vanityurl=${extracted}`
+        `${PROXY_SERVER}/api/steamid?vanityurl=${extracted}`,
       );
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Eroare la conexiunea cu serverul proxy');
+        throw new Error(
+          errorData.error || "Eroare la conexiunea cu serverul proxy",
+        );
       }
 
       const data = await response.json();
@@ -94,12 +106,12 @@ export const FaceitTool = ({ onShowPlayerDetails, onAddFriend }: FaceitToolProps
       }
 
       if (!data.steamid) {
-        throw new Error('Profil Steam nu a fost găsit');
+        throw new Error("Profil Steam nu a fost găsit");
       }
 
       return data.steamid;
     } catch (error) {
-      let errorMessage = 'Eroare la obținerea SteamID';
+      let errorMessage = "Eroare la obținerea SteamID";
       if (error instanceof Error) {
         errorMessage += `: ${error.message}`;
       }
@@ -109,32 +121,35 @@ export const FaceitTool = ({ onShowPlayerDetails, onAddFriend }: FaceitToolProps
 
   const getUserFriendlyErrorMessage = (error: any): string => {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    
+
     // Verificăm dacă eroarea conține "API Error:"
-    if (errorMessage.includes('API Error:')) {
-      if (errorMessage.includes('not found') || errorMessage.includes('404')) {
-        return 'Jucătorul nu a fost găsit pe FACEIT. Verifică dacă numele sau ID-ul sunt corecte.';
+    if (errorMessage.includes("API Error:")) {
+      if (errorMessage.includes("not found") || errorMessage.includes("404")) {
+        return "Jucătorul nu a fost găsit pe FACEIT. Verifică dacă numele sau ID-ul sunt corecte.";
       }
-      if (errorMessage.includes('403') || errorMessage.includes('unauthorized')) {
-        return 'Acces neautorizat la API. Te rog contactează administratorul.';
+      if (
+        errorMessage.includes("403") ||
+        errorMessage.includes("unauthorized")
+      ) {
+        return "Acces neautorizat la API. Te rog contactează administratorul.";
       }
-      if (errorMessage.includes('500')) {
-        return 'Problemă temporară cu serverul FACEIT. Te rog încearcă din nou peste câteva minute.';
+      if (errorMessage.includes("500")) {
+        return "Problemă temporară cu serverul FACEIT. Te rog încearcă din nou peste câteva minute.";
       }
-      if (errorMessage.includes('rate limit') || errorMessage.includes('429')) {
-        return 'Prea multe cereri. Te rog așteaptă câteva secunde și încearcă din nou.';
+      if (errorMessage.includes("rate limit") || errorMessage.includes("429")) {
+        return "Prea multe cereri. Te rog așteaptă câteva secunde și încearcă din nou.";
       }
       // Pentru alte tipuri de API Error, returnăm un mesaj generic
-      return 'Nu s-au găsit rezultate pentru căutarea ta. Verifică dacă datele introduse sunt corecte.';
+      return "Nu s-au găsit rezultate pentru căutarea ta. Verifică dacă datele introduse sunt corecte.";
     }
-    
+
     // Pentru alte tipuri de erori, returnăm mesajul original
     return errorMessage;
   };
 
   const searchPlayer = async () => {
     if (!searchTerm.trim()) {
-      setApiError('Te rog introdu un termen de căutare');
+      setApiError("Te rog introdu un termen de căutare");
       return;
     }
 
@@ -145,32 +160,47 @@ export const FaceitTool = ({ onShowPlayerDetails, onAddFriend }: FaceitToolProps
     try {
       let playerInfo;
 
-      if (searchType === 'steam') {
+      if (searchType === "steam") {
         // Folosim SteamID64 direct dacă este valid
         if (isValidSteamID64(searchTerm)) {
-          playerInfo = await makeApiCall(`/players?game=cs2&game_player_id=${searchTerm}`);
+          playerInfo = await makeApiCall(
+            `/players?game=cs2&game_player_id=${searchTerm}`,
+          );
         } else {
           // Altfel încercăm să obținem SteamID64 din vanity URL sau profile URL
           const steamID64 = await getSteamID64(searchTerm);
-          playerInfo = await makeApiCall(`/players?game=cs2&game_player_id=${steamID64}`);
+          playerInfo = await makeApiCall(
+            `/players?game=cs2&game_player_id=${steamID64}`,
+          );
         }
       } else {
         // Căutare după nickname FACEIT
-        playerInfo = await makeApiCall(`/players?nickname=${encodeURIComponent(searchTerm.trim())}`);
+        playerInfo = await makeApiCall(
+          `/players?nickname=${encodeURIComponent(searchTerm.trim())}`,
+        );
       }
 
-      const statsData = await makeApiCall(`/players/${playerInfo.player_id}/stats/cs2`);
+      const statsData = await makeApiCall(
+        `/players/${playerInfo.player_id}/stats/cs2`,
+      );
 
       const player: Player = {
         player_id: playerInfo.player_id,
         nickname: playerInfo.nickname,
-        avatar: playerInfo.avatar || '/placeholder.svg',
+        avatar: playerInfo.avatar || "/placeholder.svg",
         level: playerInfo.games?.cs2?.skill_level || 0,
         elo: playerInfo.games?.cs2?.faceit_elo || 0,
-        wins: parseInt(statsData.lifetime?.Wins || '0') || 0,
-        winRate: Math.round((parseInt(statsData.lifetime?.Wins || '0') / parseInt(statsData.lifetime?.Matches || '1')) * 100) || 0,
-        hsRate: parseFloat(statsData.lifetime?.['Average Headshots %'] || '0') || 0,
-        kdRatio: parseFloat(statsData.lifetime?.['Average K/D Ratio'] || '0') || 0,
+        wins: parseInt(statsData.lifetime?.Wins || "0") || 0,
+        winRate:
+          Math.round(
+            (parseInt(statsData.lifetime?.Wins || "0") /
+              parseInt(statsData.lifetime?.Matches || "1")) *
+              100,
+          ) || 0,
+        hsRate:
+          parseFloat(statsData.lifetime?.["Average Headshots %"] || "0") || 0,
+        kdRatio:
+          parseFloat(statsData.lifetime?.["Average K/D Ratio"] || "0") || 0,
       };
 
       setPlayerData(player);
@@ -189,11 +219,11 @@ export const FaceitTool = ({ onShowPlayerDetails, onAddFriend }: FaceitToolProps
   };
 
   const getLevelColor = (level: number) => {
-    if (level >= 9) return 'from-red-500 to-red-600';
-    if (level >= 7) return 'from-purple-500 to-purple-600';
-    if (level >= 5) return 'from-blue-500 to-blue-600';
-    if (level >= 3) return 'from-green-500 to-green-600';
-    return 'from-gray-500 to-gray-600';
+    if (level >= 9) return "from-red-500 to-red-600";
+    if (level >= 7) return "from-purple-500 to-purple-600";
+    if (level >= 5) return "from-blue-500 to-blue-600";
+    if (level >= 3) return "from-green-500 to-green-600";
+    return "from-gray-500 to-gray-600";
   };
 
   const handleAddFriend = (player: Player) => {
@@ -226,31 +256,43 @@ export const FaceitTool = ({ onShowPlayerDetails, onAddFriend }: FaceitToolProps
                   <div className="w-2 h-2 rounded-full bg-red-400"></div>
                 </div>
                 <div className="flex-1">
-                  <h4 className="text-red-400 font-medium mb-1">Căutare nereușită</h4>
-                  <p className="text-red-300 text-sm leading-relaxed">{apiError}</p>
+                  <h4 className="text-red-400 font-medium mb-1">
+                    Căutare nereușită
+                  </h4>
+                  <p className="text-red-300 text-sm leading-relaxed">
+                    {apiError}
+                  </p>
                 </div>
               </div>
             </div>
           )}
 
           <div className="flex items-center justify-center gap-3 mb-4">
-            <span className={`text-sm font-medium ${searchType === 'nickname' ? 'text-orange-400' : 'text-gray-400'}`}>
+            <span
+              className={`text-sm font-medium ${searchType === "nickname" ? "text-orange-400" : "text-gray-400"}`}
+            >
               FACEIT ID
             </span>
 
             <button
               onClick={() => {
-                setSearchType(searchType === 'nickname' ? 'steam' : 'nickname');
+                setSearchType(searchType === "nickname" ? "steam" : "nickname");
                 setApiError(null);
               }}
               className="relative inline-flex items-center h-7 rounded-full w-14 bg-gray-800 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-orange-500 border border-gray-700"
             >
-              <span className={`absolute flex items-center justify-center w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-300 ${
-                searchType === 'steam' ? 'translate-x-7 bg-gradient-to-br from-orange-500 to-amber-500' : 'translate-x-1 bg-gradient-to-br from-gray-500 to-gray-600'
-              }`}></span>
+              <span
+                className={`absolute flex items-center justify-center w-5 h-5 bg-white rounded-full shadow-md transform transition-transform duration-300 ${
+                  searchType === "steam"
+                    ? "translate-x-7 bg-gradient-to-br from-orange-500 to-amber-500"
+                    : "translate-x-1 bg-gradient-to-br from-gray-500 to-gray-600"
+                }`}
+              ></span>
             </button>
 
-            <span className={`text-sm font-medium ${searchType === 'steam' ? 'text-amber-400' : 'text-gray-400'}`}>
+            <span
+              className={`text-sm font-medium ${searchType === "steam" ? "text-amber-400" : "text-gray-400"}`}
+            >
               STEAM ID/URL
             </span>
           </div>
@@ -258,7 +300,7 @@ export const FaceitTool = ({ onShowPlayerDetails, onAddFriend }: FaceitToolProps
           <div className="flex gap-3">
             <Input
               placeholder={
-                searchType === 'steam'
+                searchType === "steam"
                   ? "Introdu Steam URL, ID sau SteamID64 (ex: donk666, https://steamcommunity.com/id/donk666/ sau 76561197960287930)"
                   : "Introdu FACEIT Nickname"
               }
@@ -267,7 +309,7 @@ export const FaceitTool = ({ onShowPlayerDetails, onAddFriend }: FaceitToolProps
                 setSearchTerm(e.target.value);
                 setApiError(null);
               }}
-              onKeyPress={(e) => e.key === 'Enter' && searchPlayer()}
+              onKeyPress={(e) => e.key === "Enter" && searchPlayer()}
               className="bg-white/10 border-orange-400/30 text-white placeholder:text-gray-400 focus:border-orange-400"
             />
             <Button
@@ -275,7 +317,7 @@ export const FaceitTool = ({ onShowPlayerDetails, onAddFriend }: FaceitToolProps
               disabled={loading || !searchTerm.trim()}
               className="bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white border-0 px-8"
             >
-              {loading ? 'Caută...' : 'Caută'}
+              {loading ? "Caută..." : "Caută"}
               <Search className="ml-2 h-4 w-4" />
             </Button>
           </div>
@@ -309,17 +351,23 @@ export const FaceitTool = ({ onShowPlayerDetails, onAddFriend }: FaceitToolProps
                     loading="lazy"
                     className="w-12 h-12 rounded-full border-2 border-orange-400"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src = '/placeholder.svg';
+                      (e.target as HTMLImageElement).src = "/placeholder.svg";
                     }}
                   />
 
                   <div>
-                    <h3 className="text-lg font-semibold text-white">{playerData.nickname}</h3>
+                    <h3 className="text-lg font-semibold text-white">
+                      {playerData.nickname}
+                    </h3>
                     <div className="flex items-center gap-2 mt-1">
-                      <Badge className={`bg-gradient-to-r ${getLevelColor(playerData.level || 0)} text-white border-0`}>
+                      <Badge
+                        className={`bg-gradient-to-r ${getLevelColor(playerData.level || 0)} text-white border-0`}
+                      >
                         Nivel {playerData.level}
                       </Badge>
-                      <span className="text-orange-400 font-medium">{playerData.elo} ELO</span>
+                      <span className="text-orange-400 font-medium">
+                        {playerData.elo} ELO
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -329,28 +377,36 @@ export const FaceitTool = ({ onShowPlayerDetails, onAddFriend }: FaceitToolProps
                     <div className="flex items-center gap-1 mb-1 text-orange-400">
                       <Trophy size={14} />
                     </div>
-                    <div className="text-white font-medium">{playerData.wins}</div>
+                    <div className="text-white font-medium">
+                      {playerData.wins}
+                    </div>
                     <div className="text-gray-400">Victorii</div>
                   </div>
                   <div className="text-center">
                     <div className="flex items-center gap-1 mb-1 text-orange-400">
                       <BarChart2 size={14} />
                     </div>
-                    <div className="text-white font-medium">{playerData.winRate}%</div>
+                    <div className="text-white font-medium">
+                      {playerData.winRate}%
+                    </div>
                     <div className="text-gray-400">Win Rate</div>
                   </div>
                   <div className="text-center">
                     <div className="flex items-center gap-1 mb-1 text-orange-400">
                       <Crosshair size={14} />
                     </div>
-                    <div className="text-white font-medium">{playerData.hsRate}%</div>
+                    <div className="text-white font-medium">
+                      {playerData.hsRate}%
+                    </div>
                     <div className="text-gray-400">HS%</div>
                   </div>
                   <div className="text-center">
                     <div className="flex items-center gap-1 mb-1 text-orange-400">
                       <Sword size={14} />
                     </div>
-                    <div className="text-white font-medium">{playerData.kdRatio}</div>
+                    <div className="text-white font-medium">
+                      {playerData.kdRatio}
+                    </div>
                     <div className="text-gray-400">K/D</div>
                   </div>
 
