@@ -256,9 +256,10 @@ export class EnrichedPlayerService {
     }
 
     // ── Step 3: Process FaceitAnalyser segments ───────────────────────────
-    // Use local timezone for date matching (not UTC)
-    const now = new Date();
-    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    // Use timestamp-based comparison (last 24 hours) to avoid timezone issues
+    // between server UTC and browser local time
+    const nowMs = Date.now();
+    const oneDayAgoMs = nowMs - 24 * 60 * 60 * 1000;
 
     let eloWin = 0;
     let eloLose = 0;
@@ -268,15 +269,13 @@ export class EnrichedPlayerService {
     let todayMatches: any[] = [];
 
     if (faSegments.length > 0) {
-      // Filter today's matches — handle both UTC ISO and local date formats
+      // Filter today's matches — use timestamp comparison (last 24 hours)
       todayMatches = faSegments.filter((s: any) => {
         const matchDate = s.date || s.created_at || "";
         if (!matchDate) return false;
-        // Parse the match date and compare using local timezone
-        const matchDateObj = new Date(matchDate);
-        if (isNaN(matchDateObj.getTime())) return false;
-        const matchLocalStr = `${matchDateObj.getFullYear()}-${String(matchDateObj.getMonth() + 1).padStart(2, "0")}-${String(matchDateObj.getDate()).padStart(2, "0")}`;
-        return matchLocalStr === todayStr;
+        const matchMs = new Date(matchDate).getTime();
+        if (isNaN(matchMs)) return false;
+        return matchMs >= oneDayAgoMs && matchMs <= nowMs + 60 * 60 * 1000; // allow 1hr future
       });
       todayMatchCount = todayMatches.length;
 
