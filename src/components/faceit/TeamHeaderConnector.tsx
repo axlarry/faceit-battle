@@ -22,7 +22,9 @@ export const TeamHeaderConnector: React.FC<TeamHeaderConnectorProps> = ({
     const el = ref.current;
     if (!el) return;
 
-    const avatars = Array.from(el.querySelectorAll<HTMLElement>("[data-team-avatar]"));
+    const avatars = Array.from(
+      el.querySelectorAll<HTMLElement>("[data-team-avatar]"),
+    );
     if (avatars.length < 2) {
       setPath(null);
       return;
@@ -44,7 +46,7 @@ export const TeamHeaderConnector: React.FC<TeamHeaderConnectorProps> = ({
 
     const h = height; // SVG height
     const startY = h; // start at bottom of SVG
-    const endY = h;   // end at bottom of SVG
+    const endY = h; // end at bottom of SVG
     const topY = 2; // top of the rectangle
 
     // Create a rectangular path connecting all avatars
@@ -85,9 +87,9 @@ export const TeamHeaderConnector: React.FC<TeamHeaderConnectorProps> = ({
             d={path}
             fill="none"
             // Use semantic design token color with subtle glow for visibility
-            style={{ 
+            style={{
               stroke: `hsl(var(${strokeColorVar}))`,
-              filter: 'drop-shadow(0 1px 0.5px rgba(0,0,0,0.4))'
+              filter: "drop-shadow(0 1px 0.5px rgba(0,0,0,0.4))",
             }}
             strokeWidth={strokeWidth}
             strokeLinecap="round"

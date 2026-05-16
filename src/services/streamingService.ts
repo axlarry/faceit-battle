@@ -1,6 +1,5 @@
-
-import { StreamsResponse, LiveStream } from '@/types/streaming';
-import { getLacurteBaseUrl, isDiscordActivity } from '@/lib/discordProxy';
+import { StreamsResponse, LiveStream } from "@/types/streaming";
+import { getLacurteBaseUrl, isDiscordActivity } from "@/lib/discordProxy";
 
 interface StreamData {
   originalName: string;
@@ -25,9 +24,12 @@ class StreamingService {
 
   async getActiveStreams(): Promise<Record<string, StreamData>> {
     const now = Date.now();
-    
+
     // Return cached data if fresh
-    if (now - this.lastFetch < this.CACHE_DURATION && this.cachedStreams.size > 0) {
+    if (
+      now - this.lastFetch < this.CACHE_DURATION &&
+      this.cachedStreams.size > 0
+    ) {
       return Object.fromEntries(this.cachedStreams);
     }
 
@@ -40,9 +42,9 @@ class StreamingService {
 
     try {
       const response = await fetch(apiUrl, {
-        method: 'GET',
+        method: "GET",
         headers: {
-          'Accept': 'application/json',
+          Accept: "application/json",
         },
       });
 
@@ -50,18 +52,18 @@ class StreamingService {
         this.lastError = now;
         return Object.fromEntries(this.cachedStreams);
       }
-      
+
       this.lastError = 0; // Clear error state on success
 
       const data: StreamsResponse = await response.json();
 
       this.cachedStreams.clear();
-      
+
       if (data.items && Array.isArray(data.items)) {
         data.items.forEach((item) => {
           // Extract stream name from path (e.g., "live/Suzeta" -> "Suzeta")
-          if (item.name.startsWith('live/') && item.ready) {
-            const streamName = item.name.replace('live/', '');
+          if (item.name.startsWith("live/") && item.ready) {
+            const streamName = item.name.replace("live/", "");
             // Store: key=lowercase, value=StreamData with original name and viewer count
             this.cachedStreams.set(streamName.toLowerCase(), {
               originalName: streamName,
@@ -70,7 +72,7 @@ class StreamingService {
           }
         });
       }
-      
+
       this.lastFetch = now;
       return Object.fromEntries(this.cachedStreams);
     } catch (error) {
@@ -93,15 +95,17 @@ class StreamingService {
   async getLiveStreamsForFriends(nicknames: string[]): Promise<LiveStream[]> {
     const activeStreams = await this.getActiveStreams();
     const hlsBase = this.getHlsBase();
-    
-    return nicknames.map(nickname => {
+
+    return nicknames.map((nickname) => {
       const streamData = activeStreams[nickname.toLowerCase()];
       const isLive = !!streamData;
-      
+
       return {
         nickname,
         isLive,
-        streamUrl: isLive ? `${hlsBase}/live/${streamData.originalName}/index.m3u8` : undefined,
+        streamUrl: isLive
+          ? `${hlsBase}/live/${streamData.originalName}/index.m3u8`
+          : undefined,
         viewers: streamData?.viewers || 0,
       };
     });

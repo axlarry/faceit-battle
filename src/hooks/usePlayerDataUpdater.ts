@@ -1,17 +1,18 @@
-
-import { Player } from '@/types/Player';
-import { useFaceitApi } from '@/hooks/useFaceitApi';
+import { Player } from "@/types/Player";
+import { useFaceitApi } from "@/hooks/useFaceitApi";
 
 export const usePlayerDataUpdater = () => {
   const { makeApiCall } = useFaceitApi();
 
   const updatePlayerData = async (player: Player): Promise<Player | null> => {
     try {
-      console.log(`Updating player data for ${player.nickname} (ID: ${player.player_id})`);
-      
+      console.log(
+        `Updating player data for ${player.nickname} (ID: ${player.player_id})`,
+      );
+
       // Get player basic data using the Supabase API
       const playerData = await makeApiCall(`/players/${player.player_id}`);
-      
+
       // Get additional stats
       let statsData: any = {};
       try {
@@ -27,9 +28,22 @@ export const usePlayerDataUpdater = () => {
         level: playerData.games?.cs2?.skill_level || player.level || 0,
         elo: playerData.games?.cs2?.faceit_elo || player.elo || 0,
         wins: parseInt(statsData.lifetime?.Wins) || player.wins || 0,
-        winRate: Math.round((parseInt(statsData.lifetime?.Wins) / parseInt(statsData.lifetime?.Matches)) * 100) || player.winRate || 0,
-        hsRate: parseFloat(statsData.lifetime?.['Average Headshots %']) || player.hsRate || 0,
-        kdRatio: parseFloat(statsData.lifetime?.['Average K/D Ratio']) || player.kdRatio || 0,
+        winRate:
+          Math.round(
+            (parseInt(statsData.lifetime?.Wins) /
+              parseInt(statsData.lifetime?.Matches)) *
+              100,
+          ) ||
+          player.winRate ||
+          0,
+        hsRate:
+          parseFloat(statsData.lifetime?.["Average Headshots %"]) ||
+          player.hsRate ||
+          0,
+        kdRatio:
+          parseFloat(statsData.lifetime?.["Average K/D Ratio"]) ||
+          player.kdRatio ||
+          0,
       };
 
       console.log(`Successfully updated ${player.nickname}`, updatedPlayer);

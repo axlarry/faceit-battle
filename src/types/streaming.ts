@@ -1,4 +1,3 @@
-
 export interface StreamInfo {
   name: string;
   ready: boolean;

@@ -1,4 +1,3 @@
-
 ## Fix: 401 Errors and lcrypt Data Display
 
 ### Problem Analysis

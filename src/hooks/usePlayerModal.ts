@@ -1,6 +1,5 @@
-
-import { useState } from 'react';
-import { Player } from '@/types/Player';
+import { useState } from "react";
+import { Player } from "@/types/Player";
 
 export const usePlayerModal = () => {
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
@@ -20,6 +19,6 @@ export const usePlayerModal = () => {
     selectedPlayer,
     showModal,
     showPlayerDetails,
-    closeModal
+    closeModal,
   };
 };

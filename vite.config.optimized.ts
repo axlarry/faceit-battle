@@ -10,10 +10,9 @@ export default defineConfig(({ mode }) => ({
     host: "::",
     port: 8080,
   },
-  plugins: [
-    react(),
-    mode === 'development' && componentTagger(),
-  ].filter(Boolean),
+  plugins: [react(), mode === "development" && componentTagger()].filter(
+    Boolean,
+  ),
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
@@ -25,55 +24,59 @@ export default defineConfig(({ mode }) => ({
       output: {
         manualChunks: {
           // Vendor chunks
-          'react-vendor': ['react', 'react-dom', 'react-router-dom'],
-          'ui-vendor': ['lucide-react', '@radix-ui/react-dialog', '@radix-ui/react-popover'],
-          'api-vendor': ['@supabase/supabase-js', '@tanstack/react-query'],
-          
-          // Feature chunks
-          'faceit-components': [
-            './src/components/faceit/FriendsList',
-            './src/components/faceit/FriendsSection', 
-            './src/components/faceit/PlayerModal'
+          "react-vendor": ["react", "react-dom", "react-router-dom"],
+          "ui-vendor": [
+            "lucide-react",
+            "@radix-ui/react-dialog",
+            "@radix-ui/react-popover",
           ],
-          'services': [
-            './src/services/optimizedApiService',
-            './src/services/friendDataProcessor',
-            './src/services/lcryptOptimizedService'
-          ]
-        }
-      }
+          "api-vendor": ["@supabase/supabase-js", "@tanstack/react-query"],
+
+          // Feature chunks
+          "faceit-components": [
+            "./src/components/faceit/FriendsList",
+            "./src/components/faceit/FriendsSection",
+            "./src/components/faceit/PlayerModal",
+          ],
+          services: [
+            "./src/services/optimizedApiService",
+            "./src/services/friendDataProcessor",
+            "./src/services/lcryptOptimizedService",
+          ],
+        },
+      },
     },
     // Optimize chunk size
     chunkSizeWarningLimit: 1000,
     // Enable compression
-    minify: 'terser',
+    minify: "terser",
     terserOptions: {
       compress: {
-        drop_console: mode === 'production',
-        drop_debugger: mode === 'production'
-      }
+        drop_console: mode === "production",
+        drop_debugger: mode === "production",
+      },
     },
     // Source maps for debugging
-    sourcemap: mode === 'development'
+    sourcemap: mode === "development",
   },
   // Optimization options
   optimizeDeps: {
     include: [
-      'react',
-      'react-dom', 
-      'react-router-dom',
-      '@supabase/supabase-js',
-      'lucide-react'
+      "react",
+      "react-dom",
+      "react-router-dom",
+      "@supabase/supabase-js",
+      "lucide-react",
     ],
-    exclude: ['@react-three/fiber', '@react-three/drei'] // Heavy 3D libs if not used
+    exclude: ["@react-three/fiber", "@react-three/drei"], // Heavy 3D libs if not used
   },
   // Performance improvements
   esbuild: {
     // Tree shaking
     treeShaking: true,
     // Minify identifiers
-    minifyIdentifiers: mode === 'production',
+    minifyIdentifiers: mode === "production",
     // Remove unused imports
-    minifySyntax: mode === 'production'
-  }
+    minifySyntax: mode === "production",
+  },
 }));

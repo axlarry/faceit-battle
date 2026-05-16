@@ -6,24 +6,24 @@
 @layer base {
   :root {
     /* Holiday Winter Theme */
-    --background: 210 40% 12%;        /* dark winter blue */
-    --foreground: 0 0% 98%;           /* snow white */
+    --background: 210 40% 12%; /* dark winter blue */
+    --foreground: 0 0% 98%; /* snow white */
 
     --card: 210 35% 15%;
     --card-foreground: 0 0% 98%;
     --popover: 210 35% 15%;
     --popover-foreground: 0 0% 98%;
 
-    --primary: 355 78% 55%;           /* festive red */
+    --primary: 355 78% 55%; /* festive red */
     --primary-foreground: 0 0% 98%;
 
-    --secondary: 140 45% 45%;         /* pine green */
+    --secondary: 140 45% 45%; /* pine green */
     --secondary-foreground: 0 0% 98%;
 
     --muted: 210 25% 20%;
     --muted-foreground: 215 15% 75%;
 
-    --accent: 45 95% 60%;             /* gold */
+    --accent: 45 95% 60%; /* gold */
     --accent-foreground: 210 40% 12%;
 
     --destructive: 0 84% 60%;
@@ -84,25 +84,27 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-family:
+      -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial,
+      sans-serif;
   }
 
   /* Hide default scrollbars */
   ::-webkit-scrollbar {
     display: none;
   }
-  
+
   /* For Firefox */
   * {
     scrollbar-width: none;
   }
-  
+
   /* Modern scrollbar utility class */
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
-  
+
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }
@@ -181,7 +183,8 @@
   }
 
   @keyframes float {
-    0%, 100% {
+    0%,
+    100% {
       transform: translateY(0px) rotate(0deg);
     }
     33% {
@@ -219,92 +222,159 @@
   }
 
   .bg-grid {
-    background-image: linear-gradient(
-        to right,
-        hsl(var(--border) / 0.25) 1px,
-        transparent 1px
-      ),
-      linear-gradient(
-        to bottom,
-        hsl(var(--border) / 0.25) 1px,
-        transparent 1px
-      );
+    background-image:
+      linear-gradient(to right, hsl(var(--border) / 0.25) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(var(--border) / 0.25) 1px, transparent 1px);
     background-size: 24px 24px;
-    mask-image: radial-gradient(ellipse at 50% 0%, rgba(0,0,0,0.9), transparent 70%);
+    mask-image: radial-gradient(
+      ellipse at 50% 0%,
+      rgba(0, 0, 0, 0.9),
+      transparent 70%
+    );
   }
 
   .app-aurora {
     background:
-      radial-gradient(1000px 400px at 10% -10%, hsl(var(--holiday-red) / 0.2), transparent 50%),
-      radial-gradient(800px 300px at 90% 0%, hsl(var(--holiday-green) / 0.15), transparent 50%),
-      radial-gradient(600px 250px at 50% 100%, hsl(var(--holiday-gold) / 0.12), transparent 60%);
+      radial-gradient(
+        1000px 400px at 10% -10%,
+        hsl(var(--holiday-red) / 0.2),
+        transparent 50%
+      ),
+      radial-gradient(
+        800px 300px at 90% 0%,
+        hsl(var(--holiday-green) / 0.15),
+        transparent 50%
+      ),
+      radial-gradient(
+        600px 250px at 50% 100%,
+        hsl(var(--holiday-gold) / 0.12),
+        transparent 60%
+      );
     filter: blur(40px);
     transform: translateZ(0);
   }
 
   /* Holiday glow effects */
   .holiday-glow-red {
-    box-shadow: 0 0 20px hsl(var(--holiday-red) / 0.4),
-                0 0 40px hsl(var(--holiday-red) / 0.2);
+    box-shadow:
+      0 0 20px hsl(var(--holiday-red) / 0.4),
+      0 0 40px hsl(var(--holiday-red) / 0.2);
   }
 
   .holiday-glow-green {
-    box-shadow: 0 0 20px hsl(var(--holiday-green) / 0.4),
-                0 0 40px hsl(var(--holiday-green) / 0.2);
+    box-shadow:
+      0 0 20px hsl(var(--holiday-green) / 0.4),
+      0 0 40px hsl(var(--holiday-green) / 0.2);
   }
 
   .holiday-glow-gold {
-    box-shadow: 0 0 20px hsl(var(--holiday-gold) / 0.5),
-                0 0 40px hsl(var(--holiday-gold) / 0.3);
+    box-shadow:
+      0 0 20px hsl(var(--holiday-gold) / 0.5),
+      0 0 40px hsl(var(--holiday-gold) / 0.3);
   }
 }
 
 /* ELO Today state animations */
 @layer utilities {
-  .animate-elo-positive-strong { animation: elo-positive-strong 1.6s ease-in-out infinite; }
-  .animate-elo-positive { animation: elo-positive 1.6s ease-in-out infinite; }
-  .animate-elo-neutral { animation: elo-neutral 2.4s ease-in-out infinite; }
-  .animate-elo-negative { animation: elo-negative 1.6s ease-in-out infinite; }
-  .animate-elo-negative-strong { animation: elo-negative-strong 1.6s ease-in-out infinite; }
+  .animate-elo-positive-strong {
+    animation: elo-positive-strong 1.6s ease-in-out infinite;
+  }
+  .animate-elo-positive {
+    animation: elo-positive 1.6s ease-in-out infinite;
+  }
+  .animate-elo-neutral {
+    animation: elo-neutral 2.4s ease-in-out infinite;
+  }
+  .animate-elo-negative {
+    animation: elo-negative 1.6s ease-in-out infinite;
+  }
+  .animate-elo-negative-strong {
+    animation: elo-negative-strong 1.6s ease-in-out infinite;
+  }
 
   @keyframes elo-positive-strong {
-    0%, 100% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(1.06); opacity: 1; }
+    0%,
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    50% {
+      transform: scale(1.06);
+      opacity: 1;
+    }
   }
   @keyframes elo-positive {
-    0%, 100% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(1.03); opacity: 1; }
+    0%,
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    50% {
+      transform: scale(1.03);
+      opacity: 1;
+    }
   }
   @keyframes elo-neutral {
-    0%, 100% { transform: scale(1); opacity: 0.95; }
-    50% { transform: scale(1.01); opacity: 1; }
+    0%,
+    100% {
+      transform: scale(1);
+      opacity: 0.95;
+    }
+    50% {
+      transform: scale(1.01);
+      opacity: 1;
+    }
   }
   @keyframes elo-negative {
-    0%, 100% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(0.97); opacity: 0.95; }
+    0%,
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    50% {
+      transform: scale(0.97);
+      opacity: 0.95;
+    }
   }
   @keyframes elo-negative-strong {
-    0%, 100% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(0.94); opacity: 0.9; }
+    0%,
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    50% {
+      transform: scale(0.94);
+      opacity: 0.9;
+    }
   }
 }
 
 /* Professional Mascot Animations */
 @layer utilities {
   @keyframes mascot-glow {
-    0%, 100% { filter: drop-shadow(0 0 8px currentColor); }
-    50% { filter: drop-shadow(0 0 16px currentColor); }
+    0%,
+    100% {
+      filter: drop-shadow(0 0 8px currentColor);
+    }
+    50% {
+      filter: drop-shadow(0 0 16px currentColor);
+    }
   }
 
   @keyframes mascot-subtle-scale {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.02); }
+    0%,
+    100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.02);
+    }
   }
-  
+
   .animate-mascot-glow {
     animation: mascot-glow 2s ease-in-out infinite;
   }
-  
+
   .animate-mascot-subtle {
     animation: mascot-subtle-scale 3s ease-in-out infinite;
   }
@@ -318,16 +388,28 @@
   }
 
   .cs2-animated-bg::before {
-    content: '';
+    content: "";
     position: absolute;
     top: 0;
     left: 0;
     right: 0;
     bottom: 0;
-    background: 
-      radial-gradient(circle at 20% 20%, hsl(24 100% 56% / 0.12) 0%, transparent 50%),
-      radial-gradient(circle at 80% 80%, hsl(0 84% 60% / 0.10) 0%, transparent 50%),
-      radial-gradient(circle at 40% 60%, hsl(265 85% 62% / 0.08) 0%, transparent 50%);
+    background:
+      radial-gradient(
+        circle at 20% 20%,
+        hsl(24 100% 56% / 0.12) 0%,
+        transparent 50%
+      ),
+      radial-gradient(
+        circle at 80% 80%,
+        hsl(0 84% 60% / 0.1) 0%,
+        transparent 50%
+      ),
+      radial-gradient(
+        circle at 40% 60%,
+        hsl(265 85% 62% / 0.08) 0%,
+        transparent 50%
+      );
     animation: cs2-glow 8s ease-in-out infinite alternate;
     z-index: 1;
   }
@@ -352,7 +434,7 @@
   }
 
   .cs2-map-icon:nth-child(1) {
-    background-image: url('/faceit-icons/de_dust2.png');
+    background-image: url("/faceit-icons/de_dust2.png");
     top: 10%;
     left: 5%;
     animation-delay: 0s;
@@ -360,7 +442,7 @@
   }
 
   .cs2-map-icon:nth-child(2) {
-    background-image: url('/faceit-icons/de_mirage.png');
+    background-image: url("/faceit-icons/de_mirage.png");
     top: 60%;
     left: 85%;
     animation-delay: -5s;
@@ -368,7 +450,7 @@
   }
 
   .cs2-map-icon:nth-child(3) {
-    background-image: url('/faceit-icons/de_inferno.png');
+    background-image: url("/faceit-icons/de_inferno.png");
     top: 30%;
     left: 75%;
     animation-delay: -10s;
@@ -376,7 +458,7 @@
   }
 
   .cs2-map-icon:nth-child(4) {
-    background-image: url('/faceit-icons/de_ancient.png');
+    background-image: url("/faceit-icons/de_ancient.png");
     top: 80%;
     left: 15%;
     animation-delay: -15s;
@@ -384,7 +466,7 @@
   }
 
   .cs2-map-icon:nth-child(5) {
-    background-image: url('/faceit-icons/de_nuke.png');
+    background-image: url("/faceit-icons/de_nuke.png");
     top: 15%;
     left: 45%;
     animation-delay: -8s;
@@ -392,7 +474,7 @@
   }
 
   .cs2-map-icon:nth-child(6) {
-    background-image: url('/faceit-icons/de_vertigo.png');
+    background-image: url("/faceit-icons/de_vertigo.png");
     top: 70%;
     left: 55%;
     animation-delay: -12s;
@@ -429,7 +511,7 @@
     }
     75% {
       transform: translateY(-30px) translateX(5px) rotate(270deg) scale(1.05);
-      opacity: 0.10;
+      opacity: 0.1;
     }
     100% {
       transform: translateY(0px) translateX(0px) rotate(360deg) scale(1);
@@ -437,4 +519,3 @@
     }
   }
 }
-

@@ -1,30 +1,33 @@
-
-import React, { useState } from 'react';
-import { RefreshCw, Radio, Film, Trash2, Users } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { LiveStreamCard } from './LiveStreamCard';
-import { LiveStreamPlayer } from './LiveStreamPlayer';
-import { RecordingPlayer } from './RecordingPlayer';
-import { useLiveStreams } from '@/hooks/useLiveStreams';
-import { useRecordings } from '@/hooks/useRecordings';
-import { LiveStream, Recording } from '@/types/streaming';
-import { Player } from '@/types/Player';
-import { PasswordDialog } from '@/components/faceit/PasswordDialog';
-import { toast } from '@/hooks/use-toast';
-import { format } from 'date-fns';
-import { recordingsService } from '@/services/recordingsService';
-import { getProxiedImageUrl, getLacurteBaseUrl, getProxiedLacurteUrl } from '@/lib/discordProxy';
+import React, { useState } from "react";
+import { RefreshCw, Radio, Film, Trash2, Users } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { LiveStreamCard } from "./LiveStreamCard";
+import { LiveStreamPlayer } from "./LiveStreamPlayer";
+import { RecordingPlayer } from "./RecordingPlayer";
+import { useLiveStreams } from "@/hooks/useLiveStreams";
+import { useRecordings } from "@/hooks/useRecordings";
+import { LiveStream, Recording } from "@/types/streaming";
+import { Player } from "@/types/Player";
+import { PasswordDialog } from "@/components/faceit/PasswordDialog";
+import { toast } from "@/hooks/use-toast";
+import { format } from "date-fns";
+import { recordingsService } from "@/services/recordingsService";
+import {
+  getProxiedImageUrl,
+  getLacurteBaseUrl,
+  getProxiedLacurteUrl,
+} from "@/lib/discordProxy";
 
 // Format duration from seconds to HH:MM:SS
 const formatDuration = (seconds: number): string => {
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
   const secs = seconds % 60;
-  
+
   if (hours > 0) {
-    return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    return `${hours}:${minutes.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   }
-  return `${minutes}:${secs.toString().padStart(2, '0')}`;
+  return `${minutes}:${secs.toString().padStart(2, "0")}`;
 };
 
 interface LiveStreamsTabProps {
@@ -34,17 +37,18 @@ interface LiveStreamsTabProps {
 export const LiveStreamsTab = ({ friends }: LiveStreamsTabProps) => {
   const [selectedStream, setSelectedStream] = useState<LiveStream | null>(null);
   const [isPlayerOpen, setIsPlayerOpen] = useState(false);
-  const [selectedRecording, setSelectedRecording] = useState<Recording | null>(null);
+  const [selectedRecording, setSelectedRecording] = useState<Recording | null>(
+    null,
+  );
   const [isRecordingPlayerOpen, setIsRecordingPlayerOpen] = useState(false);
-  const [recordingToDelete, setRecordingToDelete] = useState<Recording | null>(null);
+  const [recordingToDelete, setRecordingToDelete] = useState<Recording | null>(
+    null,
+  );
   const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
 
-  const { 
-    liveStreamsList, 
-    liveCount,
-    isLoading, 
-    refresh 
-  } = useLiveStreams({ friends });
+  const { liveStreamsList, liveCount, isLoading, refresh } = useLiveStreams({
+    friends,
+  });
 
   const {
     recordings,
@@ -53,8 +57,8 @@ export const LiveStreamsTab = ({ friends }: LiveStreamsTabProps) => {
     refresh: refreshRecordings,
   } = useRecordings();
 
-  const getFriend = (nickname: string) => 
-    friends.find(f => f.nickname.toLowerCase() === nickname.toLowerCase());
+  const getFriend = (nickname: string) =>
+    friends.find((f) => f.nickname.toLowerCase() === nickname.toLowerCase());
 
   const handleWatch = (stream: LiveStream) => {
     setSelectedStream(stream);
@@ -85,22 +89,25 @@ export const LiveStreamsTab = ({ friends }: LiveStreamsTabProps) => {
     if (!recordingToDelete) return;
 
     try {
-      const response = await fetch(`${getLacurteBaseUrl()}/delete-recording.php`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          filename: recordingToDelete.filename,
-          nickname: recordingToDelete.nickname,
-          adminPassword: password
-        })
-      });
+      const response = await fetch(
+        `${getLacurteBaseUrl()}/delete-recording.php`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            filename: recordingToDelete.filename,
+            nickname: recordingToDelete.nickname,
+            adminPassword: password,
+          }),
+        },
+      );
 
       const result = await response.json();
 
       if (result.success) {
         toast({
           title: "Înregistrare ștearsă",
-          description: `${recordingToDelete.nickname} - ${format(recordingToDelete.date, 'MMM d, HH:mm')}`,
+          description: `${recordingToDelete.nickname} - ${format(recordingToDelete.date, "MMM d, HH:mm")}`,
         });
         refreshRecordings();
       } else {
@@ -147,7 +154,10 @@ export const LiveStreamsTab = ({ friends }: LiveStreamsTabProps) => {
           disabled={isLoading || isLoadingRecordings}
           className="gap-2 text-muted-foreground hover:text-foreground"
         >
-          <RefreshCw size={16} className={(isLoading || isLoadingRecordings) ? 'animate-spin' : ''} />
+          <RefreshCw
+            size={16}
+            className={isLoading || isLoadingRecordings ? "animate-spin" : ""}
+          />
         </Button>
       </div>
 
@@ -161,7 +171,9 @@ export const LiveStreamsTab = ({ friends }: LiveStreamsTabProps) => {
           <div className="w-20 h-20 rounded-full bg-muted/20 flex items-center justify-center mb-4">
             <Users className="text-muted-foreground" size={40} />
           </div>
-          <h2 className="text-xl font-semibold text-foreground mb-2">Niciun prieten adăugat</h2>
+          <h2 className="text-xl font-semibold text-foreground mb-2">
+            Niciun prieten adăugat
+          </h2>
           <p className="text-muted-foreground max-w-md">
             Adaugă prieteni pentru a vedea când sunt live.
           </p>
@@ -190,8 +202,13 @@ export const LiveStreamsTab = ({ friends }: LiveStreamsTabProps) => {
               </div>
             ) : (
               <div className="py-16 text-center border border-border/50 rounded-xl bg-card/30">
-                <Radio className="text-muted-foreground mx-auto mb-3" size={32} />
-                <p className="text-muted-foreground">Nimeni nu este live acum</p>
+                <Radio
+                  className="text-muted-foreground mx-auto mb-3"
+                  size={32}
+                />
+                <p className="text-muted-foreground">
+                  Nimeni nu este live acum
+                </p>
               </div>
             )}
           </section>
@@ -216,109 +233,133 @@ export const LiveStreamsTab = ({ friends }: LiveStreamsTabProps) => {
               </div>
             ) : recordings.length === 0 ? (
               <div className="py-16 text-center border border-border/50 rounded-xl bg-card/30">
-                <Film className="text-muted-foreground mx-auto mb-3" size={32} />
-                <p className="text-muted-foreground">Nicio înregistrare disponibilă</p>
+                <Film
+                  className="text-muted-foreground mx-auto mb-3"
+                  size={32}
+                />
+                <p className="text-muted-foreground">
+                  Nicio înregistrare disponibilă
+                </p>
               </div>
             ) : (
               <div className="space-y-6">
-                {Object.entries(groupedRecordings).map(([nickname, userRecordings]) => {
-                  const friend = getFriend(nickname);
-                  
-                  return (
-                    <div key={nickname} className="space-y-3">
-                      {/* Streamer Header */}
-                      <div className="flex items-center gap-3">
-                        {friend?.avatar ? (
-                          <img 
-                            src={getProxiedImageUrl(friend.avatar)} 
-                            alt={nickname}
-                            className="w-10 h-10 rounded-full border-2 border-purple-500/50"
-                          />
-                        ) : (
-                          <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center border-2 border-purple-500/50">
-                            <span className="text-sm font-bold text-purple-400">{nickname[0]?.toUpperCase()}</span>
-                          </div>
-                        )}
-                        <div>
-                          <span className="font-semibold text-foreground">{nickname}</span>
-                          <p className="text-xs text-muted-foreground">
-                            {userRecordings.length} înregistrări
-                          </p>
-                        </div>
-                      </div>
+                {Object.entries(groupedRecordings).map(
+                  ([nickname, userRecordings]) => {
+                    const friend = getFriend(nickname);
 
-                      {/* VOD Grid */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                        {userRecordings.slice(0, 8).map((recording) => (
-                          <div
-                            key={recording.id}
-                            className="group relative bg-card/50 rounded-lg border border-border/50 overflow-hidden hover:border-purple-500/50 transition-all cursor-pointer"
-                            onClick={() => handlePlayRecording(recording)}
-                          >
-                            {/* Thumbnail */}
-                            <div className="aspect-video bg-gradient-to-br from-purple-900/30 to-purple-600/10 relative">
-                              {recording.thumbnailUrl ? (
-                                <img 
-                                  src={getProxiedLacurteUrl(recording.thumbnailUrl)}
-                                  alt={recording.filename}
-                                  className="w-full h-full object-cover"
-                                  onError={(e) => {
-                                    e.currentTarget.style.display = 'none';
-                                    e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                    return (
+                      <div key={nickname} className="space-y-3">
+                        {/* Streamer Header */}
+                        <div className="flex items-center gap-3">
+                          {friend?.avatar ? (
+                            <img
+                              src={getProxiedImageUrl(friend.avatar)}
+                              alt={nickname}
+                              className="w-10 h-10 rounded-full border-2 border-purple-500/50"
+                            />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-purple-500/20 flex items-center justify-center border-2 border-purple-500/50">
+                              <span className="text-sm font-bold text-purple-400">
+                                {nickname[0]?.toUpperCase()}
+                              </span>
+                            </div>
+                          )}
+                          <div>
+                            <span className="font-semibold text-foreground">
+                              {nickname}
+                            </span>
+                            <p className="text-xs text-muted-foreground">
+                              {userRecordings.length} înregistrări
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* VOD Grid */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+                          {userRecordings.slice(0, 8).map((recording) => (
+                            <div
+                              key={recording.id}
+                              className="group relative bg-card/50 rounded-lg border border-border/50 overflow-hidden hover:border-purple-500/50 transition-all cursor-pointer"
+                              onClick={() => handlePlayRecording(recording)}
+                            >
+                              {/* Thumbnail */}
+                              <div className="aspect-video bg-gradient-to-br from-purple-900/30 to-purple-600/10 relative">
+                                {recording.thumbnailUrl ? (
+                                  <img
+                                    src={getProxiedLacurteUrl(
+                                      recording.thumbnailUrl,
+                                    )}
+                                    alt={recording.filename}
+                                    className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                      e.currentTarget.style.display = "none";
+                                      e.currentTarget.nextElementSibling?.classList.remove(
+                                        "hidden",
+                                      );
+                                    }}
+                                  />
+                                ) : null}
+                                <div
+                                  className={`absolute inset-0 flex items-center justify-center ${recording.thumbnailUrl ? "hidden" : ""}`}
+                                >
+                                  <Film
+                                    className="text-purple-500/50"
+                                    size={32}
+                                  />
+                                </div>
+
+                                {/* Play overlay */}
+                                <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                  <div className="w-12 h-12 rounded-full bg-purple-500 flex items-center justify-center">
+                                    <div className="w-0 h-0 border-l-[16px] border-l-white border-y-[10px] border-y-transparent ml-1" />
+                                  </div>
+                                </div>
+
+                                {/* Delete button */}
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeleteRecording(recording);
                                   }}
-                                />
-                              ) : null}
-                              <div className={`absolute inset-0 flex items-center justify-center ${recording.thumbnailUrl ? 'hidden' : ''}`}>
-                                <Film className="text-purple-500/50" size={32} />
-                              </div>
-                              
-                              {/* Play overlay */}
-                              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                                <div className="w-12 h-12 rounded-full bg-purple-500 flex items-center justify-center">
-                                  <div className="w-0 h-0 border-l-[16px] border-l-white border-y-[10px] border-y-transparent ml-1" />
+                                  className="absolute top-2 right-2 w-8 h-8 bg-black/60 hover:bg-red-500 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                  <Trash2 size={14} />
+                                </Button>
+
+                                {/* Duration badge */}
+                                <div className="absolute bottom-2 right-2 px-1.5 py-0.5 bg-black/80 rounded text-xs text-white font-mono">
+                                  {recording.duration
+                                    ? formatDuration(recording.duration)
+                                    : recordingsService.formatFileSize(
+                                        recording.size,
+                                      )}
                                 </div>
                               </div>
 
-                              {/* Delete button */}
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleDeleteRecording(recording);
-                                }}
-                                className="absolute top-2 right-2 w-8 h-8 bg-black/60 hover:bg-red-500 text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                              >
-                                <Trash2 size={14} />
-                              </Button>
-
-                              {/* Duration badge */}
-                              <div className="absolute bottom-2 right-2 px-1.5 py-0.5 bg-black/80 rounded text-xs text-white font-mono">
-                                {recording.duration ? formatDuration(recording.duration) : recordingsService.formatFileSize(recording.size)}
+                              {/* Info */}
+                              <div className="p-3">
+                                <p className="text-sm font-medium text-foreground truncate">
+                                  {format(recording.date, "EEEE, d MMM")}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {format(recording.date, "HH:mm")}
+                                </p>
                               </div>
                             </div>
+                          ))}
+                        </div>
 
-                            {/* Info */}
-                            <div className="p-3">
-                              <p className="text-sm font-medium text-foreground truncate">
-                                {format(recording.date, 'EEEE, d MMM')}
-                              </p>
-                              <p className="text-xs text-muted-foreground">
-                                {format(recording.date, 'HH:mm')}
-                              </p>
-                            </div>
-                          </div>
-                        ))}
+                        {userRecordings.length > 8 && (
+                          <p className="text-sm text-muted-foreground pl-[52px]">
+                            +{userRecordings.length - 8} mai multe
+                          </p>
+                        )}
                       </div>
-
-                      {userRecordings.length > 8 && (
-                        <p className="text-sm text-muted-foreground pl-[52px]">
-                          +{userRecordings.length - 8} mai multe
-                        </p>
-                      )}
-                    </div>
-                  );
-                })}
+                    );
+                  },
+                )}
               </div>
             )}
           </section>
@@ -348,9 +389,10 @@ export const LiveStreamsTab = ({ friends }: LiveStreamsTabProps) => {
         }}
         onConfirm={handleConfirmDelete}
         title="Șterge Înregistrare"
-        description={recordingToDelete 
-          ? `Ești sigur că vrei să ștergi înregistrarea de la ${recordingToDelete.nickname} din ${format(recordingToDelete.date, 'MMM d, HH:mm')}?`
-          : 'Confirmare ștergere înregistrare'
+        description={
+          recordingToDelete
+            ? `Ești sigur că vrei să ștergi înregistrarea de la ${recordingToDelete.nickname} din ${format(recordingToDelete.date, "MMM d, HH:mm")}?`
+            : "Confirmare ștergere înregistrare"
         }
       />
     </div>

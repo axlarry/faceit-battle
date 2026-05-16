@@ -1,8 +1,18 @@
-
 import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { useState } from "react";
-import { Globe, ChevronDown, Users, Search, Shuffle, Radio } from "lucide-react";
+import {
+  Globe,
+  ChevronDown,
+  Users,
+  Search,
+  Shuffle,
+  Radio,
+} from "lucide-react";
 import { RegionSelectPopover } from "./RegionSelectPopover";
 
 interface RegionTabsProps {
@@ -10,80 +20,83 @@ interface RegionTabsProps {
   onRegionChange: (region: string) => void;
 }
 
-export const RegionTabs = ({ currentRegion, onRegionChange }: RegionTabsProps) => {
+export const RegionTabs = ({
+  currentRegion,
+  onRegionChange,
+}: RegionTabsProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
   const regions = [
-    { 
-      id: 'EU', 
-      name: 'Europa', 
-      flag: '/faceit-icons/eu.svg', 
-      color: 'from-blue-600 via-indigo-600 to-purple-600', 
-      desc: 'European Championship' 
+    {
+      id: "EU",
+      name: "Europa",
+      flag: "/faceit-icons/eu.svg",
+      color: "from-blue-600 via-indigo-600 to-purple-600",
+      desc: "European Championship",
     },
-    { 
-      id: 'NA', 
-      name: 'America de Nord', 
-      flag: '/faceit-icons/us.svg', 
-      color: 'from-red-600 via-blue-600 to-white/20', 
-      desc: 'North American League' 
+    {
+      id: "NA",
+      name: "America de Nord",
+      flag: "/faceit-icons/us.svg",
+      color: "from-red-600 via-blue-600 to-white/20",
+      desc: "North American League",
     },
-    { 
-      id: 'SA', 
-      name: 'America de Sud', 
-      flag: '/faceit-icons/br.svg', 
-      color: 'from-green-600 via-yellow-500 to-blue-600', 
-      desc: 'South American Circuit' 
+    {
+      id: "SA",
+      name: "America de Sud",
+      flag: "/faceit-icons/br.svg",
+      color: "from-green-600 via-yellow-500 to-blue-600",
+      desc: "South American Circuit",
     },
-    { 
-      id: 'OCE', 
-      name: 'Oceania', 
-      flag: '/faceit-icons/au.svg', 
-      color: 'from-blue-600 via-red-600 to-blue-800', 
-      desc: 'Oceanic Pro Series' 
+    {
+      id: "OCE",
+      name: "Oceania",
+      flag: "/faceit-icons/au.svg",
+      color: "from-blue-600 via-red-600 to-blue-800",
+      desc: "Oceanic Pro Series",
     },
   ];
 
   const specialTabs = [
-    { 
-      id: 'FRIENDS', 
-      name: 'Prietenii Mei', 
-      shortName: 'Prieteni',
-      icon: Users, 
-      gradient: 'from-accent to-primary',
-      iconColor: 'text-primary-foreground',
-      bgColor: 'bg-gradient-to-r from-accent to-primary',
-      hoverBg: 'hover:from-accent hover:to-primary'
+    {
+      id: "FRIENDS",
+      name: "Prietenii Mei",
+      shortName: "Prieteni",
+      icon: Users,
+      gradient: "from-accent to-primary",
+      iconColor: "text-primary-foreground",
+      bgColor: "bg-gradient-to-r from-accent to-primary",
+      hoverBg: "hover:from-accent hover:to-primary",
     },
-    { 
-      id: 'LIVE_STREAMS', 
-      name: 'Live', 
-      shortName: 'Live',
-      icon: Radio, 
-      gradient: 'from-red-500 to-orange-500',
-      iconColor: 'text-primary-foreground',
-      bgColor: 'bg-gradient-to-r from-red-500 to-orange-500',
-      hoverBg: 'hover:from-red-500 hover:to-orange-500'
+    {
+      id: "LIVE_STREAMS",
+      name: "Live",
+      shortName: "Live",
+      icon: Radio,
+      gradient: "from-red-500 to-orange-500",
+      iconColor: "text-primary-foreground",
+      bgColor: "bg-gradient-to-r from-red-500 to-orange-500",
+      hoverBg: "hover:from-red-500 hover:to-orange-500",
     },
-    { 
-      id: 'TEAM_BALANCER', 
-      name: 'Team Balancer', 
-      shortName: 'Teams',
-      icon: Shuffle, 
-      gradient: 'from-green-500 to-emerald-600',
-      iconColor: 'text-primary-foreground',
-      bgColor: 'bg-gradient-to-r from-green-500 to-emerald-600',
-      hoverBg: 'hover:from-green-500 hover:to-emerald-600'
+    {
+      id: "TEAM_BALANCER",
+      name: "Team Balancer",
+      shortName: "Teams",
+      icon: Shuffle,
+      gradient: "from-green-500 to-emerald-600",
+      iconColor: "text-primary-foreground",
+      bgColor: "bg-gradient-to-r from-green-500 to-emerald-600",
+      hoverBg: "hover:from-green-500 hover:to-emerald-600",
     },
-    { 
-      id: 'FACEIT_TOOL', 
-      name: 'FACEIT Tool', 
-      shortName: 'Caută',
-      icon: Search, 
-      gradient: 'from-primary to-secondary',
-      iconColor: 'text-primary-foreground',
-      bgColor: 'bg-gradient-to-r from-primary to-secondary',
-      hoverBg: 'hover:from-primary hover:to-secondary'
+    {
+      id: "FACEIT_TOOL",
+      name: "FACEIT Tool",
+      shortName: "Caută",
+      icon: Search,
+      gradient: "from-primary to-secondary",
+      iconColor: "text-primary-foreground",
+      bgColor: "bg-gradient-to-r from-primary to-secondary",
+      hoverBg: "hover:from-primary hover:to-secondary",
     },
   ];
 
@@ -99,7 +112,7 @@ export const RegionTabs = ({ currentRegion, onRegionChange }: RegionTabsProps) =
         {specialTabs.map((tab) => {
           const IconComponent = tab.icon;
           const isActive = currentRegion === tab.id;
-          
+
           return (
             <div key={tab.id} className="relative">
               <Button
@@ -107,20 +120,20 @@ export const RegionTabs = ({ currentRegion, onRegionChange }: RegionTabsProps) =
                 className={`
                   relative px-3 py-2 sm:px-6 sm:py-3 text-xs sm:text-sm font-semibold transition-all duration-300 rounded-xl
                   transform hover:scale-105 hover:shadow-lg
-                  ${isActive 
-                    ? `${tab.bgColor} text-primary-foreground shadow-lg scale-105` 
-                    : `bg-card/40 backdrop-blur-sm text-foreground/80 hover:text-foreground border border-border ${tab.hoverBg}`
+                  ${
+                    isActive
+                      ? `${tab.bgColor} text-primary-foreground shadow-lg scale-105`
+                      : `bg-card/40 backdrop-blur-sm text-foreground/80 hover:text-foreground border border-border ${tab.hoverBg}`
                   }
                 `}
               >
                 <div className="flex items-center gap-1.5 sm:gap-3">
-                  <IconComponent size={16} className={`sm:w-[18px] sm:h-[18px] ${isActive ? 'text-primary-foreground' : tab.iconColor}`} />
-                  <span className="hidden sm:inline">
-                    {tab.name}
-                  </span>
-                  <span className="sm:hidden">
-                    {tab.shortName}
-                  </span>
+                  <IconComponent
+                    size={16}
+                    className={`sm:w-[18px] sm:h-[18px] ${isActive ? "text-primary-foreground" : tab.iconColor}`}
+                  />
+                  <span className="hidden sm:inline">{tab.name}</span>
+                  <span className="sm:hidden">{tab.shortName}</span>
                 </div>
               </Button>
             </div>
@@ -135,30 +148,31 @@ export const RegionTabs = ({ currentRegion, onRegionChange }: RegionTabsProps) =
                 className={`
                   relative px-3 py-2 sm:px-6 sm:py-3 text-xs sm:text-sm font-semibold transition-all duration-300 rounded-xl
                   transform hover:scale-105 hover:shadow-lg
-                  ${regions.some(r => r.id === currentRegion)
-                    ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg scale-105' 
-                    : 'bg-white/10 backdrop-blur-sm text-slate-300 hover:text-white border border-white/20 hover:from-indigo-600 hover:to-purple-600'
+                  ${
+                    regions.some((r) => r.id === currentRegion)
+                      ? "bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg scale-105"
+                      : "bg-white/10 backdrop-blur-sm text-slate-300 hover:text-white border border-white/20 hover:from-indigo-600 hover:to-purple-600"
                   }
                 `}
               >
                 <div className="flex items-center gap-1.5 sm:gap-3">
-                  <Globe 
-                    size={16} 
-                    className={`sm:w-[18px] sm:h-[18px] transition-all duration-300 ${isOpen ? 'rotate-180' : ''} ${regions.some(r => r.id === currentRegion) ? 'text-primary-foreground' : 'text-primary'}`} 
+                  <Globe
+                    size={16}
+                    className={`sm:w-[18px] sm:h-[18px] transition-all duration-300 ${isOpen ? "rotate-180" : ""} ${regions.some((r) => r.id === currentRegion) ? "text-primary-foreground" : "text-primary"}`}
                   />
-                  
+
                   <span className="hidden sm:inline">Rank Global</span>
                   <span className="sm:hidden">Rank</span>
-                  
-                  <ChevronDown 
-                    size={14} 
-                    className={`sm:w-4 sm:h-4 transition-all duration-300 ${isOpen ? 'rotate-180' : ''}`} 
+
+                  <ChevronDown
+                    size={14}
+                    className={`sm:w-4 sm:h-4 transition-all duration-300 ${isOpen ? "rotate-180" : ""}`}
                   />
                 </div>
               </Button>
             </PopoverTrigger>
 
-            <PopoverContent 
+            <PopoverContent
               className="w-[90vw] sm:w-[520px] md:w-[560px] max-w-[560px] p-0 bg-gradient-to-b from-background/80 to-background/60 border-border shadow-2xl rounded-2xl overflow-hidden backdrop-blur-xl border"
               align="center"
               side="bottom"

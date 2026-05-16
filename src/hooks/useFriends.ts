@@ -1,11 +1,14 @@
-import { useState, useEffect } from 'react';
-import { Player } from '@/types/Player';
-import { toast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-import { invokeEdgeFunction, isDiscordActivity } from '@/lib/discordProxy';
+import { useState, useEffect } from "react";
+import { Player } from "@/types/Player";
+import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction, isDiscordActivity } from "@/lib/discordProxy";
 
 // Helper to invoke edge functions with Discord proxy support
-const invokeFunction = async (functionName: string, body: Record<string, unknown>) => {
+const invokeFunction = async (
+  functionName: string,
+  body: Record<string, unknown>,
+) => {
   if (isDiscordActivity()) {
     return invokeEdgeFunction(functionName, body);
   }
@@ -22,10 +25,12 @@ export const useFriends = () => {
 
   const loadFriendsFromDatabase = async (refreshData = true) => {
     try {
-      const { data, error } = await invokeFunction('friends-gateway', { action: 'list' });
+      const { data, error } = await invokeFunction("friends-gateway", {
+        action: "list",
+      });
 
       if (error) {
-        console.error('Error loading friends via gateway:', error);
+        console.error("Error loading friends via gateway:", error);
         toast({
           title: "Eroare la încărcare",
           description: "Nu s-au putut încărca prietenii (gateway).",
@@ -35,7 +40,7 @@ export const useFriends = () => {
       }
 
       const items = (data as any)?.items || [];
-      
+
       const friendsData: Player[] = items.map((friend: any) => ({
         player_id: friend.player_id,
         nickname: friend.nickname,
@@ -49,7 +54,7 @@ export const useFriends = () => {
       }));
       setFriends(friendsData);
     } catch (error) {
-      console.error('Error loading friends from gateway:', error);
+      console.error("Error loading friends from gateway:", error);
       toast({
         title: "Eroare la încărcare",
         description: "Nu s-au putut încărca prietenii din gateway.",
@@ -59,11 +64,11 @@ export const useFriends = () => {
   };
 
   const addFriend = async (player: Player, password: string) => {
-    const exists = friends.some(f => f.player_id === player.player_id);
+    const exists = friends.some((f) => f.player_id === player.player_id);
     if (!exists) {
       try {
-        const { error } = await invokeFunction('friends-gateway', {
-          action: 'add',
+        const { error } = await invokeFunction("friends-gateway", {
+          action: "add",
           password,
           player: {
             player_id: player.player_id,
@@ -75,14 +80,16 @@ export const useFriends = () => {
             win_rate: player.winRate || 0,
             hs_rate: player.hsRate || 0,
             kd_ratio: player.kdRatio || 0,
-          }
+          },
         });
 
         if (error) {
-          console.error('Error adding friend (gateway):', error);
+          console.error("Error adding friend (gateway):", error);
           toast({
             title: "Eroare la adăugare",
-            description: (error as any).message || "Parolă invalidă sau eroare la gateway.",
+            description:
+              (error as any).message ||
+              "Parolă invalidă sau eroare la gateway.",
             variant: "destructive",
           });
           return;
@@ -90,13 +97,13 @@ export const useFriends = () => {
 
         const updatedFriends = [...friends, player];
         setFriends(updatedFriends);
-        
+
         toast({
           title: "Prieten adăugat!",
           description: `${player.nickname} a fost adăugat în lista de prieteni.`,
         });
       } catch (error) {
-        console.error('Error adding friend:', error);
+        console.error("Error adding friend:", error);
         toast({
           title: "Eroare la adăugare",
           description: "Nu s-a putut adăuga prietenul.",
@@ -114,8 +121,8 @@ export const useFriends = () => {
 
   const updateFriend = async (updatedPlayer: Player, password?: string) => {
     try {
-      const { error } = await invokeFunction('friends-gateway', {
-        action: 'update',
+      const { error } = await invokeFunction("friends-gateway", {
+        action: "update",
         password,
         player: {
           player_id: updatedPlayer.player_id,
@@ -127,36 +134,35 @@ export const useFriends = () => {
           win_rate: updatedPlayer.winRate || 0,
           hs_rate: updatedPlayer.hsRate || 0,
           kd_ratio: updatedPlayer.kdRatio || 0,
-        }
+        },
       });
 
       if (error) {
-        console.error('Error updating friend in gateway:', error);
+        console.error("Error updating friend in gateway:", error);
         throw error;
       }
 
-      setFriends(prevFriends => 
-        prevFriends.map(f => 
-          f.player_id === updatedPlayer.player_id ? updatedPlayer : f
-        )
+      setFriends((prevFriends) =>
+        prevFriends.map((f) =>
+          f.player_id === updatedPlayer.player_id ? updatedPlayer : f,
+        ),
       );
-      
     } catch (error) {
-      console.error('Error updating friend:', error);
+      console.error("Error updating friend:", error);
       throw error;
     }
   };
 
   const removeFriend = async (playerId: string, password: string) => {
     try {
-      const { error } = await invokeFunction('friends-gateway', {
-        action: 'remove',
+      const { error } = await invokeFunction("friends-gateway", {
+        action: "remove",
         password,
-        playerId
+        playerId,
       });
 
       if (error) {
-        console.error('Error removing friend (gateway):', error);
+        console.error("Error removing friend (gateway):", error);
         toast({
           title: "Eroare la ștergere",
           description: "Parolă invalidă sau eroare la gateway.",
@@ -165,15 +171,15 @@ export const useFriends = () => {
         return;
       }
 
-      const updatedFriends = friends.filter(f => f.player_id !== playerId);
+      const updatedFriends = friends.filter((f) => f.player_id !== playerId);
       setFriends(updatedFriends);
-      
+
       toast({
         title: "Prieten șters",
         description: "Jucătorul a fost șters din lista de prieteni.",
       });
     } catch (error) {
-      console.error('Error removing friend:', error);
+      console.error("Error removing friend:", error);
       toast({
         title: "Eroare la ștergere",
         description: "Nu s-a putut șterge prietenul din listă.",
@@ -192,6 +198,6 @@ export const useFriends = () => {
     updateFriend,
     removeFriend,
     loadFriendsFromDatabase,
-    refreshFriendsData
+    refreshFriendsData,
   };
 };

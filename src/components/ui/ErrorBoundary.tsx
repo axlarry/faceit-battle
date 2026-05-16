@@ -1,8 +1,8 @@
 // V2.0 Error Boundary for better error handling
-import React from 'react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertTriangle, RefreshCw } from 'lucide-react';
+import React from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { AlertTriangle, RefreshCw } from "lucide-react";
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -15,7 +15,10 @@ interface ErrorBoundaryProps {
   fallback?: React.ComponentType<{ error?: Error; retry: () => void }>;
 }
 
-export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundaryState> {
+export class ErrorBoundary extends React.Component<
+  ErrorBoundaryProps,
+  ErrorBoundaryState
+> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false };
@@ -26,13 +29,13 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('ErrorBoundary caught an error:', error, errorInfo);
-    
+    console.error("ErrorBoundary caught an error:", error, errorInfo);
+
     // Report to monitoring service in production
-    if (process.env.NODE_ENV === 'production') {
+    if (process.env.NODE_ENV === "production") {
       // reportError(error, errorInfo);
     }
-    
+
     this.setState({ error, errorInfo });
   }
 
@@ -44,7 +47,9 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
     if (this.state.hasError) {
       if (this.props.fallback) {
         const FallbackComponent = this.props.fallback;
-        return <FallbackComponent error={this.state.error} retry={this.retry} />;
+        return (
+          <FallbackComponent error={this.state.error} retry={this.retry} />
+        );
       }
 
       return (
@@ -60,8 +65,8 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
               <p className="text-sm text-muted-foreground">
                 An unexpected error occurred. Please try refreshing the page.
               </p>
-              
-              {process.env.NODE_ENV === 'development' && this.state.error && (
+
+              {process.env.NODE_ENV === "development" && this.state.error && (
                 <details className="text-left">
                   <summary className="text-xs font-mono cursor-pointer">
                     Error Details
@@ -72,7 +77,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
                   </pre>
                 </details>
               )}
-              
+
               <Button onClick={this.retry} variant="outline" className="w-full">
                 <RefreshCw className="mr-2 h-4 w-4" />
                 Try Again
@@ -90,7 +95,7 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
 // Higher-order component for easy error boundary wrapping
 export const withErrorBoundary = <P extends Record<string, any>>(
   Component: React.ComponentType<P>,
-  fallback?: React.ComponentType<{ error?: Error; retry: () => void }>
+  fallback?: React.ComponentType<{ error?: Error; retry: () => void }>,
 ) => {
   return React.memo((props: P) => (
     <ErrorBoundary fallback={fallback}>

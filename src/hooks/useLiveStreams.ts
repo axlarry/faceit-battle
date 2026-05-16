@@ -1,8 +1,7 @@
-
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { streamingService } from '@/services/streamingService';
-import { LiveStream } from '@/types/streaming';
-import { Player } from '@/types/Player';
+import { useState, useEffect, useCallback, useRef } from "react";
+import { streamingService } from "@/services/streamingService";
+import { LiveStream } from "@/types/streaming";
+import { Player } from "@/types/Player";
 
 interface UseLiveStreamsProps {
   friends: Player[];
@@ -10,10 +9,10 @@ interface UseLiveStreamsProps {
   refreshInterval?: number;
 }
 
-export const useLiveStreams = ({ 
-  friends, 
-  enabled = true, 
-  refreshInterval = 10000 
+export const useLiveStreams = ({
+  friends,
+  enabled = true,
+  refreshInterval = 10000,
 }: UseLiveStreamsProps) => {
   const [liveStreams, setLiveStreams] = useState<LiveStream[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -28,13 +27,14 @@ export const useLiveStreams = ({
     }
 
     try {
-      const nicknames = friends.map(f => f.nickname);
-      const streams = await streamingService.getLiveStreamsForFriends(nicknames);
+      const nicknames = friends.map((f) => f.nickname);
+      const streams =
+        await streamingService.getLiveStreamsForFriends(nicknames);
       setLiveStreams(streams);
       setError(null);
     } catch (err) {
-      console.error('Error fetching live streams:', err);
-      setError('Failed to fetch live streams');
+      console.error("Error fetching live streams:", err);
+      setError("Failed to fetch live streams");
     } finally {
       setIsLoading(false);
     }
@@ -54,9 +54,9 @@ export const useLiveStreams = ({
     };
   }, [fetchLiveStreams, enabled, refreshInterval]);
 
-  const liveCount = liveStreams.filter(s => s.isLive).length;
-  const liveStreamsList = liveStreams.filter(s => s.isLive);
-  const offlineStreamsList = liveStreams.filter(s => !s.isLive);
+  const liveCount = liveStreams.filter((s) => s.isLive).length;
+  const liveStreamsList = liveStreams.filter((s) => s.isLive);
+  const offlineStreamsList = liveStreams.filter((s) => !s.isLive);
 
   return {
     liveStreams,

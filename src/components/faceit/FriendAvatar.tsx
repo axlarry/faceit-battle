@@ -1,5 +1,5 @@
-import React from 'react';
-import { getProxiedAvatarUrl } from '@/lib/discordProxy';
+import React from "react";
+import { getProxiedAvatarUrl } from "@/lib/discordProxy";
 
 interface FriendAvatarProps {
   avatar: string;
@@ -7,17 +7,21 @@ interface FriendAvatarProps {
   index: number;
 }
 
-export const FriendAvatar = ({ avatar, nickname, index }: FriendAvatarProps) => {
-  const fallbackAvatar = '/faceit-icons/faceit_icon.png';
+export const FriendAvatar = ({
+  avatar,
+  nickname,
+  index,
+}: FriendAvatarProps) => {
+  const fallbackAvatar = "/faceit-icons/faceit_icon.png";
   const rawAvatar = avatar && avatar.trim() ? avatar : fallbackAvatar;
   const safeAvatar = getProxiedAvatarUrl(rawAvatar);
-  
+
   return (
     <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto min-w-0">
       <div className="text-xl sm:text-2xl font-bold text-primary min-w-[2.5rem] sm:min-w-[3rem] flex-shrink-0">
         #{index + 1}
       </div>
-      
+
       <img
         src={safeAvatar}
         alt={nickname}

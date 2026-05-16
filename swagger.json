@@ -1,13 +1,7 @@
 {
-  "consumes": [
-    "application/json"
-  ],
-  "produces": [
-    "application/json"
-  ],
-  "schemes": [
-    "https"
-  ],
+  "consumes": ["application/json"],
+  "produces": ["application/json"],
+  "schemes": ["https"],
   "swagger": "2.0",
   "info": {
     "description": "# This API provide access to FACEIT's data",
@@ -23,12 +17,8 @@
     "/championships": {
       "get": {
         "description": "Retrieve all championships of a game",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Championships"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Championships"],
         "summary": "Retrieve all championships of a game",
         "operationId": "getChampionships",
         "parameters": [
@@ -40,12 +30,7 @@
             "required": true
           },
           {
-            "enum": [
-              "all",
-              "upcoming",
-              "ongoing",
-              "past"
-            ],
+            "enum": ["all", "upcoming", "ongoing", "past"],
             "type": "string",
             "description": "Kind of matches to return. Can be all(default), upcoming, ongoing or past",
             "name": "type",
@@ -103,12 +88,8 @@
     "/championships/{championship_id}": {
       "get": {
         "description": "Retrieve championship details",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Championships"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Championships"],
         "summary": "Retrieve championship details",
         "operationId": "getChampionship",
         "parameters": [
@@ -123,10 +104,7 @@
             "uniqueItems": true,
             "type": "array",
             "items": {
-              "enum": [
-                "organizer",
-                "game"
-              ],
+              "enum": ["organizer", "game"],
               "type": "string"
             },
             "collectionFormat": "csv",
@@ -166,12 +144,8 @@
     "/championships/{championship_id}/matches": {
       "get": {
         "description": "Retrieve all matches of a championship",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Championships"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Championships"],
         "summary": "Retrieve all matches of a championship",
         "operationId": "getChampionshipMatches",
         "parameters": [
@@ -183,12 +157,7 @@
             "required": true
           },
           {
-            "enum": [
-              "all",
-              "upcoming",
-              "ongoing",
-              "past"
-            ],
+            "enum": ["all", "upcoming", "ongoing", "past"],
             "type": "string",
             "description": "Kind of matches to return. Can be all(default), upcoming, ongoing or past",
             "name": "type",
@@ -246,12 +215,8 @@
     "/championships/{championship_id}/results": {
       "get": {
         "description": "Retrieve all results of a championship",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Championships"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Championships"],
         "summary": "Retrieve all results of a championship",
         "operationId": "getChampionshipResults",
         "parameters": [
@@ -314,12 +279,8 @@
     "/championships/{championship_id}/subscriptions": {
       "get": {
         "description": "Retrieve all subscriptions of a championship",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Championships"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Championships"],
         "summary": "Retrieve all subscriptions of a championship",
         "operationId": "getChampionshipSubscriptions",
         "parameters": [
@@ -382,12 +343,8 @@
     "/games": {
       "get": {
         "description": "Retrieve details of all games on FACEIT",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Games"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Games"],
         "summary": "Retrieve details of all games on FACEIT",
         "operationId": "getAllGames",
         "parameters": [
@@ -443,12 +400,8 @@
     "/games/{gameId}/matchmakings": {
       "get": {
         "description": "Retrieve details of all matchmakings of a game on FACEIT",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Games"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Games"],
         "summary": "Retrieve details of all matchmakings of a game on FACEIT",
         "operationId": "getGameMatchmakings",
         "parameters": [
@@ -519,12 +472,8 @@
     "/games/{game_id}": {
       "get": {
         "description": "Retrieve game details",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Games"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Games"],
         "summary": "Retrieve game details",
         "operationId": "getGame",
         "parameters": [
@@ -567,12 +516,8 @@
     "/games/{game_id}/parent": {
       "get": {
         "description": "Retrieve the details of the parent game, if the game is region-specific",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Games"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Games"],
         "summary": "Retrieve the details of the parent game, if the game is region-specific",
         "operationId": "getParentGame",
         "parameters": [
@@ -615,12 +560,8 @@
     "/games/{game_id}/queues": {
       "get": {
         "description": "Retrieve queues by filters on FACEIT. Available only for game developers and queue owners(organizers)",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Games"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Games"],
         "summary": "Retrieve queues by filters on FACEIT",
         "operationId": "getQueuesByEntityFilters",
         "parameters": [
@@ -699,12 +640,8 @@
     "/games/{game_id}/queues/{queue_id}": {
       "get": {
         "description": "Retrieve details of a queue on FACEIT. Available only for game or queue owners(organizers)",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Games"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Games"],
         "summary": "Retrieve details of a queue on FACEIT",
         "operationId": "getQueueById",
         "parameters": [
@@ -758,12 +695,8 @@
     "/games/{game_id}/queues/{queue_id}/bans": {
       "get": {
         "description": "Retrieve queue bans on FACEIT. Available only for game or queue owners(organizers)",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Games"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Games"],
         "summary": "Retrieve queue bans on FACEIT",
         "operationId": "getQueueBans",
         "parameters": [
@@ -834,12 +767,8 @@
     "/games/{game_id}/regions/{region_id}/queues": {
       "get": {
         "description": "Retrieve queues by region on FACEIT. Available only for game developers",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Games"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Games"],
         "summary": "Retrieve queues by region on FACEIT",
         "operationId": "getQueuesByRegion",
         "parameters": [
@@ -911,12 +840,8 @@
     "/hubs/{hub_id}": {
       "get": {
         "description": "Retrieve hub details",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Hubs"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Hubs"],
         "summary": "Retrieve hub details",
         "operationId": "getHub",
         "parameters": [
@@ -931,10 +856,7 @@
             "uniqueItems": true,
             "type": "array",
             "items": {
-              "enum": [
-                "organizer",
-                "game"
-              ],
+              "enum": ["organizer", "game"],
               "type": "string"
             },
             "collectionFormat": "csv",
@@ -974,12 +896,8 @@
     "/hubs/{hub_id}/matches": {
       "get": {
         "description": "Retrieve all matches of a hub",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Hubs"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Hubs"],
         "summary": "Retrieve all matches of a hub",
         "operationId": "getHubMatches",
         "parameters": [
@@ -991,12 +909,7 @@
             "required": true
           },
           {
-            "enum": [
-              "all",
-              "upcoming",
-              "ongoing",
-              "past"
-            ],
+            "enum": ["all", "upcoming", "ongoing", "past"],
             "type": "string",
             "description": "Kind of matches to return. Can be all(default), upcoming, ongoing or past",
             "name": "type",
@@ -1054,12 +967,8 @@
     "/hubs/{hub_id}/members": {
       "get": {
         "description": "Retrieve all members of a hub",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Hubs"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Hubs"],
         "summary": "Retrieve all members of a hub",
         "operationId": "getHubMembers",
         "parameters": [
@@ -1120,12 +1029,8 @@
     "/hubs/{hub_id}/roles": {
       "get": {
         "description": "Retrieve all roles members can have in a hub",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Hubs"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Hubs"],
         "summary": "Retrieve all roles members can have in a hub",
         "operationId": "getHubRoles",
         "parameters": [
@@ -1189,12 +1094,8 @@
     "/hubs/{hub_id}/rules": {
       "get": {
         "description": "Retrieve rules of a hub",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Hubs"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Hubs"],
         "summary": "Retrieve rules of a hub",
         "operationId": "getHubRules",
         "parameters": [
@@ -1237,12 +1138,8 @@
     "/hubs/{hub_id}/stats": {
       "get": {
         "description": "Retrieve statistics of a hub",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Hubs"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Hubs"],
         "summary": "Retrieve statistics of a hub",
         "operationId": "getHubStats",
         "parameters": [
@@ -1305,12 +1202,8 @@
     "/leaderboards/championships/{championship_id}": {
       "get": {
         "description": "Retrieve all leaderboards of a championship",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Leaderboards"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Leaderboards"],
         "summary": "Retrieve all leaderboards of a championship",
         "operationId": "getChampionshipLeaderboards",
         "parameters": [
@@ -1373,12 +1266,8 @@
     "/leaderboards/championships/{championship_id}/groups/{group}": {
       "get": {
         "description": "Retrieve group ranking of a championship",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Leaderboards"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Leaderboards"],
         "summary": "Retrieve group ranking of a championship",
         "operationId": "getChampionshipGroupRanking",
         "parameters": [
@@ -1448,12 +1337,8 @@
     "/leaderboards/hubs/{hub_id}": {
       "get": {
         "description": "Retrieve all leaderboards of a hub",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Leaderboards"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Leaderboards"],
         "summary": "Retrieve all leaderboards of a hub",
         "operationId": "getHubLeaderboards",
         "parameters": [
@@ -1516,12 +1401,8 @@
     "/leaderboards/hubs/{hub_id}/general": {
       "get": {
         "description": "Retrieve all time ranking of a hub",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Leaderboards"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Leaderboards"],
         "summary": "Retrieve all time ranking of a hub",
         "operationId": "getHubRanking",
         "parameters": [
@@ -1584,12 +1465,8 @@
     "/leaderboards/hubs/{hub_id}/seasons/{season}": {
       "get": {
         "description": "Retrieve seasonal ranking of a hub",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Leaderboards"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Leaderboards"],
         "summary": "Retrieve seasonal ranking of a hub",
         "operationId": "getHubSeasonRanking",
         "parameters": [
@@ -1659,12 +1536,8 @@
     "/leaderboards/{leaderboard_id}": {
       "get": {
         "description": "Retrieve ranking from a leaderboard id",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Leaderboards"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Leaderboards"],
         "summary": "Retrieve ranking from a leaderboard id",
         "operationId": "getLeaderboard",
         "parameters": [
@@ -1727,12 +1600,8 @@
     "/leaderboards/{leaderboard_id}/players/{player_id}": {
       "get": {
         "description": "Retrieve a players ranking in a leaderboard",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Leaderboards"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Leaderboards"],
         "summary": "Retrieve a players ranking in a leaderboard",
         "operationId": "getPlayerRankingInLeaderboard",
         "parameters": [
@@ -1785,12 +1654,8 @@
     "/leagues/{league_id}": {
       "get": {
         "description": "Retrieve details of a league of a matchmaking on FACEIT",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Leagues"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Leagues"],
         "summary": "Retrieve details of a league of a matchmaking on FACEIT",
         "operationId": "getLeagueById",
         "parameters": [
@@ -1836,12 +1701,8 @@
     "/leagues/{league_id}/seasons/{season_id}": {
       "get": {
         "description": "Retrieve details of a season of a league on FACEIT",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Leagues"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Leagues"],
         "summary": "Retrieve details of a season of a league on FACEIT",
         "operationId": "getLeagueSeason",
         "parameters": [
@@ -1896,12 +1757,8 @@
     "/leagues/{league_id}/seasons/{season_id}/players/{player_id}": {
       "get": {
         "description": "Retrieve details of a player for a given league and season on FACEIT",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Leagues"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Leagues"],
         "summary": "Retrieve details of a player for a given league and season on FACEIT",
         "operationId": "getPlayerForLeagueSeason",
         "parameters": [
@@ -1964,12 +1821,8 @@
     "/matches/{match_id}": {
       "get": {
         "description": "Retrieve match details",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Matches"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Matches"],
         "summary": "Retrieve match details",
         "operationId": "getMatch",
         "parameters": [
@@ -2012,12 +1865,8 @@
     "/matches/{match_id}/stats": {
       "get": {
         "description": "Retrieve statistics of a match",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Matches"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Matches"],
         "summary": "Retrieve statistics of a match",
         "operationId": "getMatchStats",
         "parameters": [
@@ -2060,12 +1909,8 @@
     "/matchmakings/{matchmaking_id}": {
       "get": {
         "description": "Retrieve details of a matchmaking of a game on FACEIT",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Matchmakings"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Matchmakings"],
         "summary": "Retrieve details of a matchmaking of a game on FACEIT",
         "operationId": "getMatchmaking",
         "parameters": [
@@ -2111,12 +1956,8 @@
     "/organizers": {
       "get": {
         "description": "Retrieve organizer details from name",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Organizers"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Organizers"],
         "summary": "Retrieve organizer details from name",
         "operationId": "getOrganizerByName",
         "parameters": [
@@ -2162,12 +2003,8 @@
     "/organizers/{organizer_id}": {
       "get": {
         "description": "Retrieve organizer details",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Organizers"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Organizers"],
         "summary": "Retrieve organizer details",
         "operationId": "getOrganizer",
         "parameters": [
@@ -2210,12 +2047,8 @@
     "/organizers/{organizer_id}/championships": {
       "get": {
         "description": "Retrieve all championships of an organizer",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Organizers"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Organizers"],
         "summary": "Retrieve all championships of an organizer",
         "operationId": "getOrganizerChampionships",
         "parameters": [
@@ -2278,12 +2111,8 @@
     "/organizers/{organizer_id}/games": {
       "get": {
         "description": "Retrieve all games an organizer is involved with",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Organizers"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Organizers"],
         "summary": "Retrieve all games an organizer is involved with",
         "operationId": "getOrganizerGames",
         "parameters": [
@@ -2326,12 +2155,8 @@
     "/organizers/{organizer_id}/hubs": {
       "get": {
         "description": "Retrieve all hubs of an organizer",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Organizers"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Organizers"],
         "summary": "Retrieve all hubs of an organizer",
         "operationId": "getOrganizerHubs",
         "parameters": [
@@ -2395,12 +2220,8 @@
     "/organizers/{organizer_id}/tournaments": {
       "get": {
         "description": "Retrieve all tournaments of an organizer",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Organizers"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Organizers"],
         "summary": "Retrieve all tournaments of an organizer",
         "operationId": "getOrganizerTournaments",
         "parameters": [
@@ -2412,10 +2233,7 @@
             "required": true
           },
           {
-            "enum": [
-              "past",
-              "upcoming"
-            ],
+            "enum": ["past", "upcoming"],
             "type": "string",
             "description": "Kind of tournament. Can be upcoming(default) or past",
             "name": "type",
@@ -2473,12 +2291,8 @@
     "/players": {
       "get": {
         "description": "Retrieve player details",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Players"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Players"],
         "summary": "Retrieve player details",
         "operationId": "getPlayerFromLookup",
         "parameters": [
@@ -2535,12 +2349,8 @@
     "/players/{player_id}": {
       "get": {
         "description": "Retrieve player details",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Players"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Players"],
         "summary": "Retrieve player details",
         "operationId": "getPlayer",
         "parameters": [
@@ -2583,12 +2393,8 @@
     "/players/{player_id}/bans": {
       "get": {
         "description": "Retrieve all bans of a player",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Players"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Players"],
         "summary": "Retrieve all bans of a player",
         "operationId": "getPlayerBans",
         "parameters": [
@@ -2648,12 +2454,8 @@
     "/players/{player_id}/games/{game_id}/stats": {
       "get": {
         "description": "Retrieve statistics of a player for a given amount of matches",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Players"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Players"],
         "summary": "Retrieve statistics of a player for a given amount of matches",
         "operationId": "getPlayerStats",
         "parameters": [
@@ -2734,12 +2536,8 @@
     "/players/{player_id}/history": {
       "get": {
         "description": "Retrieve all matches of a player",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Players"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Players"],
         "summary": "Retrieve all matches of a player",
         "operationId": "getPlayerHistory",
         "parameters": [
@@ -2824,12 +2622,8 @@
     "/players/{player_id}/hubs": {
       "get": {
         "description": "Retrieve all hubs of a player",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Players"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Players"],
         "summary": "Retrieve all hubs of a player",
         "operationId": "getPlayerHubs",
         "parameters": [
@@ -2893,12 +2687,8 @@
     "/players/{player_id}/stats/{game_id}": {
       "get": {
         "description": "Retrieve statistics of a player",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Players"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Players"],
         "summary": "Retrieve statistics of a player",
         "operationId": "getPlayerStats",
         "parameters": [
@@ -2948,12 +2738,8 @@
     "/players/{player_id}/teams": {
       "get": {
         "description": "Retrieve all teams of a player",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Players"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Players"],
         "summary": "Retrieve all teams of a player",
         "operationId": "getPlayerTeams",
         "parameters": [
@@ -3013,12 +2799,8 @@
     "/players/{player_id}/tournaments": {
       "get": {
         "description": "Retrieve all tournaments of a player",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Players"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Players"],
         "summary": "Retrieve all tournaments of a player",
         "operationId": "getPlayerTournaments",
         "parameters": [
@@ -3081,12 +2863,8 @@
     "/rankings/games/{game_id}/regions/{region}": {
       "get": {
         "description": "Retrieve global ranking of a game",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Rankings"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Rankings"],
         "summary": "Retrieve global ranking of a game",
         "operationId": "getGlobalRanking",
         "parameters": [
@@ -3159,12 +2937,8 @@
     "/rankings/games/{game_id}/regions/{region}/players/{player_id}": {
       "get": {
         "description": "Retrieve user position in the global ranking of a game",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Rankings"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Rankings"],
         "summary": "Retrieve user position in the global ranking of a game",
         "operationId": "getPlayerRanking",
         "parameters": [
@@ -3236,12 +3010,8 @@
     "/search/championships": {
       "get": {
         "description": "Search for championships",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Search"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Search"],
         "summary": "Search for championships",
         "operationId": "searchChampionships",
         "parameters": [
@@ -3265,12 +3035,7 @@
             "in": "query"
           },
           {
-            "enum": [
-              "all",
-              "upcoming",
-              "ongoing",
-              "past"
-            ],
+            "enum": ["all", "upcoming", "ongoing", "past"],
             "type": "string",
             "description": "Kind of competitions to return",
             "name": "type",
@@ -3328,12 +3093,8 @@
     "/search/clans": {
       "get": {
         "description": "Search for clans",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Search"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Search"],
         "summary": "Search for clans",
         "operationId": "searchClans",
         "parameters": [
@@ -3408,12 +3169,8 @@
     "/search/hubs": {
       "get": {
         "description": "Search for hubs",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Search"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Search"],
         "summary": "Search for hubs",
         "operationId": "searchHubs",
         "parameters": [
@@ -3488,12 +3245,8 @@
     "/search/organizers": {
       "get": {
         "description": "Search for organizers",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Search"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Search"],
         "summary": "Search for organizers",
         "operationId": "searchOrganizers",
         "parameters": [
@@ -3556,12 +3309,8 @@
     "/search/players": {
       "get": {
         "description": "Search for players",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Search"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Search"],
         "summary": "Search for players",
         "operationId": "searchPlayers",
         "parameters": [
@@ -3636,12 +3385,8 @@
     "/search/teams": {
       "get": {
         "description": "Search for teams",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Search"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Search"],
         "summary": "Search for teams",
         "operationId": "searchTeams",
         "parameters": [
@@ -3710,12 +3455,8 @@
     "/search/tournaments": {
       "get": {
         "description": "Search for tournaments",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Search"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Search"],
         "summary": "Search for tournaments",
         "operationId": "searchTournaments",
         "parameters": [
@@ -3739,12 +3480,7 @@
             "in": "query"
           },
           {
-            "enum": [
-              "all",
-              "upcoming",
-              "ongoing",
-              "past"
-            ],
+            "enum": ["all", "upcoming", "ongoing", "past"],
             "type": "string",
             "description": "Kind of competitions to return",
             "name": "type",
@@ -3802,12 +3538,8 @@
     "/teams/{team_id}": {
       "get": {
         "description": "Retrieve team details",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Teams"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Teams"],
         "summary": "Retrieve team details",
         "operationId": "getTeam",
         "parameters": [
@@ -3850,12 +3582,8 @@
     "/teams/{team_id}/stats/{game_id}": {
       "get": {
         "description": "Retrieve statistics of a team",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Teams"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Teams"],
         "summary": "Retrieve statistics of a team",
         "operationId": "getTeamStats",
         "parameters": [
@@ -3905,12 +3633,8 @@
     "/teams/{team_id}/tournaments": {
       "get": {
         "description": "Retrieve tournaments of a team",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Teams"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Teams"],
         "summary": "Retrieve tournaments of a team",
         "operationId": "getTeamTournaments",
         "parameters": [
@@ -3973,12 +3697,8 @@
     "/tournaments": {
       "get": {
         "description": "Retrieve tournaments v1 (no longer used). Please refer to the Championships controller to retrieve tournaments v2",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Tournaments"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Tournaments"],
         "summary": "Retrieve tournaments v1 (no longer used)",
         "operationId": "getTournamentsList",
         "parameters": [
@@ -4046,12 +3766,8 @@
     "/tournaments/{tournament_id}": {
       "get": {
         "description": "Retrieve tournament details",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Tournaments"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Tournaments"],
         "summary": "Retrieve tournament details",
         "operationId": "getTournament",
         "parameters": [
@@ -4066,10 +3782,7 @@
             "uniqueItems": true,
             "type": "array",
             "items": {
-              "enum": [
-                "organizer",
-                "game"
-              ],
+              "enum": ["organizer", "game"],
               "type": "string"
             },
             "collectionFormat": "csv",
@@ -4109,12 +3822,8 @@
     "/tournaments/{tournament_id}/brackets": {
       "get": {
         "description": "Retrieve brackets of a tournament",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Tournaments"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Tournaments"],
         "summary": "Retrieve brackets of a tournament",
         "operationId": "getTournamentBrackets",
         "parameters": [
@@ -4157,12 +3866,8 @@
     "/tournaments/{tournament_id}/matches": {
       "get": {
         "description": "Retrieve all matches of a tournament",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Tournaments"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Tournaments"],
         "summary": "Retrieve all matches of a tournament",
         "operationId": "getTournamentMatches",
         "parameters": [
@@ -4225,12 +3930,8 @@
     "/tournaments/{tournament_id}/teams": {
       "get": {
         "description": "Retrieve all teams of a tournament",
-        "produces": [
-          "application/json"
-        ],
-        "tags": [
-          "Tournaments"
-        ],
+        "produces": ["application/json"],
+        "tags": ["Tournaments"],
         "summary": "Retrieve all teams of a tournament",
         "operationId": "getTournamentTeams",
         "parameters": [
@@ -4360,10 +4061,7 @@
     "AuthenticateOKBody": {
       "description": "AuthenticateOKBody authenticate o k body",
       "type": "object",
-      "required": [
-        "IdentityToken",
-        "Status"
-      ],
+      "required": ["IdentityToken", "Status"],
       "properties": {
         "IdentityToken": {
           "description": "An opaque token used to authenticate a user after a successful login",
@@ -5248,10 +4946,7 @@
     "ContainerTopOKBody": {
       "description": "ContainerTopOKBody OK response to ContainerTop operation",
       "type": "object",
-      "required": [
-        "Processes",
-        "Titles"
-      ],
+      "required": ["Processes", "Titles"],
       "properties": {
         "Processes": {
           "description": "Each process running in the container, where each is process\nis an array of values corresponding to the titles.",
@@ -5276,9 +4971,7 @@
     "ContainerUpdateOKBody": {
       "description": "ContainerUpdateOKBody OK response to ContainerUpdate operation",
       "type": "object",
-      "required": [
-        "Warnings"
-      ],
+      "required": ["Warnings"],
       "properties": {
         "Warnings": {
           "description": "warnings",
@@ -5327,10 +5020,7 @@
       "description": "OK response to ContainerCreate operation",
       "type": "object",
       "title": "CreateResponse ContainerCreateResponse",
-      "required": [
-        "Id",
-        "Warnings"
-      ],
+      "required": ["Id", "Warnings"],
       "properties": {
         "Id": {
           "description": "The ID of the created container",
@@ -5473,9 +5163,7 @@
     "ErrorResponse": {
       "type": "object",
       "title": "ErrorResponse Represents an error.",
-      "required": [
-        "message"
-      ],
+      "required": ["message"],
       "properties": {
         "message": {
           "description": "The error message.",
@@ -5546,10 +5234,7 @@
     "FilesystemChange": {
       "type": "object",
       "title": "FilesystemChange Change in the container's filesystem.",
-      "required": [
-        "Kind",
-        "Path"
-      ],
+      "required": ["Kind", "Path"],
       "properties": {
         "Kind": {
           "$ref": "#/definitions/ChangeType"
@@ -5811,10 +5496,7 @@
     "GraphDriverData": {
       "description": "GraphDriverData Information about the storage driver used to store the container's and\nimage's filesystem.",
       "type": "object",
-      "required": [
-        "Data",
-        "Name"
-      ],
+      "required": ["Data", "Name"],
       "properties": {
         "Data": {
           "description": "Low-level storage metadata, provided as key/value pairs.\n\nThis information is driver-specific, and depends on the storage-driver\nin use, and should be used for informational purposes only.",
@@ -5862,14 +5544,7 @@
     "HistoryResponseItem": {
       "description": "HistoryResponseItem individual image layer information in response to ImageHistory operation",
       "type": "object",
-      "required": [
-        "Comment",
-        "Created",
-        "CreatedBy",
-        "Id",
-        "Size",
-        "Tags"
-      ],
+      "required": ["Comment", "Created", "CreatedBy", "Id", "Size", "Tags"],
       "properties": {
         "Comment": {
           "description": "comment",
@@ -6131,9 +5806,7 @@
     "IdResponse": {
       "description": "IDResponse Response to an API call that returns just an Id",
       "type": "object",
-      "required": [
-        "Id"
-      ],
+      "required": ["Id"],
       "properties": {
         "Id": {
           "description": "The id of the newly created object.",
@@ -7614,9 +7287,7 @@
         },
         "lifetime": {
           "type": "object",
-          "additionalProperties": {
-
-          },
+          "additionalProperties": {},
           "x-go-name": "Lifetime"
         },
         "player_id": {
@@ -7627,9 +7298,7 @@
           "type": "array",
           "items": {
             "type": "object",
-            "additionalProperties": {
-
-            }
+            "additionalProperties": {}
           },
           "x-go-name": "Segments"
         }
@@ -7641,9 +7310,7 @@
       "properties": {
         "stats": {
           "type": "object",
-          "additionalProperties": {
-
-          },
+          "additionalProperties": {},
           "x-go-name": "Stats"
         }
       },
@@ -7683,9 +7350,7 @@
         },
         "player_stats": {
           "type": "object",
-          "additionalProperties": {
-
-          },
+          "additionalProperties": {},
           "x-go-name": "PlayerStats"
         }
       },
@@ -7694,12 +7359,7 @@
     "Plugin": {
       "description": "Plugin A plugin for the Engine API",
       "type": "object",
-      "required": [
-        "Config",
-        "Enabled",
-        "Name",
-        "Settings"
-      ],
+      "required": ["Config", "Enabled", "Name", "Settings"],
       "properties": {
         "Config": {
           "$ref": "#/definitions/PluginConfig"
@@ -7819,12 +7479,7 @@
     "PluginConfigArgs": {
       "description": "PluginConfigArgs plugin config args",
       "type": "object",
-      "required": [
-        "Description",
-        "Name",
-        "Settable",
-        "Value"
-      ],
+      "required": ["Description", "Name", "Settable", "Value"],
       "properties": {
         "Description": {
           "description": "description",
@@ -7854,10 +7509,7 @@
     "PluginConfigInterface": {
       "description": "PluginConfigInterface The interface between Docker and the plugin",
       "type": "object",
-      "required": [
-        "Socket",
-        "Types"
-      ],
+      "required": ["Socket", "Types"],
       "properties": {
         "ProtocolScheme": {
           "description": "Protocol to use for clients connecting to the plugin.",
@@ -7880,11 +7532,7 @@
     "PluginConfigLinux": {
       "description": "PluginConfigLinux plugin config linux",
       "type": "object",
-      "required": [
-        "AllowAllDevices",
-        "Capabilities",
-        "Devices"
-      ],
+      "required": ["AllowAllDevices", "Capabilities", "Devices"],
       "properties": {
         "AllowAllDevices": {
           "description": "allow all devices",
@@ -7910,9 +7558,7 @@
     "PluginConfigNetwork": {
       "description": "PluginConfigNetwork plugin config network",
       "type": "object",
-      "required": [
-        "Type"
-      ],
+      "required": ["Type"],
       "properties": {
         "Type": {
           "description": "type",
@@ -7961,12 +7607,7 @@
     "PluginDevice": {
       "description": "PluginDevice plugin device",
       "type": "object",
-      "required": [
-        "Description",
-        "Name",
-        "Path",
-        "Settable"
-      ],
+      "required": ["Description", "Name", "Path", "Settable"],
       "properties": {
         "Description": {
           "description": "description",
@@ -7993,12 +7634,7 @@
     "PluginEnv": {
       "description": "PluginEnv plugin env",
       "type": "object",
-      "required": [
-        "Description",
-        "Name",
-        "Settable",
-        "Value"
-      ],
+      "required": ["Description", "Name", "Settable", "Value"],
       "properties": {
         "Description": {
           "description": "description",
@@ -8025,11 +7661,7 @@
     "PluginInterfaceType": {
       "description": "PluginInterfaceType plugin interface type",
       "type": "object",
-      "required": [
-        "Capability",
-        "Prefix",
-        "Version"
-      ],
+      "required": ["Capability", "Prefix", "Version"],
       "properties": {
         "Capability": {
           "description": "capability",
@@ -8099,12 +7731,7 @@
     "PluginSettings": {
       "type": "object",
       "title": "PluginSettings Settings that can be modified by users.",
-      "required": [
-        "Args",
-        "Devices",
-        "Env",
-        "Mounts"
-      ],
+      "required": ["Args", "Devices", "Env", "Mounts"],
       "properties": {
         "Args": {
           "description": "args",
@@ -8140,10 +7767,7 @@
     "Port": {
       "description": "Port An open port on a container",
       "type": "object",
-      "required": [
-        "PrivatePort",
-        "Type"
-      ],
+      "required": ["PrivatePort", "Type"],
       "properties": {
         "IP": {
           "description": "Host IP address that the container's port is mapped to",
@@ -8703,9 +8327,7 @@
         },
         "round_stats": {
           "type": "object",
-          "additionalProperties": {
-
-          },
+          "additionalProperties": {},
           "x-go-name": "RoundStats"
         },
         "teams": {
@@ -9020,9 +8642,7 @@
         },
         "stats": {
           "type": "object",
-          "additionalProperties": {
-
-          },
+          "additionalProperties": {},
           "x-go-name": "Stats"
         }
       },
@@ -9228,9 +8848,7 @@
       "description": "The TeamList holds teams information.",
       "type": "object",
       "title": "TeamList Model",
-      "required": [
-        "items"
-      ],
+      "required": ["items"],
       "properties": {
         "end": {
           "type": "integer",
@@ -9297,18 +8915,14 @@
         },
         "lifetime": {
           "type": "object",
-          "additionalProperties": {
-
-          },
+          "additionalProperties": {},
           "x-go-name": "Lifetime"
         },
         "segments": {
           "type": "array",
           "items": {
             "type": "object",
-            "additionalProperties": {
-
-            }
+            "additionalProperties": {}
           },
           "x-go-name": "Segments"
         },
@@ -9337,9 +8951,7 @@
         },
         "team_stats": {
           "type": "object",
-          "additionalProperties": {
-
-          },
+          "additionalProperties": {},
           "x-go-name": "TeamStats"
         }
       },
@@ -9536,9 +9148,7 @@
         },
         "rounds": {
           "type": "array",
-          "items": {
-
-          },
+          "items": {},
           "x-go-name": "Rounds"
         },
         "rule": {
@@ -9822,10 +9432,7 @@
     "UsageData": {
       "description": "UsageData Usage details about the volume. This information is used by the\n`GET /system/df` endpoint, and omitted in other endpoints.",
       "type": "object",
-      "required": [
-        "RefCount",
-        "Size"
-      ],
+      "required": ["RefCount", "Size"],
       "properties": {
         "RefCount": {
           "description": "The number of containers referencing this volume. This field\nis set to `-1` if the reference-count is not available.",
@@ -9921,10 +9528,7 @@
             "type": "string"
           },
           "x-go-name": "Memberships",
-          "example": [
-            "free",
-            "unlimited"
-          ]
+          "example": ["free", "unlimited"]
         },
         "nickname": {
           "description": "The Nickname of a user",
@@ -10034,9 +9638,7 @@
         "Status": {
           "description": "Low-level details about the volume, provided by the volume driver.\nDetails are returned as a map with key/value pairs:\n`{\"key\":\"value\",\"key2\":\"value2\"}`.\n\nThe `Status` field is optional, and is omitted if the volume driver\ndoes not support this feature.",
           "type": "object",
-          "additionalProperties": {
-
-          }
+          "additionalProperties": {}
         },
         "UsageData": {
           "$ref": "#/definitions/UsageData"
@@ -10059,9 +9661,7 @@
       "description": "OK response to ContainerWait operation",
       "type": "object",
       "title": "WaitResponse ContainerWaitResponse",
-      "required": [
-        "StatusCode"
-      ],
+      "required": ["StatusCode"],
       "properties": {
         "Error": {
           "$ref": "#/definitions/WaitExitError"

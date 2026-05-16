@@ -1,13 +1,12 @@
-
 import { Player, Match } from "@/types/Player";
 
 export const formatDate = (timestamp: number) => {
-  return new Date(timestamp * 1000).toLocaleDateString('ro-RO', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
+  return new Date(timestamp * 1000).toLocaleDateString("ro-RO", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
   });
 };
 
@@ -25,10 +24,10 @@ export const getMatchResult = (match: Match, player: Player) => {
   const teamIds = Object.keys(match.teams);
   const winnerTeamId = match.results.winner;
 
-  let playerTeamId = '';
+  let playerTeamId = "";
   for (const teamId of teamIds) {
     const team = match.teams[teamId];
-    if (team.players?.some(p => p.player_id === player.player_id)) {
+    if (team.players?.some((p) => p.player_id === player.player_id)) {
       playerTeamId = teamId;
       break;
     }
@@ -41,27 +40,36 @@ export const getMatchResult = (match: Match, player: Player) => {
   return playerTeamId === winnerTeamId;
 };
 
-export const getMatchScore = (match: Match, matchesStats: {[key: string]: any}, player: Player) => {
+export const getMatchScore = (
+  match: Match,
+  matchesStats: { [key: string]: any },
+  player: Player,
+) => {
   const matchStatsData = matchesStats[match.match_id];
 
-  let scoreString = '';
+  let scoreString = "";
 
   // Priority 1: Check direct round_stats at root level
   if (matchStatsData?.round_stats?.Score) {
     const scoreValue = matchStatsData.round_stats.Score;
-    if (typeof scoreValue === 'string' && scoreValue.includes('/')) {
-      scoreString = scoreValue.trim().replace(/\s+/g, ' ');
+    if (typeof scoreValue === "string" && scoreValue.includes("/")) {
+      scoreString = scoreValue.trim().replace(/\s+/g, " ");
     }
   }
 
   // Priority 2: Try from match stats rounds
-  if (!scoreString && matchStatsData?.rounds && Array.isArray(matchStatsData.rounds) && matchStatsData.rounds.length > 0) {
+  if (
+    !scoreString &&
+    matchStatsData?.rounds &&
+    Array.isArray(matchStatsData.rounds) &&
+    matchStatsData.rounds.length > 0
+  ) {
     for (let i = matchStatsData.rounds.length - 1; i >= 0; i--) {
       const round = matchStatsData.rounds[i];
       if (round.round_stats?.Score) {
         const scoreValue = round.round_stats.Score;
-        if (typeof scoreValue === 'string' && scoreValue.includes('/')) {
-          scoreString = scoreValue.trim().replace(/\s+/g, ' ');
+        if (typeof scoreValue === "string" && scoreValue.includes("/")) {
+          scoreString = scoreValue.trim().replace(/\s+/g, " ");
           break;
         }
       }
@@ -73,16 +81,16 @@ export const getMatchScore = (match: Match, matchesStats: {[key: string]: any}, 
     const scoreData = matchStatsData.results.score;
     const scoreValues = Object.values(scoreData) as unknown[];
     for (const scoreValue of scoreValues) {
-      if (typeof scoreValue === 'string' && scoreValue.includes('/')) {
-        scoreString = scoreValue.trim().replace(/\s+/g, ' ');
+      if (typeof scoreValue === "string" && scoreValue.includes("/")) {
+        scoreString = scoreValue.trim().replace(/\s+/g, " ");
         break;
       }
     }
 
     if (!scoreString && scoreValues.length === 2) {
       const numericScores = scoreValues
-        .map(score => parseInt(String(score), 10))
-        .filter(score => !isNaN(score))
+        .map((score) => parseInt(String(score), 10))
+        .filter((score) => !isNaN(score))
         .sort((a, b) => b - a);
 
       if (numericScores.length === 2) {
@@ -92,12 +100,16 @@ export const getMatchScore = (match: Match, matchesStats: {[key: string]: any}, 
   }
 
   if (!scoreString) {
-    return 'N/A';
+    return "N/A";
   }
 
   // Parse the score string and format based on match result
-  const parts = scoreString.split('/').map(s => s.trim());
-  if (parts.length === 2 && !isNaN(Number(parts[0])) && !isNaN(Number(parts[1]))) {
+  const parts = scoreString.split("/").map((s) => s.trim());
+  if (
+    parts.length === 2 &&
+    !isNaN(Number(parts[0])) &&
+    !isNaN(Number(parts[1]))
+  ) {
     const score1 = parseInt(parts[0]);
     const score2 = parseInt(parts[1]);
 
@@ -116,13 +128,20 @@ export const getMatchScore = (match: Match, matchesStats: {[key: string]: any}, 
     }
   }
 
-  return 'N/A';
+  return "N/A";
 };
 
-export const getMapInfo = (match: Match, matchesStats: {[key: string]: any}) => {
+export const getMapInfo = (
+  match: Match,
+  matchesStats: { [key: string]: any },
+) => {
   const matchStatsData = matchesStats[match.match_id];
   if (matchStatsData) {
-    if (matchStatsData.rounds && Array.isArray(matchStatsData.rounds) && matchStatsData.rounds.length > 0) {
+    if (
+      matchStatsData.rounds &&
+      Array.isArray(matchStatsData.rounds) &&
+      matchStatsData.rounds.length > 0
+    ) {
       const firstRound = matchStatsData.rounds[0];
       if (firstRound.round_stats && firstRound.round_stats.Map) {
         return firstRound.round_stats.Map;
@@ -142,9 +161,9 @@ export const getMapInfo = (match: Match, matchesStats: {[key: string]: any}) => 
     }
   }
 
-  if (match.competition_name && match.competition_name !== 'CS2') {
+  if (match.competition_name && match.competition_name !== "CS2") {
     return match.competition_name;
   }
 
-  return 'Unknown';
+  return "Unknown";
 };

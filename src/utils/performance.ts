@@ -1,5 +1,5 @@
 // V2.0 Performance Monitoring and Optimization Utils
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export class PerformanceMonitor {
   private metrics = new Map<string, number[]>();
@@ -10,10 +10,10 @@ export class PerformanceMonitor {
     const start = performance.now();
     const result = fn();
     const end = performance.now();
-    
+
     this.recordMetric(name, end - start);
     console.log(`⚡ ${name}: ${(end - start).toFixed(2)}ms`);
-    
+
     return result;
   }
 
@@ -22,10 +22,10 @@ export class PerformanceMonitor {
     const start = performance.now();
     const result = await fn();
     const end = performance.now();
-    
+
     this.recordMetric(name, end - start);
     console.log(`⚡ ${name}: ${(end - start).toFixed(2)}ms`);
-    
+
     return result;
   }
 
@@ -34,10 +34,10 @@ export class PerformanceMonitor {
     if (!this.metrics.has(name)) {
       this.metrics.set(name, []);
     }
-    
+
     const values = this.metrics.get(name)!;
     values.push(value);
-    
+
     // Keep only last 100 measurements
     if (values.length > 100) {
       values.shift();
@@ -48,62 +48,62 @@ export class PerformanceMonitor {
   getMetricStats(name: string) {
     const values = this.metrics.get(name) || [];
     if (values.length === 0) return null;
-    
+
     const sorted = [...values].sort((a, b) => a - b);
     const avg = values.reduce((sum, val) => sum + val, 0) / values.length;
     const median = sorted[Math.floor(sorted.length / 2)];
     const p95 = sorted[Math.floor(sorted.length * 0.95)];
-    
+
     return {
       count: values.length,
       avg: Number(avg.toFixed(2)),
       median: Number(median.toFixed(2)),
       p95: Number(p95.toFixed(2)),
       min: Number(sorted[0].toFixed(2)),
-      max: Number(sorted[sorted.length - 1].toFixed(2))
+      max: Number(sorted[sorted.length - 1].toFixed(2)),
     };
   }
 
   // Monitor largest contentful paint
   observeLCP(): void {
-    if (typeof window === 'undefined') return;
-    
+    if (typeof window === "undefined") return;
+
     const observer = new PerformanceObserver((list) => {
       const entries = list.getEntries();
       const lastEntry = entries[entries.length - 1];
       console.log(`📊 LCP: ${lastEntry.startTime.toFixed(2)}ms`);
     });
-    
-    observer.observe({ type: 'largest-contentful-paint', buffered: true });
-    this.observers.set('lcp', observer);
+
+    observer.observe({ type: "largest-contentful-paint", buffered: true });
+    this.observers.set("lcp", observer);
   }
 
   // Monitor first input delay
   observeFID(): void {
-    if (typeof window === 'undefined') return;
-    
+    if (typeof window === "undefined") return;
+
     const observer = new PerformanceObserver((list) => {
       const entries = list.getEntries();
-      entries.forEach(entry => {
+      entries.forEach((entry) => {
         // Type assertion for FID entry
         const fidEntry = entry as any;
         const fid = fidEntry.processingStart - fidEntry.startTime;
         console.log(`📊 FID: ${fid.toFixed(2)}ms`);
       });
     });
-    
-    observer.observe({ type: 'first-input', buffered: true });
-    this.observers.set('fid', observer);
+
+    observer.observe({ type: "first-input", buffered: true });
+    this.observers.set("fid", observer);
   }
 
   // Get all metrics summary
   getAllMetrics() {
     const summary: Record<string, any> = {};
-    
+
     for (const [name] of this.metrics) {
       summary[name] = this.getMetricStats(name);
     }
-    
+
     return summary;
   }
 
@@ -114,7 +114,7 @@ export class PerformanceMonitor {
 
   // Disconnect all observers
   disconnect(): void {
-    this.observers.forEach(observer => observer.disconnect());
+    this.observers.forEach((observer) => observer.disconnect());
     this.observers.clear();
   }
 }
@@ -128,13 +128,13 @@ export const usePerformanceMonitor = (componentName: string) => {
 
   useEffect(() => {
     mountTime.current = performance.now();
-    
+
     return () => {
       if (mountTime.current) {
         const unmountTime = performance.now();
         performanceMonitor.recordMetric(
           `${componentName}-lifetime`,
-          unmountTime - mountTime.current
+          unmountTime - mountTime.current,
         );
       }
     };
@@ -142,16 +142,22 @@ export const usePerformanceMonitor = (componentName: string) => {
 
   useEffect(() => {
     renderCount.current++;
-    performanceMonitor.recordMetric(`${componentName}-renders`, renderCount.current);
+    performanceMonitor.recordMetric(
+      `${componentName}-renders`,
+      renderCount.current,
+    );
   });
 
-  const measureRender = useCallback((fn: () => void) => {
-    performanceMonitor.measureTime(`${componentName}-render`, fn);
-  }, [componentName]);
+  const measureRender = useCallback(
+    (fn: () => void) => {
+      performanceMonitor.measureTime(`${componentName}-render`, fn);
+    },
+    [componentName],
+  );
 
   return {
     measureRender,
-    renderCount: renderCount.current
+    renderCount: renderCount.current,
   };
 };
 
@@ -172,10 +178,10 @@ export const useDebounce = <T>(value: T, delay: number): T => {
   return debouncedValue;
 };
 
-// Throttle hook for performance optimization  
+// Throttle hook for performance optimization
 export const useThrottle = <T extends (...args: any[]) => any>(
   callback: T,
-  delay: number
+  delay: number,
 ): T => {
   const lastCall = useRef<number>(0);
   const lastCallTimer = useRef<NodeJS.Timeout>();
@@ -191,25 +197,28 @@ export const useThrottle = <T extends (...args: any[]) => any>(
         if (lastCallTimer.current) {
           clearTimeout(lastCallTimer.current);
         }
-        
-        lastCallTimer.current = setTimeout(() => {
-          lastCall.current = Date.now();
-          callback(...args);
-        }, delay - (now - lastCall.current));
+
+        lastCallTimer.current = setTimeout(
+          () => {
+            lastCall.current = Date.now();
+            callback(...args);
+          },
+          delay - (now - lastCall.current),
+        );
       }
     }) as T,
-    [callback, delay]
+    [callback, delay],
   );
 };
 
 // Memory usage monitoring
 export const getMemoryUsage = () => {
-  if (typeof window !== 'undefined' && 'memory' in performance) {
+  if (typeof window !== "undefined" && "memory" in performance) {
     const memory = (performance as any).memory;
     return {
       used: (memory.usedJSHeapSize / 1024 / 1024).toFixed(2),
       total: (memory.totalJSHeapSize / 1024 / 1024).toFixed(2),
-      limit: (memory.jsHeapSizeLimit / 1024 / 1024).toFixed(2)
+      limit: (memory.jsHeapSizeLimit / 1024 / 1024).toFixed(2),
     };
   }
   return null;
@@ -217,18 +226,18 @@ export const getMemoryUsage = () => {
 
 // Bundle size analyzer
 export const analyzeBundleSize = () => {
-  if (typeof window === 'undefined') return;
-  
+  if (typeof window === "undefined") return;
+
   const scripts = Array.from(document.scripts);
   let totalSize = 0;
-  
-  scripts.forEach(script => {
+
+  scripts.forEach((script) => {
     if (script.src) {
       // This is a simplified estimation
       totalSize += script.src.length;
     }
   });
-  
+
   console.log(`📦 Estimated bundle size: ${(totalSize / 1024).toFixed(2)}KB`);
   return totalSize;
 };

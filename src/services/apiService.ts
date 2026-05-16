@@ -1,4 +1,3 @@
-
 interface RetryOptions {
   maxRetries: number;
   baseDelay: number;
@@ -8,7 +7,7 @@ interface RetryOptions {
 const DEFAULT_RETRY_OPTIONS: RetryOptions = {
   maxRetries: 1,
   baseDelay: 2000, // Reduced from 3000ms for better performance
-  maxDelay: 10000 // Reduced from 15000ms
+  maxDelay: 10000, // Reduced from 15000ms
 };
 
 export class ApiService {
@@ -25,17 +24,20 @@ export class ApiService {
 
   async retryRequest<T>(
     requestFn: () => Promise<T>,
-    options: Partial<RetryOptions> = {}
+    options: Partial<RetryOptions> = {},
   ): Promise<T> {
-    const { maxRetries, baseDelay, maxDelay } = { ...DEFAULT_RETRY_OPTIONS, ...options };
-    
+    const { maxRetries, baseDelay, maxDelay } = {
+      ...DEFAULT_RETRY_OPTIONS,
+      ...options,
+    };
+
     let lastError: Error;
-    
+
     if (this.rateLimitDelay > 0) {
-      await new Promise(resolve => setTimeout(resolve, this.rateLimitDelay));
+      await new Promise((resolve) => setTimeout(resolve, this.rateLimitDelay));
       this.rateLimitDelay = Math.max(0, this.rateLimitDelay - 1000);
     }
-    
+
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
         const result = await requestFn();
@@ -43,28 +45,34 @@ export class ApiService {
         return result;
       } catch (error) {
         lastError = error as Error;
-        
-        if (lastError.message.includes('Rate limited') || lastError.message.includes('429')) {
+
+        if (
+          lastError.message.includes("Rate limited") ||
+          lastError.message.includes("429")
+        ) {
           this.rateLimitDelay = Math.min(this.rateLimitDelay + 3000, 15000); // Optimized rate limiting
         }
-        
+
         if (attempt === maxRetries) {
           throw lastError;
         }
 
         const delay = Math.min(
           baseDelay * Math.pow(1.5, attempt) + Math.random() * 1000,
-          maxDelay
+          maxDelay,
         );
 
-        await new Promise(resolve => setTimeout(resolve, delay));
+        await new Promise((resolve) => setTimeout(resolve, delay));
       }
     }
-    
+
     throw lastError!;
   }
 
-  async dedupedRequest<T>(key: string, requestFn: () => Promise<T>): Promise<T> {
+  async dedupedRequest<T>(
+    key: string,
+    requestFn: () => Promise<T>,
+  ): Promise<T> {
     if (this.requestQueue.has(key)) {
       return this.requestQueue.get(key)!;
     }

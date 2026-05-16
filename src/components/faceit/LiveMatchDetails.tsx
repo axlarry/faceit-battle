@@ -1,20 +1,22 @@
-
-import React from 'react';
-import { MapPin } from 'lucide-react';
+import React from "react";
+import { MapPin } from "lucide-react";
 
 interface LiveMatchDetailsProps {
   isLive: boolean;
   liveMatchDetails?: any;
 }
 
-export const LiveMatchDetails = ({ isLive, liveMatchDetails }: LiveMatchDetailsProps) => {
+export const LiveMatchDetails = ({
+  isLive,
+  liveMatchDetails,
+}: LiveMatchDetailsProps) => {
   if (!isLive || !liveMatchDetails) return null;
 
   // Format map display with server country
   const getMapDisplay = () => {
-    const map = liveMatchDetails.map || 'Hartă Necunoscută';
+    const map = liveMatchDetails.map || "Hartă Necunoscută";
     const server = liveMatchDetails.server;
-    
+
     if (server) {
       return `${map} (${server})`;
     }
@@ -34,16 +36,26 @@ export const LiveMatchDetails = ({ isLive, liveMatchDetails }: LiveMatchDetailsP
           <div className="flex items-center gap-1.5 flex-shrink-0">
             {liveMatchDetails.score && (
               <div className="bg-gray-800/40 px-2 py-0.5 rounded text-white font-bold text-xs">
-                {liveMatchDetails.score === ':' && liveMatchDetails.result === 'drawing' ? '0:0' : liveMatchDetails.score}
+                {liveMatchDetails.score === ":" &&
+                liveMatchDetails.result === "drawing"
+                  ? "0:0"
+                  : liveMatchDetails.score}
               </div>
             )}
             {liveMatchDetails.result && (
-              <div className={`px-2 py-0.5 rounded font-medium capitalize text-xs ${
-                liveMatchDetails.result === 'winning' ? 'text-green-300 bg-green-500/15' : 
-                liveMatchDetails.result === 'losing' ? 'text-red-300 bg-red-500/15' : 
-                'text-yellow-300 bg-yellow-500/15'
-              }`}>
-                {liveMatchDetails.result === 'drawing' && liveMatchDetails.score === ':' ? 'Starting match' : liveMatchDetails.result}
+              <div
+                className={`px-2 py-0.5 rounded font-medium capitalize text-xs ${
+                  liveMatchDetails.result === "winning"
+                    ? "text-green-300 bg-green-500/15"
+                    : liveMatchDetails.result === "losing"
+                      ? "text-red-300 bg-red-500/15"
+                      : "text-yellow-300 bg-yellow-500/15"
+                }`}
+              >
+                {liveMatchDetails.result === "drawing" &&
+                liveMatchDetails.score === ":"
+                  ? "Starting match"
+                  : liveMatchDetails.result}
               </div>
             )}
           </div>

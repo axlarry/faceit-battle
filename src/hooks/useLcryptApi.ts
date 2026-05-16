@@ -1,16 +1,15 @@
-
-import { useState, useEffect } from 'react';
-import { lcryptOptimizedService } from '@/services/lcryptOptimizedService';
+import { useState, useEffect } from "react";
+import { enrichedPlayerService } from "@/services/enrichedPlayerService";
 
 interface LcryptEloData {
   elo: number;
-  level: string;
-  region: string;
-  country: string;
-  country_flag: string;
-  region_ranking: number;
-  country_ranking: number;
-  report: string;
+  level?: string;
+  region?: string;
+  country?: string;
+  country_flag?: string;
+  region_ranking?: number;
+  country_ranking?: number;
+  report?: string;
   today?: {
     present: boolean;
     win: number;
@@ -24,7 +23,11 @@ interface LcryptEloData {
   error: boolean;
 }
 
-export const useLcryptApi = (nickname: string, playerId?: string, country?: string) => {
+export const useLcryptApi = (
+  nickname: string,
+  playerId?: string,
+  country?: string,
+) => {
   const [data, setData] = useState<LcryptEloData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -37,31 +40,31 @@ export const useLcryptApi = (nickname: string, playerId?: string, country?: stri
       setError(null);
 
       try {
-        const result = await lcryptOptimizedService.getCompletePlayerData(
+        const result = await enrichedPlayerService.getEnrichedPlayerData(
           nickname,
           playerId,
-          country
+          country,
         );
 
         if (!result || result.error === true) {
-          throw new Error('Failed to fetch player data');
+          throw new Error("Failed to fetch player data");
         }
 
         setData({
-          elo: result.elo || 0,
-          level: result.level || '',
-          region: result.region || '',
-          country: result.country || '',
-          country_flag: result.country_flag || '',
-          region_ranking: result.region_ranking || 0,
-          country_ranking: result.country_ranking || 0,
-          report: result.report || '',
+          elo: result.elo ?? 0,
+          level: result.level ?? "",
+          region: result.region ?? "",
+          country: result.country ?? "",
+          country_flag: result.country_flag ?? "",
+          region_ranking: result.region_ranking ?? 0,
+          country_ranking: result.country_ranking ?? 0,
+          report: result.report ?? "",
           today: result.today,
           detail: result.rawData?.detail,
           error: false,
         });
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Unknown error');
+        setError(err instanceof Error ? err.message : "Unknown error");
       } finally {
         setLoading(false);
       }

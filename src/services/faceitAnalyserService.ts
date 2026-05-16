@@ -1,9 +1,12 @@
-import { toast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
-import { invokeEdgeFunction, isDiscordActivity } from '@/lib/discordProxy';
+import { toast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+import { invokeEdgeFunction, isDiscordActivity } from "@/lib/discordProxy";
 
 // Helper to invoke edge functions with Discord proxy support
-const invokeFunction = async (functionName: string, body: Record<string, unknown>) => {
+const invokeFunction = async (
+  functionName: string,
+  body: Record<string, unknown>,
+) => {
   if (isDiscordActivity()) {
     return invokeEdgeFunction(functionName, body);
   }
@@ -63,11 +66,19 @@ export interface FaceitAnalyserComplete {
 }
 
 export class FaceitAnalyserService {
-  private async fetchEndpoint(nickname: string, endpoint: string): Promise<any> {
-    const { data, error } = await invokeFunction('get-faceit-analyser-data', { nickname, endpoint });
+  private async fetchEndpoint(
+    nickname: string,
+    endpoint: string,
+  ): Promise<any> {
+    const { data, error } = await invokeFunction("get-faceit-analyser-data", {
+      nickname,
+      endpoint,
+    });
 
     if (error) {
-      throw new Error((error as any)?.message || 'Failed to fetch analyser data');
+      throw new Error(
+        (error as any)?.message || "Failed to fetch analyser data",
+      );
     }
 
     if ((data as any)?.error) {
@@ -79,37 +90,59 @@ export class FaceitAnalyserService {
 
   async getPlayerStats(nickname: string): Promise<FaceitAnalyserData | null> {
     try {
-      return await this.fetchEndpoint(nickname, 'stats');
+      return await this.fetchEndpoint(nickname, "stats");
     } catch (error) {
-      console.error('Error fetching FaceitAnalyser stats:', error);
+      console.error("Error fetching FaceitAnalyser stats:", error);
       return null;
     }
   }
 
-  async getCompletePlayerData(nickname: string): Promise<FaceitAnalyserComplete | null> {
+  async getCompletePlayerData(
+    nickname: string,
+  ): Promise<FaceitAnalyserComplete | null> {
     try {
-      const endpoints = ['overview', 'stats', 'matches', 'hubs', 'maps', 'names', 'highlights', 'playerGraphs'] as const;
+      const endpoints = [
+        "overview",
+        "stats",
+        "matches",
+        "hubs",
+        "maps",
+        "names",
+        "highlights",
+        "playerGraphs",
+      ] as const;
       const results = await Promise.allSettled(
-        endpoints.map(ep => this.fetchEndpoint(nickname, ep))
+        endpoints.map((ep) => this.fetchEndpoint(nickname, ep)),
       );
 
-      const [overview, stats, matches, hubs, maps, names, highlights, playerGraphs] = results;
+      const [
+        overview,
+        stats,
+        matches,
+        hubs,
+        maps,
+        names,
+        highlights,
+        playerGraphs,
+      ] = results;
 
       return {
-        overview: overview.status === 'fulfilled' ? overview.value : null,
-        stats: stats.status === 'fulfilled' ? stats.value : null,
-        matches: matches.status === 'fulfilled' ? matches.value : [],
-        hubs: hubs.status === 'fulfilled' ? hubs.value : [],
-        maps: maps.status === 'fulfilled' ? maps.value : null,
-        names: names.status === 'fulfilled' ? names.value : [],
-        highlights: highlights.status === 'fulfilled' ? highlights.value : [],
-        playerGraphs: playerGraphs.status === 'fulfilled' ? playerGraphs.value : null,
+        overview: overview.status === "fulfilled" ? overview.value : null,
+        stats: stats.status === "fulfilled" ? stats.value : null,
+        matches: matches.status === "fulfilled" ? matches.value : [],
+        hubs: hubs.status === "fulfilled" ? hubs.value : [],
+        maps: maps.status === "fulfilled" ? maps.value : null,
+        names: names.status === "fulfilled" ? names.value : [],
+        highlights: highlights.status === "fulfilled" ? highlights.value : [],
+        playerGraphs:
+          playerGraphs.status === "fulfilled" ? playerGraphs.value : null,
       };
     } catch (error) {
-      console.error('Error fetching complete FaceitAnalyser data:', error);
+      console.error("Error fetching complete FaceitAnalyser data:", error);
       toast({
         title: "Eroare FaceitAnalyser",
-        description: "Nu s-au putut încărca datele complete din FaceitAnalyser.",
+        description:
+          "Nu s-au putut încărca datele complete din FaceitAnalyser.",
         variant: "destructive",
       });
       return null;

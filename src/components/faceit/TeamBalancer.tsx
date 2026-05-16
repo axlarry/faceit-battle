@@ -1,12 +1,12 @@
-import { useState, useMemo } from 'react';
-import { Player } from '@/types/Player';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
-import { Shuffle, Users, AlertCircle } from 'lucide-react';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useState, useMemo } from "react";
+import { Player } from "@/types/Player";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Shuffle, Users, AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface TeamBalancerProps {
   friends: Player[];
@@ -32,15 +32,17 @@ function balanceTeams(selectedPlayers: Player[]): BalancedTeams | null {
   if (selectedPlayers.length !== 10) return null;
 
   // Sort by ELO descending then shuffle to add randomness
-  const sorted = [...selectedPlayers].sort((a, b) => (b.elo || 0) - (a.elo || 0));
+  const sorted = [...selectedPlayers].sort(
+    (a, b) => (b.elo || 0) - (a.elo || 0),
+  );
   const shuffled = shuffleArray(sorted);
-  
+
   const team1: Player[] = [];
   const team2: Player[] = [];
-  
+
   // Snake draft: 1,2,2,1,1,2,2,1,1,2
   const draftOrder = [1, 2, 2, 1, 1, 2, 2, 1, 1, 2];
-  
+
   draftOrder.forEach((teamNum, index) => {
     if (teamNum === 1) {
       team1.push(shuffled[index]);
@@ -49,15 +51,19 @@ function balanceTeams(selectedPlayers: Player[]): BalancedTeams | null {
     }
   });
 
-  const team1AvgElo = team1.reduce((sum, p) => sum + (p.elo || 0), 0) / team1.length;
-  const team2AvgElo = team2.reduce((sum, p) => sum + (p.elo || 0), 0) / team2.length;
+  const team1AvgElo =
+    team1.reduce((sum, p) => sum + (p.elo || 0), 0) / team1.length;
+  const team2AvgElo =
+    team2.reduce((sum, p) => sum + (p.elo || 0), 0) / team2.length;
 
   return { team1, team2, team1AvgElo, team2AvgElo };
 }
 
 export const TeamBalancer = ({ friends }: TeamBalancerProps) => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [balancedTeams, setBalancedTeams] = useState<BalancedTeams | null>(null);
+  const [balancedTeams, setBalancedTeams] = useState<BalancedTeams | null>(
+    null,
+  );
 
   const sortedFriends = useMemo(() => {
     return [...friends].sort((a, b) => (b.elo || 0) - (a.elo || 0));
@@ -77,7 +83,9 @@ export const TeamBalancer = ({ friends }: TeamBalancerProps) => {
   };
 
   const handleScramble = () => {
-    const selectedPlayers = sortedFriends.filter(f => selectedIds.has(f.player_id));
+    const selectedPlayers = sortedFriends.filter((f) =>
+      selectedIds.has(f.player_id),
+    );
     const result = balanceTeams(selectedPlayers);
     setBalancedTeams(result);
   };
@@ -99,7 +107,10 @@ export const TeamBalancer = ({ friends }: TeamBalancerProps) => {
 
       {/* Selection Counter */}
       <div className="flex justify-center">
-        <Badge variant={selectedCount === 10 ? "default" : "secondary"} className="text-lg px-6 py-2">
+        <Badge
+          variant={selectedCount === 10 ? "default" : "secondary"}
+          className="text-lg px-6 py-2"
+        >
           <Users className="mr-2 h-5 w-5" />
           {selectedCount} / 10 selectați
         </Badge>
@@ -127,21 +138,24 @@ export const TeamBalancer = ({ friends }: TeamBalancerProps) => {
                   key={friend.player_id}
                   className={`
                     flex items-center gap-4 p-4 rounded-lg border transition-all
-                    ${isSelected 
-                      ? 'bg-primary/10 border-primary shadow-md' 
-                      : isDisabled
-                        ? 'bg-muted/30 border-border/50 opacity-50 cursor-not-allowed'
-                        : 'bg-card border-border hover:border-primary/50 cursor-pointer'
+                    ${
+                      isSelected
+                        ? "bg-primary/10 border-primary shadow-md"
+                        : isDisabled
+                          ? "bg-muted/30 border-border/50 opacity-50 cursor-not-allowed"
+                          : "bg-card border-border hover:border-primary/50 cursor-pointer"
                     }
                   `}
-                  onClick={() => !isDisabled && handleTogglePlayer(friend.player_id)}
+                  onClick={() =>
+                    !isDisabled && handleTogglePlayer(friend.player_id)
+                  }
                 >
                   <Checkbox
                     checked={isSelected}
                     disabled={isDisabled}
                     onCheckedChange={() => handleTogglePlayer(friend.player_id)}
                   />
-                  
+
                   <Avatar className="h-12 w-12">
                     <AvatarImage src={friend.avatar} alt={friend.nickname} />
                     <AvatarFallback>{friend.nickname[0]}</AvatarFallback>
@@ -150,7 +164,7 @@ export const TeamBalancer = ({ friends }: TeamBalancerProps) => {
                   <div className="flex-1">
                     <div className="font-semibold">{friend.nickname}</div>
                     <div className="text-sm text-muted-foreground">
-                      ELO: {friend.elo || 'N/A'} • Level {friend.level || 0}
+                      ELO: {friend.elo || "N/A"} • Level {friend.level || 0}
                     </div>
                   </div>
 
@@ -208,7 +222,10 @@ export const TeamBalancer = ({ friends }: TeamBalancerProps) => {
               <div className="space-y-4">
                 <div className="text-center space-y-2">
                   <h3 className="text-2xl font-bold text-blue-400">Team 1</h3>
-                  <Badge variant="outline" className="text-lg border-blue-400 text-blue-400">
+                  <Badge
+                    variant="outline"
+                    className="text-lg border-blue-400 text-blue-400"
+                  >
                     AVG ELO: {Math.round(balancedTeams.team1AvgElo)}
                   </Badge>
                 </div>
@@ -222,16 +239,19 @@ export const TeamBalancer = ({ friends }: TeamBalancerProps) => {
                       <div className="text-lg font-bold text-muted-foreground w-6">
                         {idx + 1}
                       </div>
-                      
+
                       <Avatar className="h-12 w-12">
-                        <AvatarImage src={player.avatar} alt={player.nickname} />
+                        <AvatarImage
+                          src={player.avatar}
+                          alt={player.nickname}
+                        />
                         <AvatarFallback>{player.nickname[0]}</AvatarFallback>
                       </Avatar>
 
                       <div className="flex-1">
                         <div className="font-semibold">{player.nickname}</div>
                         <div className="text-sm text-muted-foreground">
-                          ELO: {player.elo || 'N/A'}
+                          ELO: {player.elo || "N/A"}
                         </div>
                       </div>
 
@@ -253,7 +273,10 @@ export const TeamBalancer = ({ friends }: TeamBalancerProps) => {
               <div className="space-y-4">
                 <div className="text-center space-y-2">
                   <h3 className="text-2xl font-bold text-orange-400">Team 2</h3>
-                  <Badge variant="outline" className="text-lg border-orange-400 text-orange-400">
+                  <Badge
+                    variant="outline"
+                    className="text-lg border-orange-400 text-orange-400"
+                  >
                     AVG ELO: {Math.round(balancedTeams.team2AvgElo)}
                   </Badge>
                 </div>
@@ -267,16 +290,19 @@ export const TeamBalancer = ({ friends }: TeamBalancerProps) => {
                       <div className="text-lg font-bold text-muted-foreground w-6">
                         {idx + 1}
                       </div>
-                      
+
                       <Avatar className="h-12 w-12">
-                        <AvatarImage src={player.avatar} alt={player.nickname} />
+                        <AvatarImage
+                          src={player.avatar}
+                          alt={player.nickname}
+                        />
                         <AvatarFallback>{player.nickname[0]}</AvatarFallback>
                       </Avatar>
 
                       <div className="flex-1">
                         <div className="font-semibold">{player.nickname}</div>
                         <div className="text-sm text-muted-foreground">
-                          ELO: {player.elo || 'N/A'}
+                          ELO: {player.elo || "N/A"}
                         </div>
                       </div>
 
@@ -297,7 +323,12 @@ export const TeamBalancer = ({ friends }: TeamBalancerProps) => {
           {/* ELO Difference */}
           <div className="text-center">
             <Badge variant="secondary" className="text-base px-4 py-2">
-              Diferență ELO: {Math.abs(Math.round(balancedTeams.team1AvgElo - balancedTeams.team2AvgElo))}
+              Diferență ELO:{" "}
+              {Math.abs(
+                Math.round(
+                  balancedTeams.team1AvgElo - balancedTeams.team2AvgElo,
+                ),
+              )}
             </Badge>
           </div>
         </div>

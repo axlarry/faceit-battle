@@ -1,4 +1,3 @@
-
 import { Trophy } from "lucide-react";
 
 interface MatchServerInfoProps {
@@ -6,7 +5,10 @@ interface MatchServerInfoProps {
   competitionName: string;
 }
 
-export const MatchServerInfo = ({ gameMode, competitionName }: MatchServerInfoProps) => {
+export const MatchServerInfo = ({
+  gameMode,
+  competitionName,
+}: MatchServerInfoProps) => {
   return (
     <div className="bg-slate-800/30 rounded-xl p-4 border border-slate-700 text-center">
       <div className="flex items-center justify-center gap-4 text-sm">

@@ -1,6 +1,6 @@
 // V2.0 Lazy Loading Wrapper for better code splitting
-import React, { Suspense } from 'react';
-import { Skeleton } from '@/components/ui/skeleton';
+import React, { Suspense } from "react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface LazyWrapperProps {
   children: React.ReactNode;
@@ -16,28 +16,28 @@ const DefaultFallback = ({ height = "200px" }: { height?: string }) => (
   </div>
 );
 
-export const LazyWrapper = React.memo(({ 
-  children, 
-  fallback, 
-  height 
-}: LazyWrapperProps) => (
-  <Suspense fallback={fallback || <DefaultFallback height={height} />}>
-    {children}
-  </Suspense>
-));
+export const LazyWrapper = React.memo(
+  ({ children, fallback, height }: LazyWrapperProps) => (
+    <Suspense fallback={fallback || <DefaultFallback height={height} />}>
+      {children}
+    </Suspense>
+  ),
+);
 
-LazyWrapper.displayName = 'LazyWrapper';
+LazyWrapper.displayName = "LazyWrapper";
 
 // Higher-order component for lazy loading
 export function withLazy<P extends object>(
   Component: React.ComponentType<P>,
-  fallbackHeight?: string
+  fallbackHeight?: string,
 ) {
-  const LazyComponent = React.lazy(() => Promise.resolve({ default: Component }));
-  
+  const LazyComponent = React.lazy(() =>
+    Promise.resolve({ default: Component }),
+  );
+
   return React.memo((props: P) => (
     <LazyWrapper height={fallbackHeight}>
-      <LazyComponent {...props as any} />
+      <LazyComponent {...(props as any)} />
     </LazyWrapper>
   ));
 }

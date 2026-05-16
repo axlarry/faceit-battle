@@ -20,14 +20,14 @@
       "purpose": "maskable"
     },
     {
-      "src": "/faceit-icons/faceit_icon.png", 
+      "src": "/faceit-icons/faceit_icon.png",
       "sizes": "72x72",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
       "src": "/faceit-icons/faceit_icon.png",
-      "sizes": "96x96", 
+      "sizes": "96x96",
       "type": "image/png",
       "purpose": "maskable"
     },
@@ -73,7 +73,7 @@
       ]
     },
     {
-      "name": "Leaderboard", 
+      "name": "Leaderboard",
       "short_name": "Leaderboard",
       "description": "View regional leaderboards",
       "url": "/?tab=leaderboard",

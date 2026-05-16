@@ -1,28 +1,29 @@
 /**
  * Discord Activity Proxy Helper
- * 
+ *
  * Discord Activities have strict CSP that blocks external connections.
  * All external requests MUST go through Discord's proxy at /.proxy/
- * 
+ *
  * URL Mappings required in Discord Developer Portal → Activities → URL Mappings:
- * 
+ *
  * PREFIX          | TARGET
  * /supabase       | https://rwizxoeyatdtggrpnpmq.supabase.co
  * /lacurte        | https://faceit.lacurte.ro
- * 
+ *
  * In Discord, requests to /.proxy/supabase/* will be forwarded to the target.
  * The /.proxy/ prefix is REQUIRED by Discord's CSP.
  */
 
 const SUPABASE_URL = "https://rwizxoeyatdtggrpnpmq.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ3aXp4b2V5YXRkdGdncnBucG1xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2OTkwOTYsImV4cCI6MjA2NDI3NTA5Nn0.6Rpmb1a2iFqw2VZaHl-k-3otQlQuDpaxUPf28uOlLRU";
+const SUPABASE_ANON_KEY =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ3aXp4b2V5YXRkdGdncnBucG1xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2OTkwOTYsImV4cCI6MjA2NDI3NTA5Nn0.6Rpmb1a2iFqw2VZaHl-k-3otQlQuDpaxUPf28uOlLRU";
 
 const LACURTE_URL = "https://faceit.lacurte.ro";
 
 // Faceit CDN domains that need proxying in Discord
 const FACEIT_CDN_DOMAINS = [
-  'distribution.faceit-cdn.net',
-  'assets.faceit-cdn.net'
+  "distribution.faceit-cdn.net",
+  "assets.faceit-cdn.net",
 ];
 
 // Cache the detection result
@@ -33,14 +34,16 @@ let _isDiscordActivity: boolean | null = null;
  */
 export const isDiscordActivity = (): boolean => {
   if (_isDiscordActivity !== null) return _isDiscordActivity;
-  
-  if (typeof window === 'undefined') {
+
+  if (typeof window === "undefined") {
     _isDiscordActivity = false;
     return false;
   }
-  
+
   const hostname = window.location.hostname;
-  _isDiscordActivity = hostname.endsWith('.discordsays.com') || hostname.includes('discordsays.com');
+  _isDiscordActivity =
+    hostname.endsWith(".discordsays.com") ||
+    hostname.includes("discordsays.com");
   return _isDiscordActivity;
 };
 
@@ -50,7 +53,7 @@ export const isDiscordActivity = (): boolean => {
  */
 export const getSupabaseBaseUrl = (): string => {
   if (isDiscordActivity()) {
-    return '/.proxy/supabase';
+    return "/.proxy/supabase";
   }
   return SUPABASE_URL;
 };
@@ -61,7 +64,7 @@ export const getSupabaseBaseUrl = (): string => {
  */
 export const getLacurteBaseUrl = (): string => {
   if (isDiscordActivity()) {
-    return '/.proxy/lacurte';
+    return "/.proxy/lacurte";
   }
   return LACURTE_URL;
 };
@@ -71,18 +74,18 @@ export const getLacurteBaseUrl = (): string => {
  */
 export const invokeEdgeFunction = async (
   functionName: string,
-  body: Record<string, unknown>
+  body: Record<string, unknown>,
 ): Promise<{ data: unknown; error: Error | null }> => {
   const baseUrl = getSupabaseBaseUrl();
   const url = `${baseUrl}/functions/v1/${functionName}`;
-  
+
   try {
     const response = await fetch(url, {
-      method: 'POST',
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
-        'apikey': SUPABASE_ANON_KEY,
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        "Content-Type": "application/json",
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: `Bearer ${SUPABASE_ANON_KEY}`,
       },
       body: JSON.stringify(body),
     });
@@ -90,10 +93,12 @@ export const invokeEdgeFunction = async (
     const rawText = await response.text();
 
     // Check if it's HTML (Discord error page) instead of JSON
-    if (rawText.startsWith('<!DOCTYPE') || rawText.startsWith('<html')) {
+    if (rawText.startsWith("<!DOCTYPE") || rawText.startsWith("<html")) {
       return {
         data: null,
-        error: new Error('Discord proxy returned HTML instead of JSON. Check URL mapping.'),
+        error: new Error(
+          "Discord proxy returned HTML instead of JSON. Check URL mapping.",
+        ),
       };
     }
 
@@ -128,14 +133,16 @@ export const getProxiedImageUrl = (imageUrl: string): string => {
   if (!imageUrl || !isDiscordActivity()) {
     return imageUrl;
   }
-  
+
   // Check if this is a Faceit CDN URL that needs proxying
-  const needsProxy = FACEIT_CDN_DOMAINS.some(domain => imageUrl.includes(domain));
-  
+  const needsProxy = FACEIT_CDN_DOMAINS.some((domain) =>
+    imageUrl.includes(domain),
+  );
+
   if (!needsProxy) {
     return imageUrl;
   }
-  
+
   // Proxy through Supabase edge function via Discord proxy
   // Format: /.proxy/supabase/functions/v1/proxy-image?url=<encoded_url>
   const encodedUrl = encodeURIComponent(imageUrl);
@@ -150,18 +157,20 @@ export const getProxiedAvatarUrl = getProxiedImageUrl;
  * Constructs full URL from relative path and adds Discord proxy prefix
  */
 export const getProxiedLacurteUrl = (relativePath: string): string => {
-  if (!relativePath) return '';
-  
+  if (!relativePath) return "";
+
   // If it's already a full URL, return as-is (but proxy if in Discord)
-  if (relativePath.startsWith('http')) {
-    if (isDiscordActivity() && relativePath.includes('faceit.lacurte.ro')) {
-      return relativePath.replace('https://faceit.lacurte.ro', '/.proxy/lacurte');
+  if (relativePath.startsWith("http")) {
+    if (isDiscordActivity() && relativePath.includes("faceit.lacurte.ro")) {
+      return relativePath.replace(
+        "https://faceit.lacurte.ro",
+        "/.proxy/lacurte",
+      );
     }
     return relativePath;
   }
-  
+
   // Build full URL from relative path
   const baseUrl = getLacurteBaseUrl();
-  return `${baseUrl}${relativePath.startsWith('/') ? '' : '/'}${relativePath}`;
+  return `${baseUrl}${relativePath.startsWith("/") ? "" : "/"}${relativePath}`;
 };
-

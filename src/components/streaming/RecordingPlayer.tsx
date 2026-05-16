@@ -1,13 +1,24 @@
-
-import React, { useRef, useState, useEffect } from 'react';
-import { X, Maximize2, Minimize2, Volume2, VolumeX, Download, Share2, Play, Pause, Loader2, Clock } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
-import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
-import { Recording } from '@/types/streaming';
-import { recordingsService } from '@/services/recordingsService';
-import { toast } from '@/hooks/use-toast';
-import { format } from 'date-fns';
+import React, { useRef, useState, useEffect } from "react";
+import {
+  X,
+  Maximize2,
+  Minimize2,
+  Volume2,
+  VolumeX,
+  Download,
+  Share2,
+  Play,
+  Pause,
+  Loader2,
+  Clock,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
+import { Recording } from "@/types/streaming";
+import { recordingsService } from "@/services/recordingsService";
+import { toast } from "@/hooks/use-toast";
+import { format } from "date-fns";
 
 interface RecordingPlayerProps {
   recording: Recording | null;
@@ -16,17 +27,21 @@ interface RecordingPlayerProps {
 }
 
 const formatTime = (seconds: number): string => {
-  if (!isFinite(seconds) || isNaN(seconds)) return '0:00';
+  if (!isFinite(seconds) || isNaN(seconds)) return "0:00";
   const hrs = Math.floor(seconds / 3600);
   const mins = Math.floor((seconds % 3600) / 60);
   const secs = Math.floor(seconds % 60);
   if (hrs > 0) {
-    return `${hrs}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+    return `${hrs}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   }
-  return `${mins}:${secs.toString().padStart(2, '0')}`;
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
 };
 
-export const RecordingPlayer = ({ recording, isOpen, onClose }: RecordingPlayerProps) => {
+export const RecordingPlayer = ({
+  recording,
+  isOpen,
+  onClose,
+}: RecordingPlayerProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
@@ -44,23 +59,25 @@ export const RecordingPlayer = ({ recording, isOpen, onClose }: RecordingPlayerP
     const handleTimeUpdate = () => setCurrentTime(video.currentTime);
     const handleDurationChange = () => setDuration(video.duration);
 
-    video.addEventListener('timeupdate', handleTimeUpdate);
-    video.addEventListener('durationchange', handleDurationChange);
+    video.addEventListener("timeupdate", handleTimeUpdate);
+    video.addEventListener("durationchange", handleDurationChange);
 
     return () => {
-      video.removeEventListener('timeupdate', handleTimeUpdate);
-      video.removeEventListener('durationchange', handleDurationChange);
+      video.removeEventListener("timeupdate", handleTimeUpdate);
+      video.removeEventListener("durationchange", handleDurationChange);
     };
   }, [isOpen]);
 
   const toggleFullscreen = async () => {
     try {
       const video = videoRef.current;
-      const container = document.querySelector('[data-recording-player-container]') as HTMLElement;
-      
+      const container = document.querySelector(
+        "[data-recording-player-container]",
+      ) as HTMLElement;
+
       if (!isFullscreen) {
         // Try iOS Safari first
-        if (video && 'webkitEnterFullscreen' in video) {
+        if (video && "webkitEnterFullscreen" in video) {
           (video as any).webkitEnterFullscreen();
           setIsFullscreen(true);
         } else if (container?.requestFullscreen) {
@@ -90,7 +107,7 @@ export const RecordingPlayer = ({ recording, isOpen, onClose }: RecordingPlayerP
         setIsFullscreen(false);
       }
     } catch (err) {
-      console.warn('Fullscreen not available, using CSS fallback:', err);
+      console.warn("Fullscreen not available, using CSS fallback:", err);
       // Toggle CSS fullscreen fallback for Discord
       setIsFullscreen(!isFullscreen);
     }
@@ -126,7 +143,7 @@ export const RecordingPlayer = ({ recording, isOpen, onClose }: RecordingPlayerP
 
   const handleDownload = () => {
     if (recording) {
-      window.open(recording.url, '_blank');
+      window.open(recording.url, "_blank");
     }
   };
 
@@ -152,19 +169,19 @@ export const RecordingPlayer = ({ recording, isOpen, onClose }: RecordingPlayerP
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent 
+      <DialogContent
         data-recording-player-container
         className={`p-0 bg-black border-border overflow-hidden transition-all duration-300 ${
-          isFullscreen 
-            ? 'fixed inset-0 max-w-none w-screen h-screen rounded-none z-[100]' 
-            : 'max-w-5xl w-[95vw]'
-        }`} 
+          isFullscreen
+            ? "fixed inset-0 max-w-none w-screen h-screen rounded-none z-[100]"
+            : "max-w-5xl w-[95vw]"
+        }`}
         aria-describedby={undefined}
       >
         <VisuallyHidden>
           <DialogTitle>Recording - {recording.nickname}</DialogTitle>
         </VisuallyHidden>
-        
+
         {/* Header */}
         <div className="flex items-center justify-between p-4 bg-gradient-to-b from-black/80 to-transparent absolute top-0 left-0 right-0 z-10">
           <div className="flex items-center gap-3 flex-wrap">
@@ -178,7 +195,7 @@ export const RecordingPlayer = ({ recording, isOpen, onClose }: RecordingPlayerP
               </span>
             </div>
             <span className="text-white/40 text-xs hidden sm:inline">
-              {format(recording.date, 'MMM d, yyyy HH:mm')}
+              {format(recording.date, "MMM d, yyyy HH:mm")}
             </span>
             <span className="text-white/40 text-xs hidden sm:inline">
               ({recordingsService.formatFileSize(recording.size)})
@@ -242,11 +259,13 @@ export const RecordingPlayer = ({ recording, isOpen, onClose }: RecordingPlayerP
           {isLoading && (
             <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/80 z-20">
               <Loader2 className="w-12 h-12 text-primary animate-spin mb-4" />
-              <span className="text-white/80 text-sm">Se încarcă înregistrarea...</span>
+              <span className="text-white/80 text-sm">
+                Se încarcă înregistrarea...
+              </span>
               {bufferedPercent > 0 && (
                 <div className="mt-3 w-48">
                   <div className="h-1 bg-white/20 rounded-full overflow-hidden">
-                    <div 
+                    <div
                       className="h-full bg-primary transition-all duration-300"
                       style={{ width: `${bufferedPercent}%` }}
                     />
@@ -258,7 +277,7 @@ export const RecordingPlayer = ({ recording, isOpen, onClose }: RecordingPlayerP
               )}
             </div>
           )}
-          
+
           <video
             ref={videoRef}
             src={recording.url}
@@ -272,9 +291,17 @@ export const RecordingPlayer = ({ recording, isOpen, onClose }: RecordingPlayerP
             onWaiting={() => setIsLoading(true)}
             onCanPlay={() => setIsLoading(false)}
             onProgress={() => {
-              if (videoRef.current && videoRef.current.buffered.length > 0 && videoRef.current.duration) {
-                const buffered = videoRef.current.buffered.end(videoRef.current.buffered.length - 1);
-                setBufferedPercent((buffered / videoRef.current.duration) * 100);
+              if (
+                videoRef.current &&
+                videoRef.current.buffered.length > 0 &&
+                videoRef.current.duration
+              ) {
+                const buffered = videoRef.current.buffered.end(
+                  videoRef.current.buffered.length - 1,
+                );
+                setBufferedPercent(
+                  (buffered / videoRef.current.duration) * 100,
+                );
               }
             }}
             onLoadedMetadata={() => {
