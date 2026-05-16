@@ -256,10 +256,11 @@ export class EnrichedPlayerService {
     }
 
     // ── Step 3: Process FaceitAnalyser segments ───────────────────────────
-    // Use timestamp-based comparison (last 24 hours) to avoid timezone issues
-    // between server UTC and browser local time
-    const nowMs = Date.now();
-    const oneDayAgoMs = nowMs - 24 * 60 * 60 * 1000;
+    // Compare DATE STRINGS in browser local timezone
+    // FaceitAnalyser returns date as "YYYY-MM-DD" in the player's local timezone
+    // We compare against browser's local date (since code runs in browser)
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
 
     let eloWin = 0;
     let eloLose = 0;
@@ -269,13 +270,13 @@ export class EnrichedPlayerService {
     let todayMatches: any[] = [];
 
     if (faSegments.length > 0) {
-      // Filter today's matches — use timestamp comparison (last 24 hours)
+      // Filter today's matches — compare date strings in browser local timezone
       todayMatches = faSegments.filter((s: any) => {
         const matchDate = s.date || s.created_at || "";
         if (!matchDate) return false;
-        const matchMs = new Date(matchDate).getTime();
-        if (isNaN(matchMs)) return false;
-        return matchMs >= oneDayAgoMs && matchMs <= nowMs + 60 * 60 * 1000; // allow 1hr future
+        // Handle both "YYYY-MM-DD" and ISO datetime formats
+        const matchDateStr = matchDate.substring(0, 10);
+        return matchDateStr === todayStr;
       });
       todayMatchCount = todayMatches.length;
 

@@ -77,15 +77,15 @@ export async function getPlayerTodayData(
 
     const completed = matches.filter((m: any) => !!m.finished_at);
 
-    // Today's completed matches — use timestamp comparison (last 24 hours)
-    // to avoid timezone issues between server UTC and browser local time
-    const nowMs = Date.now();
-    const oneDayAgoMs = nowMs - 24 * 60 * 60 * 1000;
+    // Today's completed matches — compare date strings in browser local timezone
+    const now = new Date();
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
     let wins = 0;
     let losses = 0;
     const todayMatches = completed.filter((m: any) => {
-      const finishedMs = m.finished_at * 1000; // convert sec to ms
-      return finishedMs >= oneDayAgoMs && finishedMs <= nowMs + 60 * 60 * 1000;
+      const finishedDate = new Date(m.finished_at * 1000); // convert sec to ms
+      const finishedStr = `${finishedDate.getFullYear()}-${String(finishedDate.getMonth() + 1).padStart(2, "0")}-${String(finishedDate.getDate()).padStart(2, "0")}`;
+      return finishedStr === todayStr;
     });
     for (const m of todayMatches) {
       const team = getPlayerTeam(m, playerId);
