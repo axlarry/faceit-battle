@@ -1,12 +1,12 @@
-import { faceitApiClient } from "./faceitApiClient";
+import { faceitApiClient } from './faceitApiClient';
 
 export interface TodayStats {
   present: boolean;
   win: number;
   lose: number;
   count: number;
-  elo: number; // always 0 — FACEIT API doesn't expose per-match ELO
-  elo_win: number; // always 0
+  elo: number;      // always 0 — FACEIT API doesn't expose per-match ELO
+  elo_win: number;  // always 0
   elo_lose: number; // always 0
 }
 
@@ -19,18 +19,15 @@ export interface PlayerTodayResult {
 
 /** Convert ISO 3166-1 alpha-2 country code (e.g. "ro") to flag emoji (e.g. 🇷🇴) */
 export function countryCodeToFlag(code: string): string {
-  if (!code || code.length !== 2) return "";
+  if (!code || code.length !== 2) return '';
   const offset = 127397; // codepoint offset for Regional Indicator symbols
   return [...code.toUpperCase()]
-    .map((c) => String.fromCodePoint(c.charCodeAt(0) + offset))
-    .join("");
+    .map(c => String.fromCodePoint(c.charCodeAt(0) + offset))
+    .join('');
 }
 
 function getPlayerTeam(match: any, playerId: string): string | null {
-  for (const [teamId, team] of Object.entries(match.teams || {}) as [
-    string,
-    any,
-  ][]) {
+  for (const [teamId, team] of Object.entries(match.teams || {}) as [string, any][]) {
     if ((team.players || []).some((p: any) => p.player_id === playerId)) {
       return teamId;
     }
@@ -54,16 +51,14 @@ function isTodayUTC(timestampSec: number): boolean {
  *  - live status (most recent match still ongoing)
  *  - last-5 result trend string
  */
-export async function getPlayerTodayData(
-  playerId: string,
-): Promise<PlayerTodayResult | null> {
+export async function getPlayerTodayData(playerId: string): Promise<PlayerTodayResult | null> {
   try {
     const data = await faceitApiClient.makeApiCall(
       `/players/${playerId}/history?game=cs2&limit=20`,
-      false,
+      false
     );
     const matches: any[] = data?.items || [];
-    if (matches.length === 0) return { today: null, isLive: false, report: "" };
+    if (matches.length === 0) return { today: null, isLive: false, report: '' };
 
     const nowSec = Math.floor(Date.now() / 1000);
 
@@ -79,12 +74,12 @@ export async function getPlayerTodayData(
 
     // Today's completed matches — compare date strings in browser local timezone
     const now = new Date();
-    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     let wins = 0;
     let losses = 0;
     const todayMatches = completed.filter((m: any) => {
       const finishedDate = new Date(m.finished_at * 1000); // convert sec to ms
-      const finishedStr = `${finishedDate.getFullYear()}-${String(finishedDate.getMonth() + 1).padStart(2, "0")}-${String(finishedDate.getDate()).padStart(2, "0")}`;
+      const finishedStr = `${finishedDate.getFullYear()}-${String(finishedDate.getMonth() + 1).padStart(2, '0')}-${String(finishedDate.getDate()).padStart(2, '0')}`;
       return finishedStr === todayStr;
     });
     for (const m of todayMatches) {
@@ -100,9 +95,9 @@ export async function getPlayerTodayData(
     const report = last5
       .map((m: any) => {
         const team = getPlayerTeam(m, playerId);
-        return m.results?.winner === team ? "WIN match" : "LOSE match";
+        return m.results?.winner === team ? 'WIN match' : 'LOSE match';
       })
-      .join(", ");
+      .join(', ');
 
     return {
       today: {

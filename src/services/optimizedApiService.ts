@@ -1,12 +1,10 @@
 // V2.0 Consolidated API Service with advanced caching and deduplication
-import { supabase } from "@/integrations/supabase/client";
-import { invokeEdgeFunction, isDiscordActivity } from "@/lib/discordProxy";
+import { supabase } from '@/integrations/supabase/client';
+import { invokeEdgeFunction, isDiscordActivity } from '@/lib/discordProxy';
+
 
 // Helper to invoke edge functions with Discord proxy support
-const invokeFunction = async (
-  functionName: string,
-  body: Record<string, unknown>,
-) => {
+const invokeFunction = async (functionName: string, body: Record<string, unknown>) => {
   if (isDiscordActivity()) {
     return invokeEdgeFunction(functionName, body);
   }
@@ -34,12 +32,12 @@ export class OptimizedApiService {
 
   // Intelligent request deduplication with caching
   async dedupedRequest<T>(
-    key: string,
+    key: string, 
     requestFn: () => Promise<T>,
-    options: RequestOptions = {},
+    options: RequestOptions = {}
   ): Promise<T> {
     const { cacheTime = 30000, forceRefresh = false } = options;
-
+    
     // Check cache first
     if (!forceRefresh) {
       const cached = this.getCached<T>(key);
@@ -70,78 +68,64 @@ export class OptimizedApiService {
   // Advanced retry logic with exponential backoff
   async retryRequest<T>(
     requestFn: () => Promise<T>,
-    options: RequestOptions = {},
+    options: RequestOptions = {}
   ): Promise<T> {
     const { maxRetries = 3, baseDelay = 1000 } = options;
-
+    
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
         // Rate limiting protection
         await this.enforceRateLimit();
-
+        
         const result = await requestFn();
-
+        
         // Reset rate limit delay on success
         this.rateLimitDelay = 0;
-
+        
         return result;
       } catch (error) {
         const isLastAttempt = attempt === maxRetries;
         const isRateLimit = this.isRateLimitError(error);
-
+        
         if (isRateLimit) {
           // Exponential backoff for rate limits
-          this.rateLimitDelay = Math.min(
-            this.rateLimitDelay * 2 || 2000,
-            30000,
-          );
+          this.rateLimitDelay = Math.min(this.rateLimitDelay * 2 || 2000, 30000);
           console.warn(`Rate limited, waiting ${this.rateLimitDelay}ms`);
-
+          
           if (!isLastAttempt) {
             await this.delay(this.rateLimitDelay);
             continue;
           }
         }
-
+        
         if (isLastAttempt) {
           throw error;
         }
-
+        
         // Standard exponential backoff
         const delay = baseDelay * Math.pow(2, attempt);
         await this.delay(delay);
       }
     }
-
-    throw new Error("Max retries exceeded");
+    
+    throw new Error('Max retries exceeded');
   }
 
   // Optimized Faceit API calls
-  async faceitApiCall(
-    endpoint: string,
-    useLeaderboardApi = false,
-    options: RequestOptions = {},
-  ) {
-    const requestKey = `faceit-${endpoint}-${useLeaderboardApi ? "leaderboard" : "friends"}`;
+  async faceitApiCall(endpoint: string, useLeaderboardApi = false, options: RequestOptions = {}) {
+    const requestKey = `faceit-${endpoint}-${useLeaderboardApi ? 'leaderboard' : 'friends'}`;
+    
+    return this.dedupedRequest(requestKey, async () => {
+      const { data, error } = await invokeFunction('proxy-faceit', { endpoint, useLeaderboardApi });
 
-    return this.dedupedRequest(
-      requestKey,
-      async () => {
-        const { data, error } = await invokeFunction("proxy-faceit", {
-          endpoint,
-          useLeaderboardApi,
-        });
+      if (error) {
+        if (this.isRateLimitError(error)) throw new Error('Rate limited');
+        return null;
+      }
 
-        if (error) {
-          if (this.isRateLimitError(error)) throw new Error("Rate limited");
-          return null;
-        }
-
-        return data ?? null;
-        // Player data changes rarely; 120s cache avoids redundant API calls
-      },
-      { cacheTime: 120000, ...options },
-    );
+      return data ?? null;
+    // Player data changes rarely; 120s cache avoids redundant API calls
+    }, { cacheTime: 120000, ...options });
   }
 
   // Batch API processing with intelligent scheduling
@@ -152,35 +136,35 @@ export class OptimizedApiService {
       batchSize?: number;
       delay?: number;
       maxConcurrency?: number;
-    } = {},
+    } = {}
   ): Promise<R[]> {
     const { batchSize = 3, delay = 500, maxConcurrency = 5 } = options;
     const results: R[] = [];
-
+    
     // Process in smaller concurrent batches
     for (let i = 0; i < items.length; i += batchSize) {
       const batch = items.slice(i, i + batchSize);
-
+      
       // Limit concurrency within each batch
-      const batchPromises = batch.map((item) =>
-        this.limitConcurrency(() => processor(item), maxConcurrency),
+      const batchPromises = batch.map(item => 
+        this.limitConcurrency(() => processor(item), maxConcurrency)
       );
-
+      
       const batchResults = await Promise.allSettled(batchPromises);
-
+      
       // Extract successful results
-      batchResults.forEach((result) => {
-        if (result.status === "fulfilled") {
+      batchResults.forEach(result => {
+        if (result.status === 'fulfilled') {
           results.push(result.value);
         }
       });
-
+      
       // Delay between batches
       if (i + batchSize < items.length) {
         await this.delay(delay);
       }
     }
-
+    
     return results;
   }
 
@@ -190,12 +174,12 @@ export class OptimizedApiService {
     if (entry && Date.now() < entry.expiry) {
       return entry.data;
     }
-
+    
     // Clean up expired entry
     if (entry) {
       this.cache.delete(key);
     }
-
+    
     return null;
   }
 
@@ -203,9 +187,9 @@ export class OptimizedApiService {
     this.cache.set(key, {
       data,
       timestamp: Date.now(),
-      expiry: Date.now() + cacheTime,
+      expiry: Date.now() + cacheTime
     });
-
+    
     // Prevent memory leaks - limit cache size
     if (this.cache.size > 1000) {
       const oldestKey = this.cache.keys().next().value;
@@ -217,36 +201,31 @@ export class OptimizedApiService {
     const now = Date.now();
     const timeSinceLastRequest = now - this.lastRequestTime;
     const minInterval = 100; // Minimum 100ms between requests
-
+    
     if (timeSinceLastRequest < minInterval) {
       await this.delay(minInterval - timeSinceLastRequest);
     }
-
+    
     this.lastRequestTime = Date.now();
   }
 
   private isRateLimitError(error: any): boolean {
-    const message = error?.message?.toLowerCase() || "";
-    return (
-      message.includes("429") ||
-      message.includes("rate limit") ||
-      message.includes("too many requests")
-    );
+    const message = error?.message?.toLowerCase() || '';
+    return message.includes('429') || 
+           message.includes('rate limit') || 
+           message.includes('too many requests');
   }
 
   private delay(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+    return new Promise(resolve => setTimeout(resolve, ms));
   }
 
   private semaphore = 0;
-  private async limitConcurrency<T>(
-    fn: () => Promise<T>,
-    max: number,
-  ): Promise<T> {
+  private async limitConcurrency<T>(fn: () => Promise<T>, max: number): Promise<T> {
     while (this.semaphore >= max) {
       await this.delay(10);
     }
-
+    
     this.semaphore++;
     try {
       return await fn();
@@ -268,7 +247,7 @@ export class OptimizedApiService {
     // Implementation would track hit/miss rates
     return {
       size: this.cache.size,
-      hitRate: 0.85, // Placeholder
+      hitRate: 0.85 // Placeholder
     };
   }
 }

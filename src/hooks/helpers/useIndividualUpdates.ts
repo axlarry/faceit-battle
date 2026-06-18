@@ -1,5 +1,6 @@
-import { useState, useCallback, useRef, useEffect } from "react";
-import { Player } from "@/types/Player";
+
+import { useState, useCallback, useRef, useEffect } from 'react';
+import { Player } from '@/types/Player';
 
 interface UseIndividualUpdatesProps {
   friends: Player[];
@@ -14,8 +15,8 @@ const BATCH_SIZE = 3;
 // the batch takes 4-8s. Using 800ms as threshold lets us distinguish the two
 // cases and apply the appropriate inter-batch pause.
 const FAST_BATCH_THRESHOLD_MS = 800;
-const INTER_BATCH_DELAY_WARM_MS = 300; // cache-hit batches: minimal gap
-const INTER_BATCH_DELAY_COLD_MS = 2000; // cache-miss batches: let FaceitAnalyser queue drain
+const INTER_BATCH_DELAY_WARM_MS = 300;   // cache-hit batches: minimal gap
+const INTER_BATCH_DELAY_COLD_MS = 2000;  // cache-miss batches: let FaceitAnalyser queue drain
 
 // Rest between full cycles. With 60s server cache the next cycle will be
 // served mostly from cache (warm) and complete in ~4s.
@@ -24,12 +25,12 @@ const CYCLE_RESTART_DELAY_MS = 60000; // 1 min between cycles (was 30s)
 export const useIndividualUpdates = ({
   friends,
   enabled,
-  updateSingleFriend,
+  updateSingleFriend
 }: UseIndividualUpdatesProps) => {
   const [isIndividualUpdating, setIsIndividualUpdating] = useState(false);
 
   const stopSignalRef = useRef(false);
-  const runningRef = useRef(false);
+  const runningRef    = useRef(false);
 
   // Always keep a ref to the latest friends list (which may be FriendWithLcrypt[]).
   // The runCycle loop reads this ref so it always processes the most up-to-date
@@ -40,11 +41,10 @@ export const useIndividualUpdates = ({
   });
 
   const startIndividualUpdates = useCallback(() => {
-    if (!enabled || friendsRef.current.length === 0 || runningRef.current)
-      return;
+    if (!enabled || friendsRef.current.length === 0 || runningRef.current) return;
 
     stopSignalRef.current = false;
-    runningRef.current = true;
+    runningRef.current    = true;
     setIsIndividualUpdating(true);
 
     const runCycle = async () => {
@@ -59,9 +59,7 @@ export const useIndividualUpdates = ({
           const batch = currentFriends.slice(i, i + BATCH_SIZE);
           const t0 = Date.now();
 
-          await Promise.all(
-            batch.map((f) => updateSingleFriend(f).catch(() => {})),
-          );
+          await Promise.all(batch.map(f => updateSingleFriend(f).catch(() => {})));
 
           if (stopSignalRef.current) break;
 
@@ -69,11 +67,10 @@ export const useIndividualUpdates = ({
             // Adaptive delay: fast completion means all data came from cache →
             // skip the long queue-drain pause.
             const batchMs = Date.now() - t0;
-            const delay =
-              batchMs < FAST_BATCH_THRESHOLD_MS
-                ? INTER_BATCH_DELAY_WARM_MS
-                : INTER_BATCH_DELAY_COLD_MS;
-            await new Promise<void>((r) => setTimeout(r, delay));
+            const delay = batchMs < FAST_BATCH_THRESHOLD_MS
+              ? INTER_BATCH_DELAY_WARM_MS
+              : INTER_BATCH_DELAY_COLD_MS;
+            await new Promise<void>(r => setTimeout(r, delay));
           }
         }
         // ────────────────────────────────────────────────────────────────────
@@ -82,7 +79,7 @@ export const useIndividualUpdates = ({
 
         // ── Rest phase ──────────────────────────────────────────────────────
         setIsIndividualUpdating(false);
-        await new Promise<void>((r) => setTimeout(r, CYCLE_RESTART_DELAY_MS));
+        await new Promise<void>(r => setTimeout(r, CYCLE_RESTART_DELAY_MS));
         if (stopSignalRef.current) break;
         setIsIndividualUpdating(true);
       }
@@ -92,18 +89,14 @@ export const useIndividualUpdates = ({
     };
 
     runCycle();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [enabled, updateSingleFriend]);
 
   const stopIndividualUpdates = useCallback(() => {
     stopSignalRef.current = true;
-    runningRef.current = false;
+    runningRef.current    = false;
     setIsIndividualUpdating(false);
   }, []);
 
-  return {
-    isIndividualUpdating,
-    startIndividualUpdates,
-    stopIndividualUpdates,
-  };
+  return { isIndividualUpdating, startIndividualUpdates, stopIndividualUpdates };
 };

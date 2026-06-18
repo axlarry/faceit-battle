@@ -12,13 +12,13 @@
  * This eliminates the root cause bug where FaceitAnalyser success + lcrypt failure
  * resulted in elo: undefined → ?? fallback → FACEIT overwrites FaceitAnalyser data.
  */
-import { faceitApiClient } from "./faceitApiClient";
-import { getPlayerTodayData, countryCodeToFlag } from "./playerTodayService";
-import { debugLog, debugWarn, debugError } from "@/utils/debug";
+import { faceitApiClient } from './faceitApiClient';
+import { getPlayerTodayData, countryCodeToFlag } from './playerTodayService';
+import { debugLog, debugWarn, debugError } from '@/utils/debug';
 
 // Helper to invoke edge functions (Discord proxy support)
-import { supabase } from "@/integrations/supabase/client";
-import { invokeEdgeFunction, isDiscordActivity } from "@/lib/discordProxy";
+import { supabase } from '@/integrations/supabase/client';
+import { invokeEdgeFunction, isDiscordActivity } from '@/lib/discordProxy';
 
 // ── FaceitAnalyser cache ────────────────────────────────────────────────────
 interface FaCacheEntry {
@@ -28,8 +28,8 @@ interface FaCacheEntry {
 }
 
 const faceitAnalyserCache = new Map<string, FaCacheEntry>();
-const FA_SUCCESS_TTL = 600_000; // 10 min for success
-const FA_ERROR_TTL = 900_000; // 15 min for errors
+const FA_SUCCESS_TTL = 600_000;   // 10 min for success
+const FA_ERROR_TTL = 900_000;     // 15 min for errors
 
 function getFaCached(nickname: string): any | null {
   const entry = faceitAnalyserCache.get(nickname);
@@ -63,15 +63,13 @@ class FaceitAnalyserQueue {
 
   async run<T>(fn: () => Promise<T>): Promise<T> {
     while (this.running) {
-      await new Promise<void>((resolve) => this.queue.push(resolve));
+      await new Promise<void>(resolve => this.queue.push(resolve));
     }
 
     const now = Date.now();
     const elapsed = now - this.lastCallTime;
     if (elapsed < this.minInterval) {
-      await new Promise<void>((resolve) =>
-        setTimeout(resolve, this.minInterval - elapsed),
-      );
+      await new Promise<void>(resolve => setTimeout(resolve, this.minInterval - elapsed));
     }
 
     this.running = true;
@@ -95,14 +93,11 @@ const invokeFaceitAnalyser = async (nickname: string): Promise<any> => {
   const call = async () => {
     const fn = isDiscordActivity() ? invokeEdgeFunction : null;
     if (fn) {
-      return fn("get-faceit-analyser-data", { nickname, endpoint: "matches" });
+      return fn('get-faceit-analyser-data', { nickname, endpoint: 'matches' });
     }
-    const { data, error } = await supabase.functions.invoke(
-      "get-faceit-analyser-data",
-      {
-        body: { nickname, endpoint: "matches" },
-      },
-    );
+    const { data, error } = await supabase.functions.invoke('get-faceit-analyser-data', {
+      body: { nickname, endpoint: 'matches' },
+    });
     if (error) throw new Error(error.message);
     return data;
   };
@@ -114,13 +109,9 @@ const invokeFaceitAnalyser = async (nickname: string): Promise<any> => {
     } catch (err) {
       lastError = err instanceof Error ? err : new Error(String(err));
       if (attempt < MAX_RETRIES) {
-        const delay =
-          RETRY_DELAYS[attempt] ?? RETRY_DELAYS[RETRY_DELAYS.length - 1];
-        debugWarn(
-          `FaceitAnalyser attempt ${attempt + 1} failed for ${nickname}, retrying in ${delay}ms:`,
-          lastError.message,
-        );
-        await new Promise((r) => setTimeout(r, delay));
+        const delay = RETRY_DELAYS[attempt] ?? RETRY_DELAYS[RETRY_DELAYS.length - 1];
+        debugWarn(`FaceitAnalyser attempt ${attempt + 1} failed for ${nickname}, retrying in ${delay}ms:`, lastError.message);
+        await new Promise(r => setTimeout(r, delay));
       }
     }
   }
@@ -130,8 +121,8 @@ const invokeFaceitAnalyser = async (nickname: string): Promise<any> => {
 // Parse elo_delta string from FaceitAnalyser to a number
 function parseEloDelta(delta: string | number | undefined): number {
   if (delta == null) return 0;
-  if (typeof delta === "number") return delta;
-  const cleaned = delta.toString().replace(/[()]/g, "").replace(/\+/g, "");
+  if (typeof delta === 'number') return delta;
+  const cleaned = delta.toString().replace(/[()]/g, '').replace(/\+/g, '');
   const parsed = parseInt(cleaned, 10);
   return isNaN(parsed) ? 0 : parsed;
 }
@@ -184,11 +175,9 @@ export class EnrichedPlayerService {
   async getEnrichedPlayerData(
     nickname: string,
     playerId?: string,
-    country?: string,
+    country?: string
   ): Promise<EnrichedPlayerData | null> {
-    debugLog(
-      `getEnrichedPlayerData START, nickname=${nickname}, playerId=${playerId}`,
-    );
+    debugLog(`getEnrichedPlayerData START, nickname=${nickname}, playerId=${playerId}`);
 
     // ── Step 1: Fetch base data from FACEIT official API ──────────────────
     let faceitElo: number | undefined;
@@ -200,7 +189,7 @@ export class EnrichedPlayerService {
     try {
       const playerData = await faceitApiClient.makeApiCall(
         `/players?nickname=${encodeURIComponent(nickname)}`,
-        false,
+        false
       );
       const cs2 = playerData?.games?.cs2 || {};
       faceitElo = cs2?.faceit_elo;
@@ -220,9 +209,7 @@ export class EnrichedPlayerService {
     // Check cache first
     const cached = getFaCached(nickname);
     if (cached !== null) {
-      debugLog(
-        `FaceitAnalyser cache hit for ${nickname}, isError=${cached.isError}`,
-      );
+      debugLog(`FaceitAnalyser cache hit for ${nickname}, isError=${cached.isError}`);
       if (Array.isArray(cached.segments)) {
         faSegments = cached.segments;
       } else {
@@ -232,16 +219,11 @@ export class EnrichedPlayerService {
     } else {
       try {
         const analyserData = await faceitAnalyserQueue.run(() =>
-          invokeFaceitAnalyser(nickname),
+          invokeFaceitAnalyser(nickname)
         );
         setFaCached(nickname, analyserData, false);
-        debugLog(
-          `FaceitAnalyser raw response for ${nickname}:`,
-          JSON.stringify(analyserData).slice(0, 500),
-        );
-        debugLog(
-          `FaceitAnalyser returned ${analyserData?.segments?.length || 0} segments`,
-        );
+        debugLog(`FaceitAnalyser raw response for ${nickname}:`, JSON.stringify(analyserData).slice(0, 500));
+        debugLog(`FaceitAnalyser returned ${analyserData?.segments?.length || 0} segments`);
         if (analyserData && Array.isArray(analyserData.segments)) {
           faSegments = analyserData.segments;
         } else if (analyserData && Array.isArray(analyserData)) {
@@ -260,11 +242,11 @@ export class EnrichedPlayerService {
     // FaceitAnalyser returns date as "YYYY-MM-DD" in the player's local timezone
     // We compare against browser's local date (since code runs in browser)
     const now = new Date();
-    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
     let eloWin = 0;
     let eloLose = 0;
-    let report = "";
+    let report = '';
     let todayMatchCount = 0;
     let completedTodayCount = 0;
     let todayMatches: any[] = [];
@@ -272,7 +254,7 @@ export class EnrichedPlayerService {
     if (faSegments.length > 0) {
       // Filter today's matches — compare date strings in browser local timezone
       todayMatches = faSegments.filter((s: any) => {
-        const matchDate = s.date || s.created_at || "";
+        const matchDate = s.date || s.created_at || '';
         if (!matchDate) return false;
         // Handle both "YYYY-MM-DD" and ISO datetime formats
         const matchDateStr = matchDate.substring(0, 10);
@@ -283,8 +265,7 @@ export class EnrichedPlayerService {
       // FaceitAnalyser segments use `w` field (1=win, 0=loss) for win/loss
       // Some segments may have `elo_delta` — prefer that when available
       const completedToday = todayMatches.filter((s: any) => {
-        if (s.elo_delta != null && parseEloDelta(s.elo_delta) !== 0)
-          return true;
+        if (s.elo_delta != null && parseEloDelta(s.elo_delta) !== 0) return true;
         // Fallback: use `w` field if present
         return s.w != null;
       });
@@ -305,28 +286,17 @@ export class EnrichedPlayerService {
 
       // Build report for TrendIndicator (last 5 matches overall)
       const last5 = faSegments.slice(0, 5);
-      report = last5
-        .map((s: any) => {
-          const delta = parseEloDelta(s.elo_delta);
-          // Use `w` field for result when elo_delta is not available
-          const result =
-            delta !== 0
-              ? delta >= 0
-                ? "WIN"
-                : "LOSE"
-              : s.w === 1
-                ? "WIN"
-                : s.w === 0
-                  ? "LOSE"
-                  : "WIN";
-          const elod = s.elod != null ? s.elod : delta;
-          return `${result} ${s.map || "Unknown"} (${elod >= 0 ? "+" : ""}${elod})`;
-        })
-        .join(", ");
+      report = last5.map((s: any) => {
+        const delta = parseEloDelta(s.elo_delta);
+        // Use `w` field for result when elo_delta is not available
+        const result = delta !== 0
+          ? (delta >= 0 ? 'WIN' : 'LOSE')
+          : (s.w === 1 ? 'WIN' : s.w === 0 ? 'LOSE' : 'WIN');
+        const elod = s.elod != null ? s.elod : delta;
+        return `${result} ${s.map || 'Unknown'} (${elod >= 0 ? '+' : ''}${elod})`;
+      }).join(', ');
 
-      debugLog(
-        `FaceitAnalyser: today=${todayMatchCount}, completed=${completedTodayCount}, ELO win=${eloWin} lose=${eloLose}`,
-      );
+      debugLog(`FaceitAnalyser: today=${todayMatchCount}, completed=${completedTodayCount}, ELO win=${eloWin} lose=${eloLose}`);
     }
 
     // Count actual wins/losses from w field for today's matches
@@ -338,7 +308,7 @@ export class EnrichedPlayerService {
     }
 
     const todayResult = {
-      present: faSegments.length > 0 && todayWins + todayLosses > 0,
+      present: faSegments.length > 0 && (todayWins + todayLosses) > 0,
       win: todayWins,
       lose: todayLosses,
       count: todayMatchCount,
@@ -351,7 +321,7 @@ export class EnrichedPlayerService {
     // FaceitAnalyser segments don't have started_at/finished_at, so we check
     // FACEIT official API for live match status when playerId is available
     let isLive = false;
-    let liveInfo: EnrichedPlayerData["liveInfo"] | undefined;
+    let liveInfo: EnrichedPlayerData['liveInfo'] | undefined;
 
     if (playerId) {
       try {
@@ -359,15 +329,15 @@ export class EnrichedPlayerService {
         if (historyResult?.isLive) {
           isLive = true;
           liveInfo = {
-            matchId: historyResult.liveMatchId || "",
-            competition: "FACEIT Match",
-            status: "LIVE",
-            state: "ONGOING",
+            matchId: historyResult.liveMatchId || '',
+            competition: 'FACEIT Match',
+            status: 'LIVE',
+            state: 'ONGOING',
             matchDetails: {},
             liveMatch: {
-              match_id: historyResult.liveMatchId || "",
-              competition_name: "FACEIT Match",
-              status: "LIVE",
+              match_id: historyResult.liveMatchId || '',
+              competition_name: 'FACEIT Match',
+              status: 'LIVE',
               started_at: Math.floor(Date.now() / 1000),
               finished_at: null,
               teams: {},
@@ -382,25 +352,21 @@ export class EnrichedPlayerService {
         const latest = faSegments[0];
         const nowSec = Math.floor(Date.now() / 1000);
         const startedAt = latest?.started_at || 0;
-        isLive =
-          !latest?.finished_at && startedAt > 0 && nowSec - startedAt < 10800;
+        isLive = !latest?.finished_at && startedAt > 0 && (nowSec - startedAt) < 10800;
       }
     } else if (faSegments.length > 0) {
       // Fallback: check FaceitAnalyser segments if no playerId
       const latest = faSegments[0];
       const nowSec = Math.floor(Date.now() / 1000);
       const startedAt = latest?.started_at || 0;
-      isLive =
-        !latest?.finished_at && startedAt > 0 && nowSec - startedAt < 10800;
+      isLive = !latest?.finished_at && startedAt > 0 && (nowSec - startedAt) < 10800;
     }
 
     // ── Step 5: Ultimate fallback — FACEIT history ──
     // Trigger when FA has no segments OR when FA segments exist but have no useful today data
-    const hasUsefulTodayData = todayWins + todayLosses > 0;
+    const hasUsefulTodayData = (todayWins + todayLosses) > 0;
     if ((faSegments.length === 0 || !hasUsefulTodayData) && playerId) {
-      debugLog(
-        `FaceitAnalyser returned no segments, trying FACEIT history fallback`,
-      );
+      debugLog(`FaceitAnalyser returned no segments, trying FACEIT history fallback`);
       const historyResult = await getPlayerTodayData(playerId);
       if (historyResult?.today) {
         todayResult.present = historyResult.today.present;
@@ -416,14 +382,11 @@ export class EnrichedPlayerService {
       }
     }
 
-    const country_flag =
-      country || faceitCountry
-        ? countryCodeToFlag(country || faceitCountry || "")
-        : undefined;
+    const country_flag = country || faceitCountry
+      ? countryCodeToFlag(country || faceitCountry || '')
+      : undefined;
 
-    debugLog(
-      `FINAL RETURN: elo=${faceitElo}, today.present=${todayResult.present}, today.elo=${todayResult.elo}, isLive=${isLive}`,
-    );
+    debugLog(`FINAL RETURN: elo=${faceitElo}, today.present=${todayResult.present}, today.elo=${todayResult.elo}, isLive=${isLive}`);
 
     return {
       elo: faceitElo,
