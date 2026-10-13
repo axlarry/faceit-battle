@@ -21,7 +21,7 @@ interface FaceitToolProps {
   onAddFriend: (player: Player, password: string) => void;
 }
 
-const PROXY_SERVER = "https://lacurte.ro:3000";
+const PROXY_SERVER = "https://faceit.lacurte.ro";
 
 interface StatsData {
   lifetime?: {
