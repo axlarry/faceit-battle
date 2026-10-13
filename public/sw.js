@@ -1,7 +1,7 @@
 // V2.0 Service Worker for Progressive Web App
 const CACHE_NAME = 'faceit-tracker-v3';
-const STATIC_CACHE = 'static-v3';
-const DYNAMIC_CACHE = 'dynamic-v3';
+const STATIC_CACHE = 'static-v4';
+const DYNAMIC_CACHE = 'dynamic-v4';
 
 // Assets to cache immediately
 const STATIC_ASSETS = [
